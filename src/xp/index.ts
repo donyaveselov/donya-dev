@@ -1,11 +1,7 @@
 // The Windows XD desktop: the shell, then the apps in registration order (the order of the desktop icons).
 import './install';
-import './legacy/apps/common';
-import './legacy/apps/stack';
-import './legacy/apps/mocks';
-import './legacy/apps/mocks-verifikat';
-import './legacy/apps/mocks-kompi';
-import './legacy/apps/projects';
+import './legacy-bridge';
+import './apps/projects';
 import './legacy/apps/resume';
 import './legacy/apps/about';
 import './legacy/apps/contact';

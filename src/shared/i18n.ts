@@ -39,3 +39,8 @@ export function translator<D extends Dict>(
 ): (key: keyof D & string, arg?: string | number) => string {
   return (key, arg) => format(pick(dict[key] as Bilingual, lang()), arg);
 }
+
+/** Both languages of a string with a `%s`, filled with the same argument. */
+export function fill(text: Bilingual, arg: string | number): Bilingual {
+  return { ru: format(text.ru, arg), en: format(text.en, arg) };
+}
