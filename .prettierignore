@@ -9,3 +9,4 @@ index.html
 src/**/legacy
 src/room/legacy-app.ts
 src/styles
+src/xp/assets

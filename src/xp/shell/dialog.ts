@@ -1,0 +1,124 @@
+// Message boxes. A dialog is modal to its owner window (or to the whole desktop when it has none): clicks on what it
+// blocks flash its title bar.
+import type { XPDialogButton, XPDialogHandle, XPDialogOptions } from '../../shared/types';
+import { clamp, css, h } from './dom';
+import { work } from './geometry';
+import { ICON, messageIcon } from './glyphs';
+import { sound } from './sound';
+import { dom, S } from './state';
+import { BRAND, L, tr } from './strings';
+import { growIn, startFlash, Win } from './window';
+
+export interface DialogOptions extends XPDialogOptions {
+  owner?: Win | null;
+}
+
+export function dialog(o: DialogOptions = {}): XPDialogHandle {
+  const owner = o.owner && !o.owner.closed ? o.owner : null;
+  const icon = messageIcon(o.icon);
+  const w = new Win({
+    kind: 'dialog',
+    title: o.title ?? BRAND,
+    icon: owner ? owner.icon : ICON.logo,
+    resizable: false,
+    modal: true,
+    owner,
+    noTask: true,
+    center: true,
+    autoSize: true,
+    w: 420,
+    h: 160,
+  });
+  const body = h('div', 'xp-dlg');
+  const row = h(
+    'div',
+    'xp-dlg__row',
+    `${icon ? `<div class="xp-dlg__ic">${icon}</div>` : ''}<div class="xp-dlg__text"></div>`,
+  );
+  const txt = row.querySelector('.xp-dlg__text');
+  if (txt) {
+    if (o.html) txt.innerHTML = o.html;
+    else txt.textContent = tr(o.text);
+  }
+  body.appendChild(row);
+  const btns = h('div', 'xp-dlg__btns');
+  const list: XPDialogButton[] = o.buttons?.length ? o.buttons : [{ label: L('ok'), primary: true }];
+  let primaryBtn: HTMLButtonElement | null = null;
+  for (const b of list) {
+    const bt = h('button', `xp-btn${b.primary ? ' xp-btn--default' : ''}`);
+    bt.textContent = tr(b.label);
+    bt.addEventListener('click', () => {
+      if (b.onClick?.() !== false) w.close();
+    });
+    if (b.primary) primaryBtn = bt;
+    btns.appendChild(bt);
+  }
+  body.appendChild(btns);
+  w.body.appendChild(body);
+  // re-measure now that content exists
+  css(w.el, { width: 'auto', height: 'auto' });
+  // offsetWidth/Height round fractional sizes, and a fraction of a pixel short is enough for a scrollbar: add a spare
+  // pixel, and only let the body scroll when the dialog really is taller than the screen
+  const W = work();
+  const fits = w.el.offsetHeight + 1 <= W.h - 16;
+  const ww = Math.min(w.el.offsetWidth + 1, W.w - 16);
+  const hh = Math.min(w.el.offsetHeight + 1, W.h - 16);
+  w.body.style.overflow = fits ? 'hidden' : 'auto';
+  const ref = owner?.state === 'normal' ? owner.rect : { x: 0, y: 0, w: W.w, h: W.h };
+  w.rect = {
+    x: Math.round(clamp(ref.x + (ref.w - ww) / 2, 0, W.w - ww)),
+    y: Math.round(clamp(ref.y + (ref.h - hh) / 2, 0, W.h - hh)),
+    w: ww,
+    h: hh,
+  };
+  w.applyRect();
+  // modality: the owner (or the whole desktop) becomes inert, clicks on it flash the dialog
+  let shield: HTMLDivElement;
+  if (owner) {
+    owner.blockedBy = w;
+    shield = h('div', 'xp-modal-shield');
+    owner.el.appendChild(shield);
+  } else {
+    shield = h('div', 'xp-modal');
+    dom().wins.appendChild(shield);
+    shield.style.zIndex = '99';
+    S.modalBlock = w;
+    for (const x of S.wins) if (x !== w) x.blockedBy = w;
+  }
+  shield.addEventListener(
+    'pointerdown',
+    (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      w.focus();
+      w.flashTitle();
+    },
+    true,
+  );
+  w.unblock = () => {
+    shield.remove();
+    if (owner) {
+      if (owner.blockedBy === w) owner.blockedBy = null;
+    } else {
+      S.modalBlock = null;
+      for (const x of S.wins) if (x.blockedBy === w) x.blockedBy = null;
+    }
+  };
+  w.hooks.onEsc = () => {
+    list.find((b) => b.cancel)?.onClick?.();
+    w.close();
+  };
+  w.focus();
+  if (owner?.state === 'min') startFlash(owner);
+  sound(o.icon === 'error' || o.icon === 'warn' ? 'error' : (o.sound ?? 'notify'));
+  growIn(w.el);
+  setTimeout(() => {
+    primaryBtn?.focus();
+  }, 0);
+  return {
+    close: () => {
+      w.close(true);
+    },
+    el: w.el,
+  };
+}
