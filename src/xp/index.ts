@@ -1,13 +1,12 @@
 // The Windows XD desktop: the shell, then the apps in registration order (the order of the desktop icons).
 import './install';
-import './legacy-bridge';
 import './apps/projects';
 import './apps/resume';
 import './apps/about';
 import './apps/contact';
-import './legacy/apps/terminal';
-import './legacy/apps/minesweeper';
-import './legacy/apps/paint';
-import './legacy/apps/recycle';
-import './legacy/apps/browser';
-import './legacy/apps/notepad';
+import './apps/terminal';
+import './apps/minesweeper';
+import './apps/paint';
+import './apps/recycle';
+import './apps/browser';
+import './apps/notepad';

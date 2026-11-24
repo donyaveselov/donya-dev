@@ -1,12 +1,12 @@
+/* Verifikat project screens rebuilt from the real product UI (truesign-ui tokens, truesign-frontend
+   VerifyCodeView, truesign-manufacturer BatchesView / ExportsView). Real HTML + CSS at a fixed design
+   size, scaled to the container by mocks-verifikat.css. Each export: (lang) -> markup string. */
 /* eslint-disable @typescript-eslint/restrict-plus-operands -- markup concatenated as in the product's own code, from fixed data */
 import type { Lang } from '../../../shared/types';
 
 type BatchStatus = 'draft' | 'awaiting_platform' | 'awaiting_manufacturer' | 'confirmed';
 type JobStatus = 'running' | 'success' | 'failed' | 'cancelled';
 
-/* Verifikat project screens rebuilt from the real product UI (truesign-ui tokens, truesign-frontend
- VerifyCodeView, truesign-manufacturer BatchesView / ExportsView). Real HTML + CSS at a fixed design
- size, scaled to the container by mocks-verifikat.css. XPApps.mocks[kind](lang) -> markup string. */
 
 function esc(s: string | number): string {
   return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');

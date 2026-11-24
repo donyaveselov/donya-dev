@@ -1,12 +1,12 @@
+/* Kompi (kompy.app) screens for the project gallery, rebuilt from the real product:
+   markup and class rules ported from relocator/frontend (QuizApp.vue, QuestionCard.vue,
+   CitizenshipPicker.vue, ResultList.vue, LangSwitcher.vue, KompiLogo.vue + brand.ts,
+   style.css) and the PDF cover/country page from backend/scoring/report_pdf.py.
+   Copy comes from src/locales/{ru,en}.ts, demo data from src/mockReport.ts and the
+   sample report (frontend/public/landing/kompi-example*.pdf). Styles: mocks-kompi.css. */
 /* eslint-disable @typescript-eslint/restrict-plus-operands -- markup concatenated as in the product's own code, from fixed data */
 import type { Lang } from '../../../shared/types';
 
-/* Kompi (kompy.app) screens for the project gallery, rebuilt from the real product:
- markup and class rules ported from relocator/frontend (QuizApp.vue, QuestionCard.vue,
- CitizenshipPicker.vue, ResultList.vue, LangSwitcher.vue, KompiLogo.vue + brand.ts,
- style.css) and the PDF cover/country page from backend/scoring/report_pdf.py.
- Copy comes from src/locales/{ru,en}.ts, demo data from src/mockReport.ts and the
- sample report (frontend/public/landing/kompi-example*.pdf). Styles: mocks-kompi.css. */
 
 function L<T>(lang: Lang, ru: T, en: T): T {
   return lang === 'en' ? en : ru;

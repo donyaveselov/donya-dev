@@ -176,8 +176,6 @@ export interface XPDesktopApi {
 declare global {
   interface Window {
     XPDesktop?: XPDesktopApi;
-    /** Helpers and content shared by the desktop apps (xp/apps/common.js and friends). */
-    XPApps?: Record<string, unknown>;
     /** Windows XP icon bitmaps as data: URLs, by name. */
     XP_ICO?: Record<string, string>;
     /** The default (Bliss) wallpaper as a data: URL. */
