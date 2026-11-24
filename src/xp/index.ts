@@ -2,9 +2,9 @@
 import './install';
 import './legacy-bridge';
 import './apps/projects';
-import './legacy/apps/resume';
-import './legacy/apps/about';
-import './legacy/apps/contact';
+import './apps/resume';
+import './apps/about';
+import './apps/contact';
 import './legacy/apps/terminal';
 import './legacy/apps/minesweeper';
 import './legacy/apps/paint';

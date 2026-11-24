@@ -25,7 +25,7 @@ export interface Contact {
   color: string;
 }
 
-export const CONTACTS: readonly Contact[] = [
+export const CONTACTS: readonly [Contact, ...Contact[]] = [
   {
     id: 'telegram',
     label: 'Telegram',
