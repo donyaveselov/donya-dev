@@ -1,7 +1,5 @@
-// Entry point. Evaluation order matters and matches build.py: the room's styles, the desktop (its styles, icons, shell
-// and apps), then the room, which mounts the desktop on demand through window.XPDesktop.
+// Entry point: the room's styles, then the room. The desktop (its styles, icons, shell and apps) is loaded by the room
+// once it is up (src/room/desktop-loader.ts) and mounted on demand through window.XPDesktop.
 import './room/room.css';
-
-import './xp';
 
 import './room';

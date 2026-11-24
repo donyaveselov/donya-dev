@@ -10,6 +10,7 @@ import type { RoomMountOptions } from '../shared/desktop';
 import type { Lang, Status } from '../shared/types';
 import { GAME_NAMES, gameKind } from './clock';
 import { debugWanted, makeDebugPanel } from './debug-panel';
+import { loadDesktop } from './desktop-loader';
 import { makeFrames } from './frames';
 import type { Frame } from './frames';
 import { HandOff } from './handoff';
@@ -353,6 +354,7 @@ function build(gl: WebGLRenderer, gltf: GLTF): Built {
       fallback: () => {
         panels.openDrawer();
       },
+      loadDesktop,
     },
     getDesktop,
   );
@@ -613,15 +615,20 @@ export function startRoom(): void {
           },
           REDUCED_MOTION ? 0 : 900,
         );
-        if (getDesktop()) {
-          const later = (f: () => void): void => {
-            if ('requestIdleCallback' in window) window.requestIdleCallback(f);
-            else setTimeout(f, 1200);
-          };
-          later(() => {
-            if (!r.handoff.atPC) r.handoff.ensureDesktop();
+        // the desktop module, then its shell (invisible), when the page is idle: a click on a monitor then starts the
+        // flight at once
+        const later = (f: () => void): void => {
+          if ('requestIdleCallback' in window) window.requestIdleCallback(f, { timeout: 3000 });
+          else setTimeout(f, 1200);
+        };
+        later(() => {
+          void loadDesktop().then((ok) => {
+            if (ok)
+              later(() => {
+                if (!r.handoff.atPC) r.handoff.ensureDesktop();
+              });
           });
-        }
+        });
         // #pc opens straight at the computer, #pcdota with a game running
         if (currentHash().startsWith('pc'))
           setTimeout(() => {

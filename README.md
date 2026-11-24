@@ -41,8 +41,8 @@ Keep object names in Blender: the code finds meshes by name (`Screen_L`, `Poster
 ## Layout
 
 ```
-index.html              page head (fonts, title) and the room's markup (top bar, drawer, resume sheet)
-src/main.ts             entry: the room's CSS, then the desktop (src/xp), then the room
+index.html              page head (title, description, Open Graph) and the room's markup (top bar, drawer, resume sheet)
+src/main.ts             entry: the room's CSS, then the room; desktop-loader.ts loads src/xp once the room is up
 src/room/               the room: room.ts boots and wires the modules (see its header)
   handoff.ts            sitting down at the monitor and standing up (the fly-in)
   tour.ts               the talkie tour;   panels.ts  top bar, drawer, resume sheet, hash routes
@@ -50,7 +50,7 @@ src/room/               the room: room.ts boots and wires the modules (see its h
   weather*.ts           weather codes and the rain / lightning effects;   outdoor.ts  sea, sky, coast
   monitors.ts, live-screens.ts, desk-snapshot.ts, textures.ts   the screens
   i18n.ts               the room's strings (typed ru/en dictionaries)
-  debug-panel.ts        the debug buttons (status, time, weather, fly-in speed, ps1)
+  debug-panel.ts        the debug buttons (status, time, weather, fly-in speed, ps1); only with ?debug or #debug
 src/xp/                 the Windows XD desktop: index.ts imports its CSS, install.ts sets up window.XPDesktop
   shell/                window manager (window.ts, layout.ts), taskbar, Start menu, menus, dialogs, desktop icons,
                         session (boot / shutdown), screen savers, system apps, sounds, hotkeys, strings;
@@ -85,7 +85,7 @@ node scripts/compare.mjs .work/baseline .work/candidate-artifact .work/diff-arti
 Playwright comes from `playwright-core` (a dev dependency) and drives the installed Google Chrome with
 `--use-gl=angle`; set `CHROME_PATH` for another binary.
 
-`regress.mjs` captures 42 states (about 50 s): the talkie tour (hello, first step, last step), the room after the
+`regress.mjs` opens the page with `?debug` (it drives the debug panel) and captures 42 states (about 50 s): the talkie tour (hello, first step, last step), the room after the
 tour, day/sunset/night, every status (work, Dota, CS, sleep, outside), cloud/rain/storm, the `#night`, `#play` and
 `#resume` routes, the room in English, the desktop after sitting down, every app opened once, the Start menu, the
 desktop in English, standing up, and a 390x844 phone (tour, room, desktop, projects). `--only=name,name` limits the

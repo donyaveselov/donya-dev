@@ -59,6 +59,8 @@ export interface HandOffHost {
   relight(): void;
   /** no desktop script on the page: the old projects drawer */
   fallback(): void;
+  /** loads the desktop module (once); false when it failed */
+  loadDesktop(): Promise<boolean>;
 }
 
 /** The painted glass during the hand-off. */
@@ -125,6 +127,8 @@ export class HandOff {
   private seat: Seat | null = null;
   private xpRoot: HTMLElement | null = null;
   private mounted = false;
+  /** a click on a monitor while the desktop module is still loading: sit down once it is in */
+  private waiting = false;
 
   constructor(
     private readonly host: HandOffHost,
@@ -190,10 +194,15 @@ export class HandOff {
   }
 
   sitDown(which: Side = 'L'): void {
-    if (this.seat) return;
+    if (this.seat || this.waiting) return;
     const desk = this.desktop();
     if (!desk) {
-      this.host.fallback();
+      this.waiting = true;
+      void this.host.loadDesktop().then((ok) => {
+        this.waiting = false;
+        if (ok) this.sitDown(which);
+        else this.host.fallback();
+      });
       return;
     }
     const { camera, controls, monitors } = this.host;
