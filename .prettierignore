@@ -7,6 +7,5 @@ package-lock.json
 # verbatim legacy import (and its markup/CSS): reformatting it would only make the diffs against the old site noisy
 index.html
 src/**/legacy
-src/room/legacy-app.ts
 src/styles
 src/xp/assets

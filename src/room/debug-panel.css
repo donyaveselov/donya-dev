@@ -1,0 +1,39 @@
+/* the debug panel (temporary): what I am doing, the time of day, the weather, the flight speed, the PS1 look */
+.dbg {
+  position: fixed;
+  z-index: 7;
+  left: max(16px, env(safe-area-inset-left, 0px));
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 14px);
+  display: grid;
+  gap: 6px;
+  font-size: 12.5px;
+}
+.dbg div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+}
+.dbg b {
+  font-weight: 600;
+  opacity: 0.75;
+  min-width: 44px;
+}
+.dbg button {
+  background: var(--chip);
+  border: 1px solid var(--chip-line);
+  border-radius: 999px;
+  color: var(--text);
+  padding: 4px 10px;
+  font-size: 12.5px;
+}
+.dbg button[aria-pressed='true'] {
+  background: var(--text);
+  color: var(--ink);
+  border-color: var(--text);
+}
+@media (max-width: 640px) {
+  .dbg {
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 56px);
+  }
+}

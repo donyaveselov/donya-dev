@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CodeSession } from './opencode';
+import { CodeSession, wrapText } from './opencode';
 
 describe('CodeSession', () => {
   it('is deterministic for a seed', () => {
@@ -23,5 +23,19 @@ describe('CodeSession', () => {
     expect(s.cur?.[0]).toBe('u');
     expect(s.asking).toBe(true);
     expect(Math.floor(s.shown)).toBe(8); // the owner types 16 characters a second
+  });
+});
+
+describe('wrapText', () => {
+  const measure = (s: string): number => s.length; // one unit per character
+  it('keeps a short line whole', () => {
+    expect(wrapText(measure, 'a b c', 10)).toEqual(['a b c']);
+    expect(wrapText(measure, '', 10)).toEqual(['']);
+  });
+  it('wraps at spaces', () => {
+    expect(wrapText(measure, 'aaa bbb ccc', 7)).toEqual(['aaa bbb', 'ccc']);
+  });
+  it('splits a long token hard', () => {
+    expect(wrapText(measure, 'abcdefghij', 4)).toEqual(['abcd', 'efgh', 'ij']);
   });
 });

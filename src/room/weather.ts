@@ -43,6 +43,11 @@ export function rainAmount(wx: Weather): number {
   return k === 'storm' ? Math.max(0.8, r) : r;
 }
 
+/** Lightning: 1 for the first flash, a dim gap, the second flash, then a short fade (seconds since the strike). */
+export function flashLevel(e: number): number {
+  return e < 0.07 ? 1 : e < 0.13 ? 0.15 : e < 0.26 ? 0.8 : Math.max(0, 0.8 - (e - 0.26) * 4);
+}
+
 export function newWeather(): Weather {
   return { kind: 'clear', code: 0, precip: 0, temp: null, at: 0, forced: null };
 }

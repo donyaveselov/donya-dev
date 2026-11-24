@@ -9,4 +9,4 @@ import './styles/mocks-kompi.css';
 
 import './xp';
 
-import './room/legacy-app';
+import './room';

@@ -216,3 +216,27 @@ export class CodeSession {
     return this.cur?.[0] === 'u';
   }
 }
+
+/** Splits text into lines no wider than maxW (a single long token is split hard). */
+export function wrapText(measure: (s: string) => number, tx: string, maxW: number): string[] {
+  if (!tx || measure(tx) <= maxW) return [tx];
+  const out: string[] = [];
+  let line = '';
+  for (let w of tx.split(' ')) {
+    const tryL = line ? line + ' ' + w : w;
+    if (measure(tryL) <= maxW) {
+      line = tryL;
+      continue;
+    }
+    if (line) out.push(line);
+    while (measure(w) > maxW && w.length > 1) {
+      let n = w.length;
+      while (n > 1 && measure(w.slice(0, n)) > maxW) n--;
+      out.push(w.slice(0, n));
+      w = w.slice(n);
+    }
+    line = w;
+  }
+  if (line) out.push(line);
+  return out;
+}

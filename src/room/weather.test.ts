@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { newWeather, overcast, rainAmount, weatherKind, type WeatherKind } from './weather';
+import { flashLevel, newWeather, overcast, rainAmount, weatherKind, type WeatherKind } from './weather';
 
 describe('weatherKind', () => {
   it('maps WMO codes', () => {
@@ -38,5 +38,15 @@ describe('rain and overcast', () => {
     expect(overcast(newWeather())).toBe(0);
     expect(overcast({ ...newWeather(), forced: 'storm' })).toBe(1);
     expect(overcast({ ...newWeather(), kind: 'cloud' })).toBe(0.45);
+  });
+});
+
+describe('lightning', () => {
+  it('flashes twice, then fades out', () => {
+    expect(flashLevel(0)).toBe(1);
+    expect(flashLevel(0.1)).toBe(0.15);
+    expect(flashLevel(0.2)).toBe(0.8);
+    expect(flashLevel(0.36)).toBeCloseTo(0.4);
+    expect(flashLevel(1)).toBe(0);
   });
 });

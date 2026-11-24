@@ -12,7 +12,7 @@ harness. Ports replace the legacy modules one at a time, and the harness checks 
 ```
 index.html                 page head (fonts, title) and the room's markup (top bar, drawer, resume sheet)
 src/main.ts                entry: CSS, then XP icons, XP shell, XP apps (old manifest order), then the room
-src/room/legacy-app.ts     the room (old parts/app.js); THREE from npm, shimmed to the old UMD shape
+src/room/                  the room (old parts/app.js), typed modules: room.ts boots and wires them (see its header)
 src/xp/legacy/             the desktop shell (core.ts) and the XP icon bitmaps (icons-xp.ts)
 src/xp/legacy/apps/        the desktop apps (old xp/apps/*.js)
 src/xp/apps/               ported apps go here
@@ -81,8 +81,12 @@ additionally ignores pixels that differ between the baseline and re-runs of it.
   `-webkit-backdrop-filter` is next to it, and the room's chips lose their blur in Chrome.
 - The room's sit-down hand-off paints the desktop onto the 3D monitor by reading the desktop's DOM (`.xp`,
   `.xp-wall image`, `.xp-taskbar`, `.xp-startbtn`, `.xp-task`, `.xp-tray`, `.xp-clock`, `.xp-lang`, `.xp-icon`, ...):
-  renaming those classes breaks the fly-in without any error.
-- `room.json` is cache-busted by a Vite plugin that rewrites the literal `fetch('room.json')`; keep that spelling
-  (or move the URL into a constant and update the plugin).
+  renaming those classes breaks the fly-in without any error. The list is `DESKTOP_DOM` in `src/shared/desktop.ts`.
+- `room.json` is cache-busted by a Vite plugin that rewrites the literal `fetch('room.json')` in `src/room/loader.ts`;
+  keep that spelling (or move the URL into a constant and update the plugin).
+- three gives every geometry, material, texture and object a uuid drawn from `Math.random`, which the harness seeds.
+  The rain's particles use the same stream, so anything that changes how many three objects exist before them (a
+  removed mesh, three's own module-level objects dropped by tree shaking) moves the drops in `wx-rain` and `wx-storm`
+  (about 0.02-0.04 %) without any change in behaviour.
 - The XP desktop must never mention the NDA employer or its repository; `src/xp/nda.test.ts` checks `src/xp` and
   `src/styles`. The room's own resume sheet in `index.html` is a separate, public document.
