@@ -1,5 +1,7 @@
-// The debug panel (temporary): pick what I am doing, the time of day, the weather, the fly-in speed, the PS1 look.
-// The regression harness finds its rows by their Russian labels and its buttons by their text.
+// The debug panel: pick what I am doing, the time of day, the weather, the fly-in speed, the PS1 look. Visitors never
+// see it: it is on the page only with ?debug in the address, or after #debug (remembered for the tab, since the hash
+// routes replace the hash). The regression harness adds ?debug, finds the rows by their Russian labels and the buttons
+// by their text.
 import type { GameKind, Status } from '../shared/types';
 import type { WeatherKind } from './weather';
 import './debug-panel.css';
@@ -41,6 +43,19 @@ function row<T>(
     line.appendChild(b);
   }
   box.appendChild(line);
+}
+
+const DEBUG_KEY = 'donya-debug';
+
+/** Whether the panel is wanted on this page: ?debug, or #debug now or earlier in this tab. */
+export function debugWanted(): boolean {
+  if (/[?&]debug\b/.test(location.search)) return true;
+  try {
+    if (location.hash === '#debug') sessionStorage.setItem(DEBUG_KEY, '1');
+    return sessionStorage.getItem(DEBUG_KEY) === '1';
+  } catch {
+    return location.hash === '#debug'; // storage blocked (a sandboxed frame): the hash alone
+  }
 }
 
 type StateChoice = readonly [Status, GameKind | null] | null;

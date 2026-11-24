@@ -137,7 +137,7 @@ export class Tour {
     el.hidden = true;
     el.innerHTML =
       '<div class="talkie__say"><div class="tbub" role="status" aria-live="polite"></div><div class="tbtns"></div></div>' +
-      '<img class="talkie__mouth" alt="" width="64" height="31" tabindex="0">';
+      '<img class="talkie__mouth" alt="" width="64" height="31" role="button" tabindex="-1">'; // a button once the tour is over
     document.body.appendChild(el);
     this.el = el;
     const bub = must(el.querySelector<HTMLElement>('.tbub'));
@@ -301,6 +301,7 @@ export class Tour {
     this.i = again ? 1 : 0;
     el.hidden = false;
     el.classList.remove('talkie--mini');
+    this.mouth?.setAttribute('tabindex', '-1'); // while the tour talks the mouth does nothing
     this.host.hideHint();
     this.show();
   }
@@ -323,6 +324,7 @@ export class Tour {
     const again = t(this.host.lang()).tour.again;
     mouth.setAttribute('aria-label', again);
     mouth.title = again;
+    mouth.setAttribute('tabindex', '0');
   }
 
   /** The page language changed: say the current line again, or relabel the corner button. */

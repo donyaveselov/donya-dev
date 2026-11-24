@@ -1,10 +1,35 @@
 <!doctype html>
-<html>
+<html lang="ru">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="claude:viewport-fit-sides" content="cover">
-<title>Комната donya.dev</title>
+<title>Даниил Иванов — Fullstack-разработчик (Vue 3, Django)</title>
+<meta name="description" content="Портфолио Даниила Иванова, fullstack-разработчика: Vue 3 / Nuxt и Python / Django. Интерактивная 3D-комната с проектами, резюме и контактами.">
+<meta name="author" content="Даниил Иванов">
+<meta name="theme-color" content="#0d1630">
+<link rel="canonical" href="https://donya.dev/">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230d1630'/%3E%3Cpath d='M16 6 27 12.5 16 19 5 12.5Z' fill='%23f2b45a'/%3E%3Cpath d='M5 12.5 16 19v8L5 20.5Z' fill='%231f8f86'/%3E%3Cpath d='M27 12.5 16 19v8l11-6.5Z' fill='%23176b66'/%3E%3C/svg%3E">
+<meta property="og:type" content="profile">
+<meta property="og:site_name" content="donya.dev">
+<meta property="og:locale" content="ru_RU">
+<meta property="og:locale:alternate" content="en_US">
+<meta property="og:url" content="https://donya.dev/">
+<meta property="og:title" content="Даниил Иванов — Fullstack-разработчик (Vue 3, Django)">
+<meta property="og:description" content="Интерактивная 3D-комната: проекты, резюме и контакты. Vue 3 / Nuxt, Python / Django.">
+<meta property="og:image" content="https://donya.dev/og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Изометрическая 3D-комната разработчика: стол с мониторами, кровать, окно на море">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<noscript><style>
+  /* without JavaScript there is no room: the resume sheet is the page */
+  html, body { height: auto; overflow: auto; }
+  #sheet { display: block !important; position: static; opacity: 1 !important; padding-top: 24px; }
+  .bar, .loading, .note, .drawer, .sheet-back, .cv-print { display: none !important; }
+</style></noscript>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&family=Unbounded:wght@500;700&family=Nunito:wght@400;700;800;900&family=Source+Sans+3:wght@300;400;500;600;700&family=Tiny5&display=swap">
 </head>
 <body>
@@ -14,7 +39,7 @@
   <div class="tools">
     <span class="chip time" id="time"></span>
     <button class="chip" id="open-resume" type="button" data-t="resume"></button>
-    <div class="chip lang" role="group" aria-label="Language">
+    <div class="chip lang" role="group" aria-label="Язык" data-t-aria="lang">
       <button id="lang-ru" type="button" aria-pressed="false">RU</button>
       <button id="lang-en" type="button" aria-pressed="false">EN</button>
     </div>
@@ -25,27 +50,28 @@
 <p class="note" id="note"><span data-t="hint"></span></p>
 <div class="loading" id="loading"><b data-t="loading"></b><div class="meter"><i id="meter"></i></div></div>
 
-<aside class="drawer" id="drawer" aria-hidden="true">
-  <header><h2 data-t="projects"></h2><button class="x" id="close-drawer" type="button" aria-label="Close">×</button></header>
+<aside class="drawer" id="drawer" aria-hidden="true" aria-label="Проекты" data-t-aria="drawer">
+  <header><h2 data-t="projects"></h2><button class="x" id="close-drawer" type="button" aria-label="Закрыть" data-t-aria="close">×</button></header>
   <div id="proj-list"></div>
-  <p class="draft" data-t="draft"></p>
 </aside>
 
-<div id="sheet" hidden>
+<div id="sheet" hidden role="dialog" aria-modal="true" aria-labelledby="cv-name" lang="ru">
+  <button class="sheet-back" id="sheet-back" type="button" hidden>← <span data-t="back"></span></button>
   <article class="cv">
     <p class="cv-note" id="cv-note" data-t="resumeNote"></p>
+    <button class="cv-print" id="print-resume" type="button" data-t="print"></button>
     <div class="cv-top">
       <div>
-        <h1>Иванов Даниил</h1>
+        <h1 id="cv-name">Иванов Даниил</h1>
         <p class="cv-role">Fullstack-разработчик <span>· Vue 3 / Nuxt · Python / Django</span></p>
       </div>
       <div class="cv-contacts">
-        +7 (902) 057-43-88 · <a href="https://t.me/work_veselov">t.me/work_veselov</a><br>
-        donya.withlove@gmail.com<br>
+        <a href="tel:+79020574388">+7 (902) 057-43-88</a> · <a href="https://t.me/work_veselov">t.me/work_veselov</a><br>
+        <a href="mailto:donya.withlove@gmail.com">donya.withlove@gmail.com</a><br>
         <a href="https://github.com/le5tef">github.com/le5tef</a> · <a href="https://donya.dev">donya.dev</a>
       </div>
     </div>
-    <p class="cv-sum">4,5 года в разработке: frontend на Vue 3 с 2022 года, с 2025-го — fullstack (Django, Node.js).</p>
+    <p class="cv-sum"><span id="cv-years">4,5 года</span> в разработке: frontend на Vue 3 с 2022 года, с 2025-го — fullstack (Django, Node.js).</p>
 
     <h2>Опыт работы</h2>
     <div class="cv-job">
@@ -103,7 +129,6 @@
   </article>
 </div>
 
-<button class="sheet-back" id="sheet-back" type="button" hidden>← <span data-t="back"></span></button>
 
 <script type="module" src="/src/main.ts"></script>
 </body>

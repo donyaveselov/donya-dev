@@ -70,6 +70,8 @@ interface Hand {
   fromBlack(a: number): void;
   reSnap(): void;
   setSource(p: HTMLCanvasElement): void;
+  /** frees the painted glass's GPU texture once the monitor shows its own picture again */
+  dispose(): void;
 }
 
 interface Seat extends CamPose {
@@ -320,6 +322,10 @@ export class HandOff {
       setSource(p) {
         src = p;
       },
+      dispose() {
+        ht.dispose();
+        hc.width = hc.height = 0; // let the canvas's backing store go too
+      },
     };
     const zoomTo = Math.max(vh / f.h, vw / f.w); // cover, not contain: the glass fills the window, nothing around it
     this.tweenCam(
@@ -403,6 +409,7 @@ export class HandOff {
               // the live status texture, the same picture the last painted frame showed
               delete mdata(hand.glass).hand;
               hand.glass.map = this.host.screenPicture(hi);
+              hand.dispose(); // a fresh canvas and texture are made at every sit-down
             }
           },
           (k) => {

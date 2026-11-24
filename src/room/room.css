@@ -276,10 +276,18 @@ button {
   padding: 3px 8px;
   font-size: 12.5px;
 }
-.draft {
-  color: var(--text-dim);
+.proj h3 a {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-color: var(--panel-line);
+  text-underline-offset: 3px;
+}
+.proj h3 a:hover {
+  text-decoration-color: currentColor;
+}
+.proj .proj-meta {
+  margin: 0 0 6px;
   font-size: 12.5px;
-  margin: 14px 0 0;
 }
 
 #sheet {
@@ -305,6 +313,23 @@ button {
 .cv a {
   color: inherit;
   text-decoration: none;
+}
+.cv-contacts a {
+  text-decoration: underline;
+  text-decoration-color: rgba(0, 0, 0, 0.25);
+  text-underline-offset: 2px;
+}
+.cv-print {
+  position: fixed;
+  z-index: 31;
+  right: max(16px, env(safe-area-inset-right, 0px));
+  top: calc(env(safe-area-inset-top, 0px) + 14px);
+  background: transparent;
+  color: var(--ink);
+  border: 1.5px solid var(--ink);
+  border-radius: 999px;
+  padding: 6.5px 14px;
+  font-weight: 500;
 }
 .cv p {
   margin: 0;
@@ -669,13 +694,60 @@ body.at-pc .talkie {
   }
 }
 
-/* at the PC: the room's own chrome steps aside for the desktop */
+/* at the PC: the room's own chrome steps aside for the desktop (and leaves the tab order once it has faded) */
 body.at-pc .bar,
 body.at-pc .dbg,
 body.at-pc .note {
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.3s;
+  visibility: hidden;
+  transition:
+    opacity 0.3s,
+    visibility 0s linear 0.3s;
+}
+/* the desktop's "My resume" opens the sheet over the desktop, not under it */
+body.at-pc #sheet {
+  z-index: 50;
+}
+
+/* no room (no WebGL): the hint line says so and stays */
+body.no-3d .note span {
+  max-width: min(560px, 100%);
+  border-radius: 14px;
+  line-height: 1.4;
+}
+
+/* printing (Print / PDF on the sheet): only the resume, on white, without the page around it */
+@media print {
+  html,
+  body {
+    height: auto;
+    overflow: visible;
+    background: #fff;
+  }
+  body > :not(#sheet) {
+    display: none !important;
+  }
+  #sheet {
+    position: static;
+    display: block !important;
+    opacity: 1 !important;
+    overflow: visible;
+    padding: 0;
+    background: #fff;
+  }
+  .sheet-back,
+  .cv-print,
+  .cv-note {
+    display: none !important;
+  }
+  .cv {
+    max-width: none;
+    font-size: 11pt;
+  }
+  .cv-job {
+    break-inside: avoid;
+  }
 }
 
 /* PS1 nod: NOW LOADING with a blinking block cursor */

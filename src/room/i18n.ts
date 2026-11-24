@@ -22,7 +22,7 @@ export interface TourStrings {
 }
 
 /** The strings the markup asks for by `data-t`. */
-export type MarkupKey = 'resume' | 'projects' | 'back' | 'loading' | 'hint' | 'draft' | 'resumeNote';
+export type MarkupKey = 'resume' | 'projects' | 'back' | 'loading' | 'hint' | 'no3d' | 'resumeNote' | 'print';
 
 export interface RoomStrings extends Record<MarkupKey | Status, string> {
   phuket: string;
@@ -33,7 +33,12 @@ export interface RoomStrings extends Record<MarkupKey | Status, string> {
   resumeTag: string;
   diplomaTag: string;
   tour: TourStrings;
+  /** accessible names the markup asks for by `data-t-aria` */
+  aria: Record<AriaKey, string>;
 }
+
+/** The accessible names the markup asks for by `data-t-aria`. */
+export type AriaKey = 'lang' | 'close' | 'sheet' | 'drawer';
 
 export type TourKey = keyof TourStrings;
 
@@ -50,7 +55,8 @@ const STR: Record<Lang, RoomStrings> = {
     phuket: 'Пхукет',
     resumeNote: '',
     hint: 'Потяните, чтобы повернуть комнату',
-    draft: 'Черновик: описания проектов предварительные.',
+    no3d: 'Этот браузер не показал 3D-комнату. Проекты и резюме открываются кнопками.',
+    print: 'Печать / PDF',
     localTime: 'Местное время',
     wxNow: 'Я на Пхукете',
     wx: { clear: 'ясно', cloud: 'облачно', drizzle: 'морось', rain: 'дождь', storm: 'гроза' },
@@ -70,12 +76,13 @@ const STR: Record<Lang, RoomStrings> = {
       sleep: 'А ночью я сплю.',
       back: 'И всё это по-настоящему: комната живёт по моим часам.',
       projects:
-        'Нажмите на любой монитор, и окажетесь за моим компьютером: Windows XD, проекты не под NDA и всякие приколюхи вроде сапёра и Paint.',
+        'Нажмите на любой монитор, и окажетесь за моим компьютером: Windows XD, проекты не под NDA и пара мини-игр вроде сапёра и Paint.',
       resume: 'На стене моё резюме, нажмите, чтобы открыть.',
       diploma: 'Рядом диплом: бакалавр, бизнес-информатика, университет «Синергия», 2026.',
       place: 'Часы показывают моё местное время, а за окном Пхукет с его настоящей погодой.',
       end: 'Вот и всё! Захотите пройтись ещё раз, я тут, в углу.',
     },
+    aria: { lang: 'Язык', close: 'Закрыть', sheet: 'Резюме', drawer: 'Проекты' },
   },
   en: {
     resume: 'Resume',
@@ -89,7 +96,8 @@ const STR: Record<Lang, RoomStrings> = {
     phuket: 'Phuket',
     resumeNote: 'The resume is in Russian for now.',
     hint: 'Drag to rotate the room',
-    draft: 'Draft: project descriptions are preliminary.',
+    no3d: 'This browser could not show the 3D room. Projects and the resume open with the buttons.',
+    print: 'Print / PDF',
     localTime: 'Local time',
     wxNow: 'I’m in Phuket',
     wx: { clear: 'clear', cloud: 'cloudy', drizzle: 'drizzle', rain: 'rain', storm: 'thunderstorm' },
@@ -115,6 +123,7 @@ const STR: Record<Lang, RoomStrings> = {
       place: 'The clock shows my local time, and outside the window is Phuket with its real weather.',
       end: 'That’s it! If you want the tour again, I’m right here in the corner.',
     },
+    aria: { lang: 'Language', close: 'Close', sheet: 'Resume', drawer: 'Projects' },
   },
 };
 
@@ -129,47 +138,20 @@ const MARKUP_KEYS: readonly string[] = [
   'back',
   'loading',
   'hint',
-  'draft',
+  'no3d',
   'resumeNote',
+  'print',
 ] satisfies MarkupKey[];
 
 export function isMarkupKey(key: string | null): key is MarkupKey {
   return key !== null && MARKUP_KEYS.includes(key);
 }
 
-export interface Project {
-  name: string;
-  about: { ru: string; en: string };
-  tags: string[];
-}
+const ARIA_KEYS: readonly string[] = ['lang', 'close', 'sheet', 'drawer'] satisfies AriaKey[];
 
-/** The fallback projects drawer (shown when the desktop shell is missing). */
-export const PROJECTS: readonly Project[] = [
-  {
-    name: 'Relocator',
-    about: {
-      ru: 'Подбор страны и визового маршрута: движок рекомендаций, Telegram-бот, PDF-отчёты, SEO-страницы на трёх языках.',
-      en: 'Country and visa route matching: a recommendation engine, a Telegram bot, PDF reports and SEO pages in three languages.',
-    },
-    tags: ['Vue 3', 'TypeScript', 'Django', 'django-ninja', 'aiogram', 'Playwright'],
-  },
-  {
-    name: 'UniCloud',
-    about: {
-      ru: 'Telegram Mini App для аренды серверов с приложениями: биллинг, платежи, автоматическое развёртывание.',
-      en: 'A Telegram Mini App for renting servers with apps: billing, payments and automated provisioning.',
-    },
-    tags: ['React', 'Bun', 'Hono', 'Drizzle', 'PostgreSQL', 'Traefik'],
-  },
-  {
-    name: 'Cases',
-    about: {
-      ru: 'Фронтенд на Nuxt 4 с полным набором тестов: unit, e2e на desktop и mobile, контрактные и мутационные.',
-      en: 'A Nuxt 4 frontend with a full test suite: unit, e2e on desktop and mobile, contract and mutation tests.',
-    },
-    tags: ['Nuxt 4', 'Vitest', 'Playwright', 'Stryker', 'OpenAPI'],
-  },
-];
+export function isAriaKey(key: string | null): key is AriaKey {
+  return key !== null && ARIA_KEYS.includes(key);
+}
 
 export const pad2 = (n: number): string => (n < 10 ? '0' : '') + String(n);
 

@@ -37,11 +37,13 @@ function loadPlaywright() {
 
 const args = process.argv.slice(2);
 const flags = Object.fromEntries(args.filter((a) => a.startsWith('--')).map((a) => a.slice(2).split('=')));
-const [url, outArg] = args.filter((a) => !a.startsWith('--'));
-if (!url || !outArg) {
+const [pageUrl, outArg] = args.filter((a) => !a.startsWith('--'));
+if (!pageUrl || !outArg) {
   console.error('usage: node scripts/regress.mjs <url> <outDir> [--only=a,b] [--headed]');
   process.exit(2);
 }
+// the debug panel (which the harness drives) is only on the page with ?debug
+const url = /[?&]debug\b/.test(pageUrl) ? pageUrl : pageUrl + (pageUrl.includes('?') ? '&' : '?') + 'debug';
 const OUT = resolve(outArg);
 const ONLY = flags.only ? new Set(String(flags.only).split(',')) : null;
 const START = new Date('2026-11-24T06:00:00Z'); // 13:00 in Phuket (UTC+7): the "work" hours

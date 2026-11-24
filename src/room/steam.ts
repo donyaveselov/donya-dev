@@ -28,13 +28,19 @@ export function fromLanyard(reply: LanyardReply): SteamState {
   return game ? { state: 'in-game', game, appid: gameId(game) } : { state: reply.data?.discord_status ?? 'offline' };
 }
 
-/** Polls every 30 s; `changed` gets each reading (null when it fails). */
+/** Polls every 30 s while the tab is visible (and at once when it is shown again); `changed` gets each reading (null
+ *  when it fails). */
 export function pollSteam(changed: (s: SteamState | null) => void): void {
   const url = DISCORD_ID ? `https://api.lanyard.rest/v1/users/${DISCORD_ID}` : STEAM_ENDPOINT;
   if (!url) return;
+  let lastAt = 0;
   const poll = (): void => {
+    lastAt = Date.now();
     fetch(url, { cache: 'no-store' })
-      .then((r) => r.json() as Promise<unknown>)
+      .then((r) => {
+        if (!r.ok) throw new Error(`status ${String(r.status)}`);
+        return r.json() as Promise<unknown>;
+      })
       .then(
         (d) => {
           changed(DISCORD_ID ? fromLanyard(d as LanyardReply) : (d as SteamState));
@@ -45,5 +51,10 @@ export function pollSteam(changed: (s: SteamState | null) => void): void {
       );
   };
   poll();
-  setInterval(poll, POLL_MS);
+  setInterval(() => {
+    if (!document.hidden) poll();
+  }, POLL_MS);
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && Date.now() - lastAt > POLL_MS) poll();
+  });
 }

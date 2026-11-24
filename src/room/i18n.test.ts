@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isMarkupKey, t, timeChip, tourLine } from './i18n';
+import { isAriaKey, isMarkupKey, t, timeChip, tourLine } from './i18n';
 
 describe('room i18n', () => {
   it('has the same keys in both languages', () => {
@@ -24,5 +24,8 @@ describe('room i18n', () => {
     expect(isMarkupKey('hint')).toBe(true);
     expect(isMarkupKey('tour')).toBe(false);
     expect(isMarkupKey(null)).toBe(false);
+    expect(isMarkupKey('no3d')).toBe(true);
+    expect(isAriaKey('close')).toBe(true);
+    expect(isAriaKey('hint')).toBe(false);
   });
 });

@@ -9,7 +9,7 @@ import { getDesktop } from '../shared/desktop';
 import type { RoomMountOptions } from '../shared/desktop';
 import type { Lang, Status } from '../shared/types';
 import { GAME_NAMES, gameKind } from './clock';
-import { makeDebugPanel } from './debug-panel';
+import { debugWanted, makeDebugPanel } from './debug-panel';
 import { makeFrames } from './frames';
 import type { Frame } from './frames';
 import { HandOff } from './handoff';
@@ -344,7 +344,10 @@ function build(gl: WebGLRenderer, gltf: GLTF): Built {
           note.style.opacity = '0';
           document.body.classList.add('at-pc');
         } else if (stage === 'leaving') document.body.classList.remove('at-pc');
-        else pin.style.opacity = '1';
+        else {
+          pin.style.opacity = '1';
+          layout(); // the window may have changed while at the PC (a phone turned): fit the monitors again
+        }
       },
       relight: applyTime,
       fallback: () => {
@@ -480,7 +483,8 @@ function frame(now: number): void {
     r.screens.tick(pt, st, atPC);
     r.outdoor.animate(pt);
     r.weather.tick(pt, dt);
-    if (!r.handoff.covered) {
+    // nothing to draw while the desktop or the (opaque) resume sheet covers the whole window
+    if (!r.handoff.covered && !panels.sheetOpen) {
       render(r.renderer, r.scene, r.camera);
       r.anchor.getWorldPosition(pinAt).project(r.camera);
       pin.style.left = String(((pinAt.x + 1) / 2) * stage.clientWidth) + 'px';
@@ -499,26 +503,20 @@ function frame(now: number): void {
 
 /* ---------- boot ---------- */
 
+/** No room (no WebGL, or the model failed): say so, and open the projects and the resume as plain pages. */
 function fail(): void {
   byId('loading').style.opacity = '0';
-  note.style.opacity = '0';
+  document.body.classList.add('no-3d');
+  note.style.opacity = '1';
+  note.firstElementChild?.setAttribute('data-t', 'no3d');
+  panels.applyLang(live.lang);
   pin.hidden = false;
   pin.style.left = '50%';
   pin.style.top = '50%';
+  pin.style.visibility = 'visible';
 }
 
-export function startRoom(): void {
-  psx.on = !location.hash.includes('nops1');
-  byId('lang-ru').addEventListener('click', () => {
-    setLang('ru');
-  });
-  byId('lang-en').addEventListener('click', () => {
-    setLang('en');
-  });
-  pin.addEventListener('click', () => {
-    if (room) room.handoff.sitDown('L');
-  });
-  window.addEventListener('hashchange', route);
+function mountDebug(): void {
   makeDebugPanel({
     slow,
     ps1: psx.on,
@@ -551,13 +549,32 @@ export function startRoom(): void {
       preview(live.forced, hour);
     },
   });
+}
+
+export function startRoom(): void {
+  psx.on = !location.hash.includes('nops1');
+  byId('lang-ru').addEventListener('click', () => {
+    setLang('ru');
+  });
+  byId('lang-en').addEventListener('click', () => {
+    setLang('en');
+  });
+  pin.addEventListener('click', () => {
+    if (room) room.handoff.sitDown('L');
+    else panels.openDrawer(); // no room to sit down in: the projects as a plain list
+  });
+  window.addEventListener('hashchange', route);
+  if (debugWanted()) mountDebug();
 
   // the weather goes first, in parallel with the room; the last answer is remembered for a repeat visit
   restoreWeather(live.wx, Date.now());
   fetchWeather(live.wx, applyTime);
   setInterval(() => {
-    fetchWeather(live.wx, applyTime);
+    if (!document.hidden) fetchWeather(live.wx, applyTime); // a hidden tab catches up when it is shown again
   }, 15 * 60e3);
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && Date.now() - live.wx.at > 15 * 60e3) fetchWeather(live.wx, applyTime);
+  });
   applyLang();
   readClock();
   applyTime();
@@ -621,7 +638,10 @@ export function startRoom(): void {
   pollSteam((s) => {
     const was = live.steam?.state === 'in-game' ? live.steam.game : null;
     live.steam = s;
-    if (!s) return;
+    if (!s) {
+      if (was) applyTime(); // the reading failed mid-game: do not leave the room in the game until the next reading
+      return;
+    }
     if (s.state === 'in-game' && !live.forced) {
       live.game.kind = gameKind(s.appid);
       live.game.name = s.game ?? null;
