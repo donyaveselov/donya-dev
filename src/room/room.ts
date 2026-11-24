@@ -619,13 +619,14 @@ export function startRoom(): void {
   } else fail();
   route();
   pollSteam((s) => {
+    const was = live.steam?.state === 'in-game' ? live.steam.game : null;
     live.steam = s;
     if (!s) return;
     if (s.state === 'in-game' && !live.forced) {
       live.game.kind = gameKind(s.appid);
       live.game.name = s.game ?? null;
     }
-    applyTime();
+    if (was !== (s.state === 'in-game' ? s.game : null)) applyTime(); // re-light only when the game changes
   });
   requestAnimationFrame(frame);
 }
