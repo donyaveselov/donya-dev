@@ -1,0 +1,111 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>Комната donya.dev</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&family=Unbounded:wght@500;700&family=Nunito:wght@400;700;800;900&family=Source+Sans+3:wght@300;400;500;600;700&family=Tiny5&display=swap">
+</head>
+<body>
+<div id="stage" aria-hidden="true"></div>
+
+<div class="bar">
+  <div class="who" hidden><b data-t="name"></b><span data-t="role"></span></div>
+  <div class="tools">
+    <span class="chip time" id="time"></span>
+    <button class="chip" id="open-resume" type="button" data-t="resume"></button>
+    <div class="chip lang" role="group" aria-label="Language">
+      <button id="lang-ru" type="button" aria-pressed="false">RU</button>
+      <button id="lang-en" type="button" aria-pressed="false">EN</button>
+    </div>
+  </div>
+</div>
+
+<button class="pin" id="pin" type="button" hidden data-t="projects"></button>
+<p class="note" id="note"><span data-t="hint"></span></p>
+<div class="loading" id="loading"><b data-t="loading"></b><div class="meter"><i id="meter"></i></div></div>
+
+<aside class="drawer" id="drawer" aria-hidden="true">
+  <header><h2 data-t="projects"></h2><button class="x" id="close-drawer" type="button" aria-label="Close">×</button></header>
+  <div id="proj-list"></div>
+  <p class="draft" data-t="draft"></p>
+</aside>
+
+<div id="sheet" hidden>
+  <article class="cv">
+    <p class="cv-note" id="cv-note" data-t="resumeNote"></p>
+    <div class="cv-top">
+      <div>
+        <h1>Иванов Даниил</h1>
+        <p class="cv-role">Fullstack-разработчик <span>· Vue 3 / Nuxt · Python / Django</span></p>
+      </div>
+      <div class="cv-contacts">
+        +7 (902) 057-43-88 · <a href="https://t.me/work_veselov">t.me/work_veselov</a><br>
+        donya.withlove@gmail.com<br>
+        <a href="https://github.com/le5tef">github.com/le5tef</a> · <a href="https://donya.dev">donya.dev</a>
+      </div>
+    </div>
+    <p class="cv-sum">4,5 года в разработке: frontend на Vue 3 с 2022 года, с 2025-го — fullstack (Django, Node.js).</p>
+
+    <h2>Опыт работы</h2>
+    <div class="cv-job">
+      <div class="cv-head"><h3>Верификат <span>— Fullstack-разработчик · проектная работа · <a href="https://verifikat.ru">verifikat.ru</a></span></h3><span class="cv-when">июль 2025 — сентябрь 2026</span></div>
+      <p class="cv-stack">Python, Django, DRF, Channels, Celery, Redis, PostgreSQL, S3, Vue 3, Pinia, Vite, Docker, GitLab CI</p>
+      <ul>
+        <li>Разработал <b>REST API на Django/DRF</b> с JWT-авторизацией для двух клиентских контуров</li>
+        <li>Реализовал генерацию партий кодов на <b>Celery</b> с прогрессом по WebSocket, отменой и перезапуском</li>
+        <li>Сделал экспорт QR-кодов в PDF и ZIP для партий <b>до ~800 тыс. кодов</b></li>
+        <li>Вынес <b>общую UI-библиотеку</b> на Vue 3 для трёх SPA с публикацией в GitLab Package Registry</li>
+        <li>Перенёс инфраструктуру с Yandex Serverless на <b>Docker Compose + Caddy</b>, собрал CI/CD в GitLab</li>
+      </ul>
+    </div>
+    <div class="cv-job">
+      <div class="cv-head"><h3>Крипто-финтех стартап <span>— Frontend-разработчик</span></h3><span class="cv-when">январь 2024 — июнь 2025</span></div>
+      <p class="cv-stack">Vue 3, Pinia, Vue Router, Vite, Axios, vue-i18n, vee-validate, ApexCharts, Docker, GitLab CI</p>
+      <ul>
+        <li>С нуля написал фронтенд: <b>мультиролевое модульное SPA</b> и приложение платёжной страницы</li>
+        <li>Разработал <b>собственную UI-библиотеку</b> вместо готового фреймворка: datatable, select, stepper</li>
+        <li>Написал <b>Pinia-плагины</b> для CRUD и пагинации с отменой устаревших запросов; кэш справочников с TTL</li>
+        <li>Реализовал <b>silent refresh JWT без гонок</b> при параллельных 401; 2FA (TOTP), SSO, RBAC</li>
+        <li>Сделал <b>редактор тем</b>: вся палитра генерируется из одного цвета; white-label сборки под бренды</li>
+      </ul>
+    </div>
+    <div class="cv-job">
+      <div class="cv-head"><h3>ИП Жуковский С. В. <span>— Frontend-разработчик · NDA</span></h3><span class="cv-when">январь 2023 — наст. время (поддержка)</span></div>
+      <p class="cv-stack">Vue 3, Pinia, Vue Router, PrimeVue, Vite, Axios, Chart.js, Leaflet, Telegram Mini Apps</p>
+      <ul>
+        <li>Расширил <b>Pinia собственной опцией</b> defineStore: CRUD, пагинация и фильтры для любого стора</li>
+        <li>Спроектировал <b>API-слой</b>: прозрачное обновление токена с повтором запроса, отмена запросов</li>
+        <li>Написал SPA-дашборд с собственным UI-китом и <b>графиками на чистом SVG</b></li>
+        <li>Разработал <b>Telegram Mini App</b>: авторизация по initData + JWT, оплата Stars, моки по OpenAPI</li>
+      </ul>
+    </div>
+    <div class="cv-job">
+      <div class="cv-head"><h3>Whai Thai <span>— Frontend-разработчик</span></h3><span class="cv-when">октябрь 2022 — январь 2023</span></div>
+      <ul><li>Разработал CRM: шахматка бронирований с drag-and-drop, ролевой доступ (Vue 3, TypeScript)</li></ul>
+    </div>
+    <div class="cv-job">
+      <div class="cv-head"><h3>RANKS LLC <span>— Junior Frontend-разработчик</span></h3><span class="cv-when">февраль 2022 — октябрь 2022</span></div>
+      <ul><li>Разработал интернет-магазин с оплатой и генерацией PDF-отчётов с графиками (Vue 2, Vuex, Chart.js)</li></ul>
+    </div>
+
+    <h2>Навыки</h2>
+    <dl>
+      <dt>Frontend</dt><dd>Vue 3, Nuxt 3/4, Pinia, Vue Router, TypeScript, JavaScript, Vite, Tailwind CSS, React, React Native</dd>
+      <dt>Backend</dt><dd>Python, Django, DRF, Celery, PostgreSQL, Redis, WebSocket, S3, Node.js (Bun, Hono, Drizzle)</dd>
+      <dt>Тестирование</dt><dd>Vitest, Playwright (e2e), Stryker (мутационное), контрактные тесты по OpenAPI, pytest</dd>
+      <dt>DevOps</dt><dd>Docker, Docker Compose, GitLab CI/CD, GitHub Actions, Caddy, Nginx, Traefik, Linux</dd>
+    </dl>
+
+    <h2>Образование</h2>
+    <div class="cv-edu"><span><b>Университет «Синергия»</b>, Москва — бизнес-информатика, бакалавр</span><span class="cv-when">2022–2026</span></div>
+    <div class="cv-edu"><span><b>РГУ им. А. Н. Косыгина</b>, Москва — информатика и вычислительная техника (перевод)</span><span class="cv-when">2020–2022</span></div>
+  </article>
+</div>
+
+<button class="sheet-back" id="sheet-back" type="button" hidden>← <span data-t="back"></span></button>
+
+<script type="module" src="/src/main.ts"></script>
+</body>
+</html>

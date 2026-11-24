@@ -1,0 +1,8 @@
+  /* at the PC: the room's own chrome steps aside for the desktop */
+  .pin { transition: opacity .25s; }
+  body.at-pc .bar, body.at-pc .dbg, body.at-pc .note { opacity: 0; pointer-events: none; transition: opacity .3s; }
+
+/* PS1 nod: NOW LOADING with a blinking block cursor */
+.loading b::after { content: ''; display: inline-block; width: .55em; height: 1em; margin-left: .25em; vertical-align: -.15em; background: currentColor; animation: psx-blink 1s steps(1) infinite; }
+@keyframes psx-blink { 50% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .loading b::after { animation: none; } }

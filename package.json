@@ -1,0 +1,45 @@
+{
+  "name": "donya-dev",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "donya.dev: the isometric three.js room with the Windows XD desktop inside its monitor",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "build:artifact": "vite build --mode artifact",
+    "preview": "vite preview",
+    "preview:artifact": "vite preview --mode artifact",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "pack:room": "node scripts/pack-room.mjs",
+    "regress": "node scripts/regress.mjs",
+    "compare": "node scripts/compare.mjs"
+  },
+  "dependencies": {
+    "three": "0.128.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@types/node": "24.19.2",
+    "@types/three": "0.128.0",
+    "eslint": "10.15.0",
+    "eslint-config-prettier": "10.1.8",
+    "globals": "17.14.0",
+    "pixelmatch": "7.0.0",
+    "playwright-core": "1.65.1",
+    "pngjs": "7.0.0",
+    "prettier": "3.10.1",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.74.0",
+    "vite": "8.3.8",
+    "vite-plugin-singlefile": "2.3.4",
+    "vitest": "5.1.1"
+  }
+}
