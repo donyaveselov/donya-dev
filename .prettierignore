@@ -4,8 +4,7 @@ dist-artifact
 public
 node_modules
 package-lock.json
-# verbatim legacy import (and its markup/CSS): reformatting it would only make the diffs against the old site noisy
+# the page markup and the desktop's CSS are kept as imported from the old site: reformatting would only add noise
 index.html
-src/**/legacy
 src/xp/styles
 src/xp/assets

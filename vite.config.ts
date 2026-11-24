@@ -32,8 +32,8 @@ export default defineConfig(({ mode }) => {
       outDir: artifact ? 'dist-artifact' : 'dist',
       emptyOutDir: true,
       chunkSizeWarningLimit: 2048,
-      // Lightning CSS minification rewrites the legacy CSS: it drops `backdrop-filter` when `-webkit-backdrop-filter`
-      // sits next to it (the room's chips lose their blur in Chrome). Keep the CSS as written until it is ported.
+      // Lightning CSS minification drops `backdrop-filter` when `-webkit-backdrop-filter` sits next to it (the room's
+      // chips lose their blur in Chrome), so the CSS ships as written.
       cssMinify: false,
     },
     test: {

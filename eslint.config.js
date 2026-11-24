@@ -6,16 +6,7 @@ import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
   {
-    // the verbatim legacy import is replaced module by module; lint each port, not the originals
-    ignores: [
-      'dist/**',
-      'dist-artifact/**',
-      '.work/**',
-      'public/**',
-      'node_modules/**',
-      'src/**/legacy/**',
-      'src/**/legacy-*.ts',
-    ],
+    ignores: ['dist/**', 'dist-artifact/**', '.work/**', 'public/**', 'node_modules/**'],
   },
   js.configs.recommended,
   {
