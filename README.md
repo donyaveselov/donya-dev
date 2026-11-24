@@ -17,7 +17,7 @@ src/xp/legacy/             the desktop shell (core.ts) and the XP icon bitmaps (
 src/xp/legacy/apps/        the desktop apps (old xp/apps/*.js)
 src/xp/apps/               ported apps go here
 src/shared/                types (window globals, the XPDesktop contract), i18n helpers
-src/styles/                room.css (old head.html <style>), extra.css, xp.css, apps.css, mocks-*.css
+src/styles/                xp.css, apps.css, mocks-*.css (the room's own CSS is src/room/room.css)
 public/room.json           the packed model ({"gz": base64(gzip(GLB))}), fetched at runtime with ?v=<md5>
 public/games, public/wall  splash screens and wallpapers the page loads by relative URL
 scripts/pack-room.mjs      blender/room.glb -> public/room.json (gltfpack 0.24.0, as build.py did)

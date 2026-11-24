@@ -1,0 +1,701 @@
+/* Layout: one full-screen isometric room floating in a sky whose colours follow Phuket time. DOM: top bar, a label on the monitor, a projects drawer and the resume sheet. */
+:root {
+  color-scheme: dark;
+  --sky-top: #0d1630; /* set from JS by time of day */
+  --sky-bottom: #25325a;
+  --text: #ffffff;
+  --text-dim: rgba(255, 255, 255, 0.72);
+  --chip: rgba(14, 18, 30, 0.62);
+  --chip-line: rgba(255, 255, 255, 0.22);
+  --accent: #ffcf6b; /* lamp light */
+  --panel: #12172a;
+  --panel-line: rgba(255, 255, 255, 0.12);
+  --tag: rgba(255, 255, 255, 0.1);
+  --paper: #fafafa;
+  --ink: #111111;
+  --ink-soft: #333333;
+  --ink-muted: #707070;
+  --rule: #d6d6d6;
+  --marker: #9a9a9a;
+  --font-ui: 'Golos Text', 'Helvetica Neue', Arial, sans-serif;
+  --font-sign: 'Unbounded', 'Golos Text', 'Helvetica Neue', Arial, sans-serif;
+}
+html,
+body {
+  height: 100%;
+}
+body {
+  background: var(--sky-top);
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: 15px;
+  overflow: hidden;
+}
+button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+#stage {
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(var(--sky-top), var(--sky-bottom));
+}
+#stage canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+  cursor: grab;
+}
+
+.bar {
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: 30;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+  pointer-events: none;
+  padding-top: calc(env(safe-area-inset-top, 0px) + 14px);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.bar > * {
+  pointer-events: auto;
+}
+.tools {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.chip {
+  background: var(--chip);
+  border: 1px solid var(--chip-line);
+  border-radius: 999px;
+  color: var(--text);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  padding: 7px 13px;
+  font-size: 13.5px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.chip.time {
+  font-variant-numeric: tabular-nums;
+}
+.chip.time i {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  margin-right: 7px;
+  vertical-align: 1px;
+}
+.lang {
+  display: flex;
+  padding: 3px;
+  gap: 2px;
+}
+.lang button {
+  background: none;
+  border: 0;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--text-dim);
+}
+.lang button[aria-pressed='true'] {
+  background: var(--text);
+  color: var(--ink);
+}
+
+.pin {
+  position: fixed;
+  z-index: 6;
+  left: 0;
+  top: 0;
+  transform: translate(-50%, -100%);
+  background: var(--text);
+  color: var(--ink);
+  border: 0;
+  border-radius: 999px;
+  padding: 7px 14px 7px 12px;
+  font-weight: 600;
+  font-size: 13.5px;
+  white-space: nowrap;
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.28);
+  transition: opacity 0.25s;
+}
+.pin::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #e2583e;
+  margin-right: 8px;
+  vertical-align: 1px;
+}
+.pin::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -5px;
+  width: 10px;
+  height: 10px;
+  background: var(--text);
+  transform: translateX(-50%) rotate(45deg);
+}
+
+.note {
+  position: fixed;
+  inset: auto 0 0;
+  z-index: 5;
+  text-align: center;
+  font-size: 13.5px;
+  margin: 0;
+  pointer-events: none;
+  transition: opacity 0.4s;
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.note span {
+  display: inline-block;
+  max-width: 100%;
+  background: var(--chip);
+  border: 1px solid var(--chip-line);
+  border-radius: 999px;
+  padding: 7px 16px;
+}
+.loading {
+  position: fixed;
+  inset: 0;
+  z-index: 8;
+  display: grid;
+  place-content: center;
+  text-align: center;
+  gap: 12px;
+  pointer-events: none;
+  transition: opacity 0.4s;
+}
+.loading b {
+  font-family: var(--font-sign);
+  font-size: 15px;
+}
+.meter {
+  width: min(240px, 60vw);
+  height: 3px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.meter i {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: var(--text);
+  transition: width 0.2s;
+}
+
+.drawer {
+  position: fixed;
+  z-index: 25;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(420px, 100%);
+  background: var(--panel);
+  border-left: 1px solid var(--panel-line);
+  overflow-y: auto;
+  transform: translateX(102%);
+  transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+  padding-top: calc(env(safe-area-inset-top, 0px) + 18px);
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 24px);
+  padding-left: 22px;
+  padding-right: max(22px, env(safe-area-inset-right, 0px));
+}
+.drawer.open {
+  transform: none;
+}
+.drawer header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 18px;
+}
+.drawer h2 {
+  font-family: var(--font-sign);
+  font-size: 19px;
+  margin: 0;
+}
+.x {
+  background: var(--tag);
+  border: 0;
+  border-radius: 50%;
+  width: 34px;
+  height: 34px;
+  font-size: 17px;
+  line-height: 1;
+}
+.proj {
+  border-top: 1px solid var(--panel-line);
+  padding: 16px 0;
+}
+.proj h3 {
+  margin: 0 0 6px;
+  font-size: 16.5px;
+}
+.proj p {
+  margin: 0 0 10px;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.tags li {
+  background: var(--tag);
+  border-radius: 6px;
+  padding: 3px 8px;
+  font-size: 12.5px;
+}
+.draft {
+  color: var(--text-dim);
+  font-size: 12.5px;
+  margin: 14px 0 0;
+}
+
+#sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  background: var(--paper);
+  color: var(--ink);
+  opacity: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-top: calc(env(safe-area-inset-top, 0px) + 64px);
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 40px);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.cv {
+  max-width: 800px;
+  margin: 0 auto;
+  font-size: 14px;
+  line-height: 1.45;
+}
+.cv a {
+  color: inherit;
+  text-decoration: none;
+}
+.cv p {
+  margin: 0;
+}
+.cv-note {
+  color: var(--ink-muted);
+  font-size: 13px;
+  margin: 0 0 14px !important;
+}
+.cv-top {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 10px 24px;
+  padding-bottom: 14px;
+  border-bottom: 2px solid var(--ink);
+}
+.cv h1 {
+  font-size: 30px;
+  line-height: 1.1;
+  margin: 0 0 6px;
+  letter-spacing: -0.01em;
+}
+.cv-role {
+  font-size: 16px;
+  font-weight: 600;
+}
+.cv-role span {
+  color: var(--ink-muted);
+  font-weight: 400;
+}
+.cv-contacts {
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--ink-soft);
+  user-select: text;
+}
+.cv-sum {
+  margin: 14px 0 0 !important;
+  color: var(--ink-soft);
+}
+.cv h2 {
+  font-size: 11.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--ink-muted);
+  margin: 26px 0 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.cv h2::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--rule);
+}
+.cv-job {
+  margin-bottom: 20px;
+}
+.cv-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 2px 12px;
+}
+.cv h3 {
+  font-size: 15.5px;
+  margin: 0;
+  min-width: 0;
+}
+.cv h3 span {
+  font-weight: 400;
+  font-size: 14px;
+  color: var(--ink-soft);
+}
+.cv-when {
+  color: var(--ink-muted);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.cv-stack {
+  color: var(--ink-muted);
+  font-size: 13px;
+  margin-top: 2px !important;
+}
+.cv ul {
+  margin: 7px 0 0;
+  padding-left: 17px;
+}
+.cv li {
+  margin: 4px 0;
+}
+.cv li::marker {
+  color: var(--marker);
+}
+.cv dl {
+  display: grid;
+  grid-template-columns: 112px minmax(0, 1fr);
+  gap: 6px 8px;
+  margin: 0;
+}
+.cv dt {
+  color: var(--ink-muted);
+}
+.cv dd {
+  margin: 0;
+}
+.cv-edu {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 2px 12px;
+  margin-bottom: 6px;
+}
+@media (max-width: 520px) {
+  .cv dl {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+  .cv dd {
+    margin-bottom: 8px;
+  }
+  .cv h1 {
+    font-size: 26px;
+  }
+}
+.sheet-back {
+  position: fixed;
+  z-index: 31;
+  left: max(16px, env(safe-area-inset-left, 0px));
+  top: calc(env(safe-area-inset-top, 0px) + 14px);
+  background: var(--ink);
+  color: var(--paper);
+  border: 0;
+  border-radius: 999px;
+  padding: 8px 14px 8px 11px;
+  font-weight: 500;
+}
+@media (max-width: 640px) {
+  .chip {
+    padding: 6px 10px;
+    font-size: 13px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .drawer,
+  .pin,
+  .loading,
+  .meter i {
+    transition: none;
+  }
+}
+/* quiet labels over things in the room (the weather in the window, the clock): the projects pin stays the only loud one */
+.tag {
+  position: fixed;
+  z-index: 5;
+  left: 0;
+  top: 0;
+  transform: translate(-50%, -100%);
+  background: var(--text);
+  color: var(--ink);
+  border-radius: 999px;
+  padding: 7px 14px;
+  font-weight: 600;
+  font-size: 13.5px;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.28);
+  transition: opacity 0.25s;
+  opacity: 0;
+}
+.tag::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -5px;
+  width: 10px;
+  height: 10px;
+  background: var(--text);
+  transform: translateX(-50%) rotate(45deg);
+}
+.tag--info {
+  white-space: normal;
+  max-width: min(320px, calc(100vw - 32px));
+  text-align: center;
+  line-height: 1.35;
+  border-radius: 14px;
+}
+body.at-pc .tag {
+  opacity: 0 !important;
+}
+/* the talkie: a pixel mouth and a pixel speech bubble (box-shadow steps on a 4 px grid, as in the wax project) */
+.talkie {
+  position: fixed;
+  z-index: 8;
+  right: max(16px, env(safe-area-inset-right, 0px));
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  pointer-events: none;
+  font-family: 'Tiny5', ui-monospace, monospace;
+}
+.talkie[hidden],
+body.at-pc .talkie {
+  display: none;
+}
+.talkie__mouth {
+  width: 192px;
+  height: auto;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  pointer-events: auto;
+  cursor: pointer;
+  filter: drop-shadow(0 4px 0 rgba(0, 0, 0, 0.25));
+}
+.talkie__say {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 14px;
+  margin: 0 22px 30px 0;
+  pointer-events: auto;
+}
+.tbub {
+  position: relative;
+  width: min(300px, calc(100vw - 260px));
+  padding: 12px 14px;
+  background: #fff;
+  color: #111;
+  font-size: 17px;
+  line-height: 1.3;
+  cursor: pointer;
+  overflow-wrap: break-word;
+  box-shadow:
+    0 -4px #fff,
+    0 -8px #111,
+    4px 0 #fff,
+    4px -4px #111,
+    8px 0 #111,
+    0 4px #fff,
+    0 8px #111,
+    -4px 0 #fff,
+    -4px 4px #111,
+    -8px 0 #111,
+    -4px -4px #111,
+    4px 4px #111;
+}
+.tbub::after {
+  content: '';
+  position: absolute;
+  right: -8px;
+  bottom: 16px;
+  width: 4px;
+  height: 4px;
+  background: #fff;
+  box-shadow:
+    4px -4px #fff,
+    4px 0 #fff,
+    8px 0 #fff,
+    0 -8px #fff,
+    4px 4px #111,
+    8px 4px #111,
+    12px 4px #111,
+    16px 4px #111,
+    12px 0 #111,
+    8px -4px #111,
+    4px -8px #111,
+    0 -4px #fff;
+}
+.tbtns {
+  display: flex;
+  gap: 14px;
+}
+.tbtn {
+  font: inherit;
+  font-size: 15px;
+  padding: 8px 12px;
+  border: 0;
+  background: #fff;
+  color: #111;
+  cursor: pointer;
+  box-shadow:
+    0 -4px #111,
+    0 4px #111,
+    -4px 0 #111,
+    4px 0 #111;
+  transition: transform 80ms ease-out;
+}
+.tbtn--ghost {
+  background: #111;
+  color: #fff;
+  box-shadow:
+    0 -4px #fff,
+    0 4px #fff,
+    -4px 0 #fff,
+    4px 0 #fff;
+}
+.tbtn:hover {
+  transform: translateY(-2px);
+}
+.tbtn:active {
+  transform: translateY(1px);
+}
+.tbtn:focus-visible,
+.talkie__mouth:focus-visible {
+  outline: 3px solid #e2583e;
+  outline-offset: 6px;
+}
+.talkie--mini .talkie__say {
+  display: none;
+}
+.talkie--mini .talkie__mouth {
+  width: 84px;
+}
+@media (max-width: 700px) {
+  .talkie {
+    right: 0;
+    left: 0;
+    justify-content: center;
+    flex-direction: column;
+    align-items: center;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 8px);
+  }
+  .talkie__say {
+    align-items: center;
+    margin: 0 16px 10px;
+    order: 0;
+  }
+  .talkie__mouth {
+    width: 128px;
+    order: 1;
+  }
+  .tbub {
+    width: min(340px, calc(100vw - 48px));
+    font-size: 16px;
+  }
+  .tbub::after {
+    right: auto;
+    left: 50%;
+    bottom: -8px;
+    box-shadow:
+      0 4px #fff,
+      -4px 4px #111,
+      4px 4px #111,
+      0 8px #111;
+  }
+  .talkie--mini {
+    left: auto;
+    right: 12px;
+  }
+  .talkie--mini .talkie__mouth {
+    width: 64px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tbtn {
+    transition: none;
+  }
+}
+
+/* at the PC: the room's own chrome steps aside for the desktop */
+body.at-pc .bar,
+body.at-pc .dbg,
+body.at-pc .note {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s;
+}
+
+/* PS1 nod: NOW LOADING with a blinking block cursor */
+.loading b::after {
+  content: '';
+  display: inline-block;
+  width: 0.55em;
+  height: 1em;
+  margin-left: 0.25em;
+  vertical-align: -0.15em;
+  background: currentColor;
+  animation: psx-blink 1s steps(1) infinite;
+}
+@keyframes psx-blink {
+  50% {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .loading b::after {
+    animation: none;
+  }
+}

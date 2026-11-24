@@ -22,7 +22,7 @@ export interface TourStrings {
 }
 
 /** The strings the markup asks for by `data-t`. */
-export type MarkupKey = 'name' | 'role' | 'resume' | 'projects' | 'back' | 'loading' | 'hint' | 'draft' | 'resumeNote';
+export type MarkupKey = 'resume' | 'projects' | 'back' | 'loading' | 'hint' | 'draft' | 'resumeNote';
 
 export interface RoomStrings extends Record<MarkupKey | Status, string> {
   phuket: string;
@@ -39,8 +39,6 @@ export type TourKey = keyof TourStrings;
 
 const STR: Record<Lang, RoomStrings> = {
   ru: {
-    name: 'Даниил Иванов',
-    role: 'Fullstack-разработчик · Пхукет',
     resume: 'Резюме',
     projects: 'Проекты',
     back: 'Назад',
@@ -80,8 +78,6 @@ const STR: Record<Lang, RoomStrings> = {
     },
   },
   en: {
-    name: 'Daniil Ivanov',
-    role: 'Fullstack developer · Phuket',
     resume: 'Resume',
     projects: 'Projects',
     back: 'Back',
@@ -128,8 +124,6 @@ export function t(lang: Lang): RoomStrings {
 }
 
 const MARKUP_KEYS: readonly string[] = [
-  'name',
-  'role',
   'resume',
   'projects',
   'back',
