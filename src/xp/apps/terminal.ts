@@ -8,6 +8,7 @@ import { registerApp } from '../shell/apps';
 import { ICONS } from './icons';
 import { pad, phuketNow, reduced, ui } from './kit';
 import { changeDir, complete, OPENABLE, parseColor, parseCommand, progressBar, prompt } from './terminal-parse';
+import { EXPERIENCE } from '../../shared/experience';
 
 const d = (ru: string, en: string): Bilingual => ({ ru, en });
 
@@ -22,8 +23,8 @@ const T = {
   ),
   someNode: d('немного Node', 'some Node'),
   whoami: d(
-    'Живу на Пхукете. 4,5 года в разработке. Люблю, когда в системе всё продумано до мелочей.',
-    'Based in Phuket. 4.5 years in development. Likes systems where every small thing is thought through.',
+    `Живу на Пхукете. ${EXPERIENCE.ru} в разработке. Люблю, когда в системе всё продумано до мелочей.`,
+    `Based in Phuket. ${EXPERIENCE.en} in development. Likes systems where every small thing is thought through.`,
   ),
   dirOf: d('Содержимое папки', 'Directory of'),
   myProjects: d('Мои проекты', 'My Projects'),
@@ -85,7 +86,7 @@ const T = {
   ),
   binDont: d('Корзина (не открывать)', 'Recycle Bin (do not open)'),
   host: d('Хост: монитор в изометрической комнате', 'Host: a monitor in an isometric room'),
-  uptime: d('Аптайм: 4,5 года в разработке', 'Uptime: 4.5 years in development'),
+  uptime: d(`Аптайм: ${EXPERIENCE.ru} в разработке`, `Uptime: ${EXPERIENCE.en} in development`),
   shell: d('Оболочка: Vue 3 / Nuxt + Python / Django', 'Shell: Vue 3 / Nuxt + Python / Django'),
   cpu: d('Процессор: 1 × Fullstack-разработчик', 'CPU: 1 × Fullstack developer'),
   timeIs: d('Время: ', 'Time: '),

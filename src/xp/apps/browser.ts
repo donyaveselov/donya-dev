@@ -7,7 +7,7 @@ import { ico, svg } from '../icons';
 import { registerApp } from '../shell/apps';
 import { ICONS } from './icons';
 import { copyText, pad, reduced, ui } from './kit';
-import { HOME, isOwnSite, normalize, searchHits } from './browser-url';
+import { HOME, isOwnSite, isThisSite, normalize, searchHits } from './browser-url';
 
 const d = (ru: string, en: string): Bilingual => ({ ru, en });
 
@@ -39,6 +39,12 @@ const T = {
   done: d('Готово', 'Done'),
   homeTitle: d('Даниил Иванов — стартовая страница', 'Daniil Ivanov — Start Page'),
   pageCannot: d('Не удаётся отобразить страницу', 'The page cannot be displayed'),
+  hereTitle: d('Вы уже здесь', 'You are already here'),
+  toStart: d('На стартовую страницу', 'Go to the start page'),
+  hereText: d(
+    'Это donya.dev: страница, на которой открыт этот рабочий стол. Если открыть её здесь, внутри окажется ещё одна комната с ещё одним компьютером, и так до бесконечности.',
+    'This is donya.dev, the page this desktop is open on. Opened here, it would hold another room with another computer, and so on forever.',
+  ),
   search: d('Поиск', 'Search'),
   noPage: d('Нет такой страницы: ', 'No such page: '),
   internet: d('Интернет', 'Internet'),
@@ -325,6 +331,9 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
     if (u === HOME) {
       view.appendChild(startPage());
       api.win.setTitle(`${t(T.homeTitle)} — ${nav}`);
+    } else if (ext && isThisSite(u)) {
+      view.appendChild(herePage());
+      api.win.setTitle(`${t(T.hereTitle)} — ${nav}`);
     } else if (ext && isOwnSite(u)) {
       view.appendChild(h('iframe.xpa-wax-frame', { src: u, title: u }));
       api.win.setTitle(`${u.replace(/^https?:\/\//, '')} — ${nav}`);
@@ -428,6 +437,27 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
       h('div.xpa-br-foot', [
         h('div', [t(T.visitor), h('span.xpa-br-counter', visitor)]),
         h('div.xpa-muted', T.bestViewed),
+      ]),
+    ]);
+  }
+
+  function herePage(): HTMLDivElement {
+    return h('div.xpa-br-err', [
+      h('div.xpa-br-err-head', [h('span.xpa-ico', { html: ICONS.info }), h('h1', T.hereTitle)]),
+      h('p', T.hereText),
+      h('p', [
+        h(
+          'button.xpa-br-inl',
+          {
+            type: 'button',
+            on: {
+              click: () => {
+                go(HOME);
+              },
+            },
+          },
+          T.toStart,
+        ),
       ]),
     ]);
   }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { HOME, isOwnSite, normalize, searchHits } from './browser-url';
+import { HOME, isOwnSite, isThisSite, normalize, searchHits } from './browser-url';
 
 describe('navigator address bar', () => {
   it('normalizes what is typed', () => {
@@ -16,6 +16,10 @@ describe('navigator address bar', () => {
     expect(isOwnSite('https://wax.donya.dev/?lang=ru')).toBe(true);
     expect(isOwnSite('http://donya.dev')).toBe(false);
     expect(isOwnSite('https://donya.dev.evil.com')).toBe(false);
+    expect(isThisSite('https://donya.dev')).toBe(true);
+    expect(isThisSite('https://www.donya.dev/#resume')).toBe(true);
+    expect(isThisSite('https://wax.donya.dev/')).toBe(false);
+    expect(isThisSite('https://donya.dev.evil.com')).toBe(false);
   });
   it('searches apps by alias and projects by name and stack', () => {
     expect(searchHits('mines')).toEqual(['minesweeper']);

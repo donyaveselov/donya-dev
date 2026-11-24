@@ -103,17 +103,22 @@ function mount(host: HTMLElement, opts: XPMountOptions): XPDesktopApi {
   const ro = new ResizeObserver(computeSize);
   ro.observe(root);
   let lastStatus = status();
+  // both ticks idle while the desktop is closed (open() repaints the tray and the wallpaper itself)
   const clock = window.setInterval(() => {
+    if (!S.open) {
+      lastStatus = status();
+      return;
+    }
     updateTray();
     const st = status();
-    if (st !== lastStatus && S.open && !S.busy)
+    if (st !== lastStatus && !S.busy)
       showBalloon({ title: L(`statusChanged_${st}`), text: L('clockTipPre') + clockText() });
     lastStatus = st;
   }, 5000);
   const slow = window.setInterval(() => {
+    if (!S.open) return;
     paintWall();
     if (
-      S.open &&
       !S.busy &&
       !saverRunning() &&
       S.prefs.saver !== 'none' &&

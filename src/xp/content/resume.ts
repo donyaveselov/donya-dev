@@ -1,6 +1,7 @@
 // The public resume the desktop's DocPad shows (the skills come from the stack).
 import type { Bilingual } from '../../shared/types';
 import { byArea, stackLine } from './stack';
+import { EXPERIENCE } from '../../shared/experience';
 
 const d = (ru: string, en: string): Bilingual => ({ ru, en });
 
@@ -30,8 +31,8 @@ export const RESUME: Resume = {
     'Fullstack developer · Vue 3 / Nuxt · Python / Django',
   ),
   lead: d(
-    '4,5 года в разработке: frontend на Vue 3 с 2022 года, с 2025-го — fullstack (Django, Node.js). Живу на Пхукете, работаю удалённо.',
-    '4.5 years in development: frontend on Vue 3 since 2022, fullstack since 2025 (Django, Node.js). Based in Phuket, working remotely.',
+    `${EXPERIENCE.ru} в разработке: frontend на Vue 3 с 2022 года, с 2025-го — fullstack (Django, Node.js). Живу на Пхукете, работаю удалённо.`,
+    `${EXPERIENCE.en} in development: frontend on Vue 3 since 2022, fullstack since 2025 (Django, Node.js). Based in Phuket, working remotely.`,
   ),
   jobs: [
     {

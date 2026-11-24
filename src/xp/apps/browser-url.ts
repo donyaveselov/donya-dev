@@ -18,6 +18,9 @@ export function normalize(input: unknown): string {
 /** My own sites, which open inside the window. */
 export const isOwnSite = (u: string): boolean => /^https:\/\/([a-z0-9-]+\.)*donya\.dev(\/|$)/i.test(u);
 
+/** This very site: inside its own window it would load the whole room again, and the desktop in it, and so on. */
+export const isThisSite = (u: string): boolean => /^https:\/\/(www\.)?donya\.dev(\/|[?#]|$)/i.test(u);
+
 /** Search on this computer: app ids (through their aliases) and then projects ('project:<id>'). */
 export function searchHits(q: string): string[] {
   const ql = q.toLowerCase();

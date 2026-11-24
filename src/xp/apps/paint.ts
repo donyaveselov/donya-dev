@@ -439,6 +439,7 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
   cv.addEventListener('pointerdown', (e) => {
     if (e.button !== 0 && e.button !== 2) return;
     e.preventDefault();
+    if (drag) end(null); // a second finger: finish the first stroke (and stop its airbrush) before the next one
     cv.focus({ preventScroll: true });
     const p = pos(e);
     const right = e.button === 2;
@@ -502,6 +503,9 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
     st.set(2, `${String(W)}×${String(H)}`);
   }
   cv.addEventListener('pointerup', end);
+  U.onCleanup(() => {
+    if (drag) clearInterval(drag.timer); // closed mid-spray
+  });
   cv.addEventListener('pointercancel', () => {
     end(null);
   });

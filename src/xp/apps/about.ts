@@ -7,6 +7,7 @@ import { registerApp } from '../shell/apps';
 import { G16, ICONS } from './icons';
 import { pad, phuketNow, reduced, ui } from './kit';
 import { hms, nextLoad } from './about-stats';
+import { EXPERIENCE } from '../../shared/experience';
 
 const d = (ru: string, en: string): Bilingual => ({ ru, en });
 
@@ -26,7 +27,7 @@ const T = {
   compNameLabel: d('Имя компьютера', 'Computer name'),
   compName: d('Имя компьютера:', 'Computer name:'),
   system: d('Система:', 'System:'),
-  servicePack: d('Пакет обновления: 4,5 года опыта', 'Service Pack: 4.5 years of experience'),
+  servicePack: d(`Пакет обновления: ${EXPERIENCE.ru} опыта`, `Service Pack: ${EXPERIENCE.en} of experience`),
   registered: d('Зарегистрирован на:', 'Registered to:'),
   computer: d('Компьютер:', 'Computer:'),
   cpu: d('Процессор: 1 × Fullstack-разработчик', 'Processor: 1 × Fullstack developer'),
