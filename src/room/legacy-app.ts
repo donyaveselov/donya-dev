@@ -5,50 +5,17 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 // the UMD build exposed the loaders as THREE.GLTFLoader / THREE.OrbitControls; the legacy code still reads them there
 const THREE = Object.assign({}, THREE_NS, { GLTFLoader, OrbitControls });
+import * as I18N from './i18n';
+import * as CLOCK from './clock';
+import * as WX from './weather';
+import * as LIGHT from './lighting';
+import { CodeSession } from './opencode';
 (function () {
   'use strict';
   var $ = function (id) { return document.getElementById(id); };
 
   /* ---------- i18n ---------- */
-  var STR = {
-    ru: { name: 'Даниил Иванов', role: 'Fullstack-разработчик · Пхукет', resume: 'Резюме', projects: 'Проекты', back: 'Назад', loading: 'NOW LOADING',
-      work: 'работаю', sleep: 'сплю', play: 'играю', outside: 'на улице', phuket: 'Пхукет', resumeNote: '', hint: 'Потяните, чтобы повернуть комнату',
-      draft: 'Черновик: описания проектов предварительные.', localTime: 'Местное время', wxNow: 'Я на Пхукете',
-      wx: { clear: 'ясно', cloud: 'облачно', drizzle: 'морось', rain: 'дождь', storm: 'гроза' },
-      diploma: 'Диплом бакалавра · бизнес-информатика · Университет «Синергия», 2026', resumeTag: 'Резюме', diplomaTag: 'Диплом',
-      tour: { hello: 'Привет, я Даниил! Сейчас на Пхукете {time}, и я {what}. Показать вам комнату?', yes: 'Да', no: 'Нет', next: 'Дальше', skip: 'Пропустить', again: 'Экскурсия по комнате',
-        work: 'С утра до вечера я работаю: вот так это выглядит.',
-        play: 'Иногда играю. Статус синхронизируется со Steam: если я в Dota, CS или другой игре, комната это покажет.',
-        outside: 'После работы обычно отдыхаю на улице.',
-        sleep: 'А ночью я сплю.',
-        back: 'И всё это по-настоящему: комната живёт по моим часам.',
-        projects: 'Нажмите на любой монитор, и окажетесь за моим компьютером: Windows XD, проекты не под NDA и всякие приколюхи вроде сапёра и Paint.',
-        resume: 'На стене моё резюме, нажмите, чтобы открыть.',
-        diploma: 'Рядом диплом: бакалавр, бизнес-информатика, университет «Синергия», 2026.',
-        place: 'Часы показывают моё местное время, а за окном Пхукет с его настоящей погодой.',
-        end: 'Вот и всё! Захотите пройтись ещё раз, я тут, в углу.' } },
-    en: { name: 'Daniil Ivanov', role: 'Fullstack developer · Phuket', resume: 'Resume', projects: 'Projects', back: 'Back', loading: 'NOW LOADING',
-      work: 'working', sleep: 'sleeping', play: 'gaming', outside: 'outside', phuket: 'Phuket', resumeNote: 'The resume is in Russian for now.', hint: 'Drag to rotate the room',
-      draft: 'Draft: project descriptions are preliminary.', localTime: 'Local time', wxNow: 'I’m in Phuket',
-      wx: { clear: 'clear', cloud: 'cloudy', drizzle: 'drizzle', rain: 'rain', storm: 'thunderstorm' },
-      diploma: 'Bachelor’s degree · Business Informatics · Synergy University, 2026', resumeTag: 'Resume', diplomaTag: 'Diploma',
-      tour: { hello: 'Hi, I’m Daniil! It’s {time} in Phuket and I’m {what}. Want a quick tour of the room?', yes: 'Yes', no: 'No', next: 'Next', skip: 'Skip', again: 'Room tour',
-        work: 'From morning till evening I work. This is what it looks like.',
-        play: 'Sometimes I play. My status syncs with Steam: if I’m in Dota, CS or another game, the room shows it.',
-        outside: 'After work I usually chill outside.',
-        sleep: 'And at night I sleep.',
-        back: 'All of it is real: the room runs on my clock.',
-        projects: 'Click either monitor to sit at my computer: Windows XD, my non-NDA projects and some fun stuff like Minesweeper and Paint.',
-        resume: 'My resume hangs on the wall. Click it to open.',
-        diploma: 'Next to it, my diploma: BSc in Business Informatics, Synergy University, 2026.',
-        place: 'The clock shows my local time, and outside the window is Phuket with its real weather.',
-        end: 'That’s it! If you want the tour again, I’m right here in the corner.' } }
-  };
-  var PROJECTS = [
-    { name: 'Relocator', ru: 'Подбор страны и визового маршрута: движок рекомендаций, Telegram-бот, PDF-отчёты, SEO-страницы на трёх языках.', en: 'Country and visa route matching: a recommendation engine, a Telegram bot, PDF reports and SEO pages in three languages.', tags: ['Vue 3', 'TypeScript', 'Django', 'django-ninja', 'aiogram', 'Playwright'] },
-    { name: 'UniCloud', ru: 'Telegram Mini App для аренды серверов с приложениями: биллинг, платежи, автоматическое развёртывание.', en: 'A Telegram Mini App for renting servers with apps: billing, payments and automated provisioning.', tags: ['React', 'Bun', 'Hono', 'Drizzle', 'PostgreSQL', 'Traefik'] },
-    { name: 'Cases', ru: 'Фронтенд на Nuxt 4 с полным набором тестов: unit, e2e на desktop и mobile, контрактные и мутационные.', en: 'A Nuxt 4 frontend with a full test suite: unit, e2e on desktop and mobile, contract and mutation tests.', tags: ['Nuxt 4', 'Vitest', 'Playwright', 'Stryker', 'OpenAPI'] }
-  ];
+  var STR = { ru: I18N.t('ru'), en: I18N.t('en') }, PROJECTS = I18N.PROJECTS;
   var lang = '';
   try { lang = localStorage.getItem('lang') || ''; } catch (e) { lang = ''; }
   if (lang !== 'ru' && lang !== 'en') lang = ((navigator.language || 'en').toLowerCase().indexOf('ru') === 0) ? 'ru' : 'en';
@@ -62,7 +29,7 @@ const THREE = Object.assign({}, THREE_NS, { GLTFLoader, OrbitControls });
     PROJECTS.forEach(function (p) {
       var d = document.createElement('div'); d.className = 'proj';
       var h = document.createElement('h3'); h.textContent = p.name; d.appendChild(h);
-      var s = document.createElement('p'); s.textContent = p[lang]; d.appendChild(s);
+      var s = document.createElement('p'); s.textContent = p.about[lang]; d.appendChild(s);
       var ul = document.createElement('ul'); ul.className = 'tags';
       p.tags.forEach(function (x) { var li = document.createElement('li'); li.textContent = x; ul.appendChild(li); }); d.appendChild(ul);
       list.appendChild(d);
@@ -93,28 +60,13 @@ const THREE = Object.assign({}, THREE_NS, { GLTFLoader, OrbitControls });
     }).catch(function () { steam = null; });
   }
   function readClock() {
-    var h = 0, m = 0;
-    try {
-      new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Bangkok', hour: 'numeric', minute: 'numeric', hour12: false })
-        .formatToParts(new Date()).forEach(function (p) { if (p.type === 'hour') h = +p.value % 24; if (p.type === 'minute') m = +p.value; });
-    } catch (e) { var d = new Date(); h = (d.getUTCHours() + 7) % 24; m = d.getUTCMinutes(); }
-    if (preview != null) { h = Math.floor(preview); m = Math.round((preview % 1) * 60); }
-    var changed = h !== bkk.h || m !== bkk.m; bkk.h = h; bkk.m = m; return changed;
+    var c = CLOCK.phuketTime(new Date(), preview);
+    var changed = c.h !== bkk.h || c.m !== bkk.m; bkk.h = c.h; bkk.m = c.m; return changed;
   }
-  function status() {
-    if (forced) return forced;
-    if (steam && steam.state === 'in-game') return 'play';
-    var h = bkk.h + bkk.m / 60;
-    if (h < 8 || h >= 23.5) return 'sleep';
-    if (h >= 10 && h < 19) return 'work';
-    if (h >= 20.5) return steam ? 'outside' : 'play';      // with Steam connected, 'play' only ever comes from Steam
-    return 'outside';                      // mornings and the hour around sunset
-  }
+  function status() { return CLOCK.statusAt(bkk, forced, steam); }
   function renderTime() {
-    var z = function (n) { return (n < 10 ? '0' : '') + n; }, t = STR[lang];
-    $('time').innerHTML = '<i></i>'; var st = status(), what = t[st];
-    if (st === 'play' && game.name) what += (lang === 'ru' ? ' в ' : ' ') + game.name;
-    $('time').appendChild(document.createTextNode(t.phuket + ' ' + z(bkk.h) + ':' + z(bkk.m) + ' · ' + what));
+    $('time').innerHTML = '<i></i>';
+    $('time').appendChild(document.createTextNode(I18N.timeChip(lang, bkk.h, bkk.m, status(), game.name)));
   }
 
   /* ---------- three ---------- */
@@ -379,16 +331,12 @@ const THREE = Object.assign({}, THREE_NS, { GLTFLoader, OrbitControls });
 
   function applyTime() {
     var t = bkk.h + bkk.m / 60;
-    var dayK = smooth(5.6, 7.2, t) * (1 - smooth(17.6, 19.2, t));                       // 0 night .. 1 day
-    var duskK = Math.min(1, Math.max(0, 1 - Math.abs(t - 18.3) / 1.3, 1 - Math.abs(t - 6.3) / 1.0));
-    if (status() === 'sleep') { dayK = 0; duskK = 0; }      // asleep means night, whatever the clock says: no sun over a sleeping room
-    // the sky in the window (CRASH.md §5): saturated blue by day, purple-to-orange at dusk, a readable blue night
-    var top = mix(0x0B1650, 0x1E8FE8, dayK).lerp(new THREE.Color(0x6A2FA0), duskK * 0.7);
-    var low = mix(0x27408F, 0xA8E6FF, dayK).lerp(new THREE.Color(0xFF9A3C), duskK * 0.9);
+    var skyF = LIGHT.skyFactors(t, status() === 'sleep'), dayK = skyF.day, duskK = skyF.dusk;
+    var top = new THREE.Color(), low = new THREE.Color();
     var oc = wxOvercast();                                   // weather: a flat grey sky, the dusk colours washed out
-    top.lerp(mix(0x0A1028, 0x4E5D74, dayK), oc * 0.85); low.lerp(mix(0x1E2846, 0x8E9BAA, dayK), oc * 0.85);
+    LIGHT.skyColours(skyF, oc, top, low);
     // the page behind the room follows the state, not the clock: one gradient per state, shared by the CSS and the post pass
-    var bd = BACKDROP[status()] || BACKDROP.work, rs = document.documentElement.style;
+    var bd = LIGHT.BACKDROP[status()], rs = document.documentElement.style;
     rs.setProperty('--sky-top', bd[0]); rs.setProperty('--sky-bottom', bd[1]);
     if (psx.post) { var pu = psx.post.children[0].material.uniforms; pu.uTop.value.set(bd[0]); pu.uBot.value.set(bd[1]); }
     renderTime();
@@ -399,23 +347,7 @@ const THREE = Object.assign({}, THREE_NS, { GLTFLoader, OrbitControls });
     // Light per state (CRASH.md §3): Lambert gives albedo x (hemi + lights) in linear space, so the sums stay well under 1 or the
     // walls clip to lemon and the plank tones vanish; the lights add hue. The states differ by hue, not by darkness: work golden and even, play two orange lamp pools
     // in a violet-blue room, asleep saturated blue from the monitors, out a cool shade with the window blazing.
-    var PRE = {
-      work:   { sky: 0xFFF4DC, gnd: 0xD9A070, hemi: 0.66, keyCol: 0xFFF0D0, key: 0.14, lamps: [0.55, 0.50], lampCol: 0xFFB24A, lampDist: 4.5, glow: 0.8, scr: 0.35, win: 0.15 * sky },
-      play:    { sky: 0x5A6AF0, gnd: 0x4A2A7A, hemi: 0.42, keyCol: 0xB0A0FF, key: 0.10, lamps: [2.0, 1.8], lampCol: 0xFF9A3C, lampDist: 3.5, glow: 1.6, scr: 0.9,  win: 0 },
-      sleep:   { sky: 0x2038FF, gnd: 0x0C1470, hemi: 0.45, keyCol: 0x6F8CFF, key: 0.03, lamps: [0, 0],     lampCol: 0xFFB24A, glow: 0,   scr: 6.0,  win: 0.15, winCol: 0x3A66FF },      // the screens are the only light: a blue pool on the floor
-      outside: { sky: mix(0x4A66D8, 0x6E9CFF, sky).getHex(), gnd: mix(0x2A2E8A, 0x6070D0, sky).getHex(), hemi: 0.55, keyCol: 0xDCEBFF, key: lerp(0.12, 0.05, sky),
-                 lamps: [0, 0], lampCol: 0xFFB24A, glow: 0, scr: 0.2, win: 0.35 + 0.75 * sky, winCol: mix(0x8FB4FF, 0xFFE8B0, sky).getHex(), winDist: lerp(9, 6, sky) }
-    };
-    var L = st === 'sleep' ? PRE.sleep : (function (n, d, k) {          // evening lamps (play) -> daylight (work) by dayK
-      var o = {};
-      Object.keys(d).forEach(function (p) {
-        var a = n[p], b = d[p];
-        if (Array.isArray(b)) o[p] = b.map(function (v, i) { return lerp(a[i], v, k); });
-        else if (/sky|gnd|Col$/.test(p)) o[p] = mix(a, b, k).getHex();
-        else o[p] = lerp(a, b, k);
-      });
-      return o;
-    })(PRE.play, PRE.work, smooth(6, 7.5, t) * (1 - smooth(16.4, 17.7, t)));      // the lamps are fully on by sunset, not only at night
+    var L = LIGHT.roomLight(st, t, sky);
     hemi.color.setHex(L.sky); hemi.groundColor.setHex(L.gnd); hemi.intensity = L.hemi;
     key.color.setHex(L.keyCol); key.intensity = L.key;
     if (st !== 'sleep') { var dimK = oc * smooth(6, 7.5, t) * (1 - smooth(16.4, 17.7, t)); hemi.intensity *= 1 - 0.15 * dimK; hemi.color.lerp(col(0xC8D4E8), 0.35 * dimK); }      // overcast daylight: cooler, a bit dimmer
@@ -435,10 +367,10 @@ const THREE = Object.assign({}, THREE_NS, { GLTFLoader, OrbitControls });
     (byName.keyboard || []).forEach(function (m) { if (!m.userData.c0) m.userData.c0 = m.color.clone(); m.color.copy(m.userData.c0).multiplyScalar(asleep ? 0.4 : 1); });      // the underglow must not outshine the screens at night
     cards.forEach(function (c) { c.on = dark ? 0 : 1; }); fadeCards();
     // the screens throw light into the room, tinted by what is on them
-    var tint = st === 'play' ? { dota: 0x7dffa0, cs: 0xffd9a0, other: 0xff9ad0 }[game.kind] || 0xff9ad0 : (asleep ? 0x4F7CFF : dark ? 0x8FB4FF : 0xBFE0FF);      // deep blue when asleep: the orange planks swallow a pale tint
+    var tint = LIGHT.screenTint(st, game.kind);      // deep blue when asleep: the orange planks swallow a pale tint
     screenLight.color.copy(col(tint)); screenLight.intensity = L.scr; screenLight.distance = 5;
     // the window: the sky's low colour while the lamps are on, moonlight asleep, a warm daylight spill when out
-    if (L.winCol != null) winFill.color.copy(col(L.winCol)); else winFill.color.copy(low).convertSRGBToLinear();
+    if (L.winCol !== null) winFill.color.copy(col(L.winCol)); else winFill.color.copy(low).convertSRGBToLinear();
     winFill.intensity = L.win; winFill.distance = L.winDist || 7;
     if (wxFx) { wxFx.winBase = L.win; wxFx.winCol.copy(winFill.color); }
     // out by day the sun through the window lays one hard-edged light polygon on the floor
@@ -501,28 +433,11 @@ const THREE = Object.assign({}, THREE_NS, { GLTFLoader, OrbitControls });
      made where it is seen: slanted 1 px rain lines between the glass and the sea, 2 px splashes on the sand and water,
      drops running down the glass (two scrolling 32 px tiles, nearest), a grey sky and a darker coast. A storm adds
      lightning: two hard flashes that light the coast and, through the window, the room. No flashes with reduced motion. */
-  var wx = { kind: 'clear', code: 0, precip: 0, temp: null, forced: null }, wxFx = null, sunObj = null;
-  function wxKind() { return wx.forced || wx.kind; }
-  function wxOvercast() { return { clear: 0, cloud: 0.45, drizzle: 0.7, rain: 0.85, storm: 1 }[wxKind()] || 0; }
-  function wxRain() {
-    var k = wxKind();
-    if (k === 'drizzle') return 0.25;
-    if (k !== 'rain' && k !== 'storm') return 0;
-    var r = wx.forced ? (k === 'storm' ? 1 : 0.6) : Math.min(1, 0.35 + wx.precip / 3);
-    return k === 'storm' ? Math.max(0.8, r) : r;
-  }
-  function fetchWeather() {
-    if (!window.fetch) return;
-    fetch('https://api.open-meteo.com/v1/forecast?latitude=7.88&longitude=98.39&current=temperature_2m,weather_code,precipitation&timezone=Asia%2FBangkok')
-      .then(function (r) { return r.json(); }).then(function (d) {
-        var c = (d && d.current) || {}, code = c.weather_code | 0;
-        wx.code = code; wx.precip = +c.precipitation || 0; wx.temp = c.temperature_2m; wx.at = Date.now();
-        wx.kind = code >= 95 ? 'storm' : (code >= 61 && code <= 67) || (code >= 80 && code <= 82) ? 'rain' : (code >= 51 && code <= 57) ? 'drizzle'
-          : (code >= 1 && code <= 3) || code === 45 || code === 48 ? 'cloud' : 'clear';
-        try { localStorage.setItem('wx', JSON.stringify({ at: Date.now(), kind: wx.kind, precip: wx.precip, code: wx.code, temp: wx.temp })); } catch (e) { }
-        applyTime();
-      }).catch(function () { });      // offline or blocked: the window simply stays clear
-  }
+  var wx = WX.newWeather(), wxFx = null, sunObj = null;
+  function wxKind() { return WX.effectiveKind(wx); }
+  function wxOvercast() { return WX.overcast(wx); }
+  function wxRain() { return WX.rainAmount(wx); }
+  function fetchWeather() { WX.fetchWeather(wx, applyTime); }
   function makeWeather(portal) {
     root.updateMatrixWorld(true);
     var X0 = -6, XW = 10, Z0 = -2.95, ZW = 6, i;
@@ -755,15 +670,7 @@ const THREE = Object.assign({}, THREE_NS, { GLTFLoader, OrbitControls });
       { key: 'end', end: true }
     ];
   }
-  function tourLine(k) {
-    var T = STR[lang], line = T.tour[k];
-    if (k === 'hello') {
-      var z = function (n) { return (n < 10 ? '0' : '') + n; }, st = status(), what = T[st];
-      if (st === 'play' && game.name) what += (lang === 'ru' ? ' в ' : ' ') + game.name;
-      line = line.replace('{time}', z(bkk.h) + ':' + z(bkk.m)).replace('{what}', what);
-    }
-    return line;
-  }
+  function tourLine(k) { return I18N.tourLine(lang, k, { h: bkk.h, m: bkk.m, status: status(), gameName: game.name }); }
   function makeTalkie() {
     var el = document.createElement('div'); el.className = 'talkie'; el.hidden = true;
     el.innerHTML = '<div class="talkie__say"><div class="tbub" role="status" aria-live="polite"></div><div class="tbtns"></div></div>' +
@@ -1272,68 +1179,9 @@ const THREE = Object.assign({}, THREE_NS, { GLTFLoader, OrbitControls });
   /* An opencode session that never ends: the owner asks to centre a div, the agent tries, the test says "almost", repeat.
      Every attempt is assembled from phrase pools with a seeded random, so it keeps going without visibly looping.
      Line kinds: u = the owner's prompt, a = the agent's text, t = a tool call, + / - = diff lines, o = tool output, ' ' = a gap. */
-  var ASK = ['отцентруй див', 'он всё ещё не по центру', 'теперь по вертикали уехал', 'по горизонтали ок, а по вертикали нет', 'на мобилке опять слева',
-    'ну почти, ещё чуть-чуть правее', 'стало хуже, верни как было и отцентруй', 'в сафари съехал', 'просто. отцентруй. див.', 'а теперь он по центру, но не тот див',
-    'он по центру экрана, а надо по центру родителя', 'почему он прыгает при загрузке', 'теперь скролл появился', 'дизайнер говорит, на пиксель левее', 'на 4к мониторе не по центру',
-    'при ресайзе окна уезжает', 'а если текст в две строки?', 'теперь кнопка внутри не по центру', 'окей, а оптически по центру?', 'я верю в тебя, отцентруй'];
-  var THINK = ['Понял. Сейчас отцентрую.', 'Вижу проблему: у родителя нет высоты.', 'Похоже, мешает margin у соседа.', 'Попробую через flex, это надёжнее.', 'Тут поможет grid, одна строка.',
-    'Старый добрый transform точно сработает.', 'Дело в box-sizing. Наверное.', 'Уберу предыдущую попытку и сделаю чисто.', 'Нашёл: это всё inline-block и пробел в разметке.',
-    'Проблема в скроллбаре, он съедает 15 пикселей.', 'В этот раз наверняка.', 'Ага, вложенный контейнер сбивает центр.', 'Добавлю обёртку. Ещё одну.', 'Причина в шрифте: у него смещена базовая линия.',
-    'Кажется, я понял CSS. Сейчас.', 'Спокойно. Это решаемая задача.'];
-  var TRY = [['  margin-left: 20px;', ['  margin: 0 auto;']], ['  margin: 0 auto;', ['  text-align: center;']], ['  text-align: center;', ['  display: flex;', '  justify-content: center;']],
-    ['  justify-content: center;', ['  justify-content: center;', '  align-items: center;']], ['  display: flex;', ['  display: grid;', '  place-items: center;']],
-    ['  place-items: center;', ['  position: absolute;', '  top: 50%; left: 50%;']], ['  top: 50%; left: 50%;', ['  top: 50%; left: 50%;', '  transform: translate(-50%, -50%);']],
-    ['  transform: translate(-50%, -50%);', ['  inset: 0;', '  margin: auto;']], ['  margin: auto;', ['  display: table-cell;', '  vertical-align: middle;']],
-    ['  vertical-align: middle;', ['  line-height: 100vh;']], ['  line-height: 100vh;', ['  padding-top: 47.3%;']], ['  padding-top: 47.3%;', ['  margin-left: calc(50% - 137px);']],
-    ['  margin-left: calc(50% - 137px);', ['  margin-left: calc(50% - 136.5px) !important;']], ['  height: auto;', ['  height: 100%;', '  min-height: 100vh;']],
-    ['  min-height: 100vh;', ['  min-height: 100dvh;']], ['  width: 100vw;', ['  width: 100%;']], ['  align-items: center;', ['  align-items: safe center;']],
-    ['  <div class="box">', ['  <center><div class="box">']], ['  left: 50%;', ['  left: 49.9%; /* оптически */']], ['  .wrapper {', ['  .wrapper .wrapper-inner .wrapper-center {']]];
-  var FILES = ['src/styles.css', 'src/App.vue', 'src/components/Box.vue', 'src/layouts/default.vue', 'src/assets/main.css'];
-  var MISS = ['на %dpx левее центра', 'на %dpx правее центра', 'на %dpx выше центра', 'на %dpx ниже центра', 'по центру, но только в Chrome', 'по центру, пока не открыть консоль',
-    'по центру на 1920px, на 1921px уже нет', 'на %d.5px левее центра', 'по центру, но это другой див', 'по центру страницы, а не родителя', 'центр найден, див не найден', 'на %dpx левее в Safari'];
-  var AFTER = ['Почти. Осталось чуть-чуть.', 'Странно, у меня работало.', 'Это уже ближе.', 'Хм. Попробую иначе.', 'Теперь точно знаю, в чём дело.', 'Кто вообще придумал CSS.',
-    'Интересный случай.', 'Это особенность браузера, но я её обойду.', 'Мы на верном пути.', 'Зафиксирую прогресс и продолжу.', 'Ещё один подход.', 'Не сдаёмся.'];
-  var codeS = { lines: [], queue: [], cur: null, shown: 0, wait: 0, n: 0, seed: 20261124, last: 0 };
-  function codeRnd() { codeS.seed = (codeS.seed * 1664525 + 1013904223) >>> 0; return codeS.seed / 4294967296; }
-  function pick(a) {                               // never the same phrase from a pool twice in a row, nor one of its last few
-    var i, tries = 0; a._seen = a._seen || [];
-    do { i = Math.floor(codeRnd() * a.length); } while (a._seen.indexOf(i) >= 0 && ++tries < 12);
-    a._seen.push(i); if (a._seen.length > Math.min(6, a.length - 1)) a._seen.shift();
-    return a[i];
-  }
-  function codeAttempt() {
-    var q = codeS.queue, n = ++codeS.n, t = pick(TRY), file = pick(FILES), win = n % 9 === 0;
-    q.push(['u', n === 1 ? ASK[0] : pick(ASK)], [' ', '']);
-    q.push(['a', pick(THINK)]);
-    if (codeRnd() < 0.45) q.push(['t', 'Read  ' + file]);
-    if (codeRnd() < 0.25) q.push(['t', 'Grep  "center" in src']);
-    q.push(['t', 'Edit  ' + file], ['-', t[0]]);
-    t[1].forEach(function (l) { q.push(['+', l]); });
-    q.push(['t', 'Bash  npx playwright test center.spec.ts']);
-    if (win) q.push(['o', '  ✓ div is centered (1.' + Math.floor(codeRnd() * 9) + 's)'], ['a', 'Готово! Див по центру. Попытка №' + n + '.'], [' ', '']);
-    else q.push(['o', '  ✗ div is centered: ' + pick(MISS).replace('%d', String(1 + Math.floor(codeRnd() * 14)))], ['a', pick(AFTER) + ' Попытка №' + (n + 1) + '.'], [' ', '']);
-  }
-  function codeStep(dt) {
-    var S2 = codeS;
-    while (dt > 0) {
-      if (S2.wait > 0) { var w = Math.min(S2.wait, dt); S2.wait -= w; dt -= w; continue; }
-      if (!S2.cur) {
-        if (!S2.queue.length) codeAttempt();
-        S2.cur = S2.queue.shift(); S2.shown = (S2.cur[0] === 'u' || S2.cur[0] === 'a') ? 0 : S2.cur[1].length;      // prose is typed, tool lines land whole
-      }
-      var typed = S2.cur[0] === 'u' || S2.cur[0] === 'a';
-      if (typed && S2.shown < S2.cur[1].length) {
-        var rate = S2.cur[0] === 'u' ? 16 : 42, need = (S2.cur[1].length - S2.shown) / rate;      // the owner types slower than the agent
-        if (dt < need) { S2.shown += dt * rate; break; }
-        S2.shown = S2.cur[1].length; dt -= need;
-      }
-      S2.lines.push(S2.cur); if (S2.lines.length > 40) S2.lines.shift();
-      S2.wait = { u: 0.7, a: 0.45, t: 0.5, '+': 0.12, '-': 0.12, o: 0.9, ' ': 0.25 }[S2.cur[0]] || 0.2;
-      S2.cur = null;
-    }
-  }
+  var codeS = new CodeSession();
   function drawCode(t) {
-    codeStep(codeS.last ? Math.min(Math.max(t - codeS.last, 0), 0.25) : (RMOTION ? 40 : 6)); codeS.last = t;      // starts a few lines in, never from an empty screen
+    codeS.step(codeS.last ? Math.min(Math.max(t - codeS.last, 0), 0.25) : (RMOTION ? 40 : 6)); codeS.last = t;      // starts a few lines in, never from an empty screen
     paintCode(liveC.code, t, 1);
     if (liveC.codeR && zoomed) { var d = liveC.codeR.userData; paintCode(liveC.codeR, t, d.dpr); }      // the readable copy for the desktop window
   }
@@ -1395,7 +1243,7 @@ const THREE = Object.assign({}, THREE_NS, { GLTFLoader, OrbitControls });
       if (rows[i][2] && Math.floor(t * 3) % 2) { g.fillStyle = '#fab283'; g.fillRect(x + g.measureText(tx).width + 2, y - 7, 7, 14); }
     }
     // prompt box and footer
-    var by = H - 66, asking = codeS.cur && codeS.cur[0] === 'u';
+    var by = H - 66, asking = codeS.asking;
     g.fillStyle = '#141414'; g.fillRect(pad, by, W - pad * 2, 34); g.fillStyle = '#fab283'; g.fillRect(pad, by, 3, 34);
     if (Math.floor(t * 2) % 2) { g.fillStyle = '#eeeeee'; g.fillRect(pad + 14, by + 10, 8, 14); }
     g.font = '12px Menlo, Consolas, monospace';
@@ -1776,7 +1624,7 @@ const THREE = Object.assign({}, THREE_NS, { GLTFLoader, OrbitControls });
 
   /* ---------- boot ---------- */
   // the weather goes first, in parallel with the room; the last answer is remembered so a repeat visit starts with it
-  try { var wx0 = JSON.parse(localStorage.getItem('wx') || 'null'); if (wx0 && Date.now() - wx0.at < 3 * 3600e3) { wx.kind = wx0.kind; wx.precip = wx0.precip; wx.code = wx0.code; wx.temp = wx0.temp; wx.at = wx0.at; } } catch (e) { }
+  WX.restoreWeather(wx, Date.now());
   fetchWeather(); setInterval(fetchWeather, 15 * 60e3);
   applyLang(); readClock(); applyTime();
   function fail() { $('loading').style.opacity = 0; $('note').style.opacity = 0; var p = $('pin'); p.hidden = false; p.style.left = '50%'; p.style.top = '50%'; }
