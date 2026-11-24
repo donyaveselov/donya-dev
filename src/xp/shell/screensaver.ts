@@ -20,11 +20,7 @@ let offs: (() => void)[] = [];
 export const saverRunning = (): boolean => !!saverEl;
 
 /** The 16:9 glass the host draws its saver on, of which this canvas (W x H) shows the centred part. */
-export function hostWindow(
-  W: number,
-  H: number,
-  base: number,
-): { k: number; fw: number; fh: number; bw: number; bh: number } {
+function hostWindow(W: number, H: number, base: number): { k: number; fw: number; fh: number; bw: number; bh: number } {
   const A = 16 / 9;
   const V = W / H;
   const fw = V > A ? 1 : V / A;

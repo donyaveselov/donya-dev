@@ -26,7 +26,7 @@ import { clampWindows, closeAll } from './window';
 let teardown: (() => void)[] = [];
 
 /** Size classes: phone up to 520 px wide, compact up to 820, desk above; the taskbar is taller on phones. */
-export function sizeClass(w: number): 'phone' | 'compact' | 'desk' {
+function sizeClass(w: number): 'phone' | 'compact' | 'desk' {
   return w <= 520 ? 'phone' : w <= 820 ? 'compact' : 'desk';
 }
 

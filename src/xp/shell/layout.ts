@@ -112,7 +112,7 @@ export function arrangeRect(mode: ArrangeMode, i: number, n: number, r: Rect, mi
 
 /* ------------------------------------------------------------------ desktop icon grid */
 
-export const iconCell = (phone: boolean): Size => (phone ? { w: 84, h: 92 } : { w: 76, h: 82 });
+const iconCell = (phone: boolean): Size => (phone ? { w: 84, h: 92 } : { w: 76, h: 82 });
 export const gridRows = (area: Size, phone: boolean): number =>
   Math.max(1, Math.floor((area.h - 8) / iconCell(phone).h));
 export const gridCols = (area: Size, phone: boolean): number =>

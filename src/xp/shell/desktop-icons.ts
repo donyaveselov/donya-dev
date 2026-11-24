@@ -342,7 +342,7 @@ function arrangeIcons(by: 'name' | 'type'): void {
 }
 
 /** F5 / Refresh: the icons blink and the wallpaper repaints. */
-export function refreshDesktop(): void {
+function refreshDesktop(): void {
   const icons = domOrNull()?.icons;
   if (!icons) return;
   icons.classList.add('xp--flicker');

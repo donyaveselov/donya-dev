@@ -109,8 +109,6 @@ export interface StatusBar {
   cell(i: number): HTMLDivElement | undefined;
 }
 
-export type Kit = ReturnType<typeof ui>;
-
 export function ui(api: XPAppApi) {
   let bindings: (() => void)[] = [];
   let cleanups: (() => void)[] = [];
@@ -241,13 +239,6 @@ export function ui(api: XPAppApi) {
   function onCleanup(fn: () => void): void {
     cleanups.push(fn);
   }
-  function every(ms: number, fn: () => void): number {
-    const id = window.setInterval(fn, ms);
-    cleanups.push(() => {
-      clearInterval(id);
-    });
-    return id;
-  }
   function later(ms: number, fn: () => void): number {
     const id = window.setTimeout(fn, ms);
     cleanups.push(() => {
@@ -257,7 +248,7 @@ export function ui(api: XPAppApi) {
   }
 
   /** A menu bar: hover between open menus, arrow keys, Escape, and items that may be disabled or checked. */
-  function menubar(menus: MenuDef[]): HTMLDivElement & { closeMenu: (focusBack: boolean) => void } {
+  function menubar(menus: MenuDef[]): HTMLDivElement {
     const bar = h('div.xpa-menubar', { role: 'menubar' });
     let openIdx = -1;
     let drop: HTMLDivElement | null = null;
@@ -406,7 +397,7 @@ export function ui(api: XPAppApi) {
     bind(() => {
       if (drop) close(false);
     });
-    return Object.assign(bar, { closeMenu: close });
+    return bar;
   }
 
   function tbtn(o: ToolButton): HTMLButtonElement {
@@ -577,13 +568,10 @@ export function ui(api: XPAppApi) {
     t,
     h,
     bind,
-    refresh,
     icon,
     glyph,
     sound,
-    listen,
     onCleanup,
-    every,
     later,
     menubar,
     toolbar,

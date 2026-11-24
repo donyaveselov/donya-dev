@@ -1,6 +1,6 @@
 // The window manager: windows with title bars, taskbar buttons, z-order, focus, minimize / maximize / restore with
 // their XP-style "ghost" animations, title-bar dragging, edge resizing, cascade / tile and Show Desktop.
-import type { Lang, XPAppApi, XPAppDef } from '../../shared/types';
+import type { Lang, XPAppDef } from '../../shared/types';
 import type { Text } from '../../shared/i18n';
 import { animate, clamp, closest, css, EASE_IN, EASE_OUT, EASE_STD, esc, h, now, reduced } from './dom';
 import { isPhone, localPt, localRect, type Pt, work } from './geometry';
@@ -67,7 +67,7 @@ const CAPTION_H = 28;
 let seq = 0;
 let zCounter = 0;
 
-export function zSort(): void {
+function zSort(): void {
   S.wins.sort((a, b) => a.modalRank - b.modalRank || a.zo - b.zo);
   S.wins.forEach((w, i) => {
     w.el.style.zIndex = String(w.o.cover && w.state !== 'min' ? 8000 : 100 + i * 2);
@@ -85,7 +85,7 @@ export function setActive(win: Win | null): void {
   domOrNull()?.desk.classList.toggle('xp--blur', !!w);
 }
 
-export function topWindow(excl?: Win): Win | null {
+function topWindow(excl?: Win): Win | null {
   for (let i = S.wins.length - 1; i >= 0; i--) {
     const w = S.wins[i];
     if (w && w !== excl && w.state !== 'min' && !w.closed) return w;
@@ -160,7 +160,6 @@ export class Win {
   cleanup: (() => void) | null = null;
   unblock: (() => void) | null = null;
   customTitle: string | null = null;
-  api: XPAppApi | null = null;
   /** The tab a built-in program shows (kept across language repaints). */
   tab: string | null = null;
   private readonly title: Text;
@@ -698,7 +697,7 @@ export function startFlash(w: Win): void {
   }, 500);
 }
 
-export function stopFlash(w: Win): void {
+function stopFlash(w: Win): void {
   clearInterval(w.flashT);
   w.task?.classList.remove('xp--flashed');
 }

@@ -92,7 +92,6 @@ function makeApi(w: Win, params: XPAppParams | undefined): XPAppApi {
 
 function runRender(w: Win, app: XPAppDef, params: XPAppParams | undefined): void {
   const api = makeApi(w, params);
-  w.api = api;
   try {
     const c = app.render(w.body, api);
     w.cleanup = typeof c === 'function' ? c : null;

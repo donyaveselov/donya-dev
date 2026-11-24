@@ -50,8 +50,6 @@ export const ICONS = {
   ),
 } as const;
 
-export type IconName = keyof typeof ICONS;
-
 /** Toolbar glyphs: [16 px original, 24 px original for the large toolbar buttons]. */
 const GLYPHS: Readonly<Record<string, readonly [string, string?]>> = {
   back: ['tbBack', 'tbBack24'],
