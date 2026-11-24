@@ -1,5 +1,5 @@
 // The built-in programs: Run, About, Task Manager and Display Properties (wallpaper, CRT effect, screen saver).
-import type { Bilingual, XPAppDef, XPAppParams } from '../../shared/types';
+import type { Bilingual, XPAppParams } from '../../shared/types';
 import { openApp } from './apps';
 import { bsod, turnOffDialog } from './session';
 import { clamp, esc, h, qs, storeGet, storeSet } from './dom';
@@ -12,6 +12,7 @@ import { appList, domOrNull, type Prefs, type SaverKind, S, savePrefs } from './
 import { L, PC_NAME, T, VERSION } from './strings';
 import { paintWall, WALLS, wallLabel, wallSVG } from './wallpaper';
 import { growIn, Win } from './window';
+import { findApp } from './find-app';
 
 interface SysDef {
   title: Bilingual;
@@ -24,21 +25,6 @@ interface SysDef {
   minW?: number;
   minH?: number;
   render(body: HTMLElement, w: Win, params: XPAppParams | undefined): (() => void) | undefined;
-}
-
-/** The app a Run box or terminal query names: an exact id, then an exact title, then an id or title prefix. */
-export function findApp(query: string, apps: readonly XPAppDef[]): string | null {
-  const q0 = query
-    .trim()
-    .toLowerCase()
-    .replace(/\.exe$/, '');
-  if (!q0) return null;
-  const titles = (a: XPAppDef): string[] => [a.title.ru.toLowerCase(), a.title.en.toLowerCase()];
-  const hit =
-    apps.find((a) => a.id.toLowerCase() === q0) ??
-    apps.find((a) => titles(a).includes(q0)) ??
-    apps.find((a) => a.id.toLowerCase().startsWith(q0) || titles(a).some((t) => t.startsWith(q0)));
-  return hit?.id ?? null;
 }
 
 /** Run box commands that are not app names. */

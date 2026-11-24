@@ -4,8 +4,7 @@ import { isBilingual, type Text } from '../../shared/i18n';
 import type { Bilingual, Lang, XPAppApi, XPDialogOptions } from '../../shared/types';
 import { G16, G24, iconMarkup } from './icons';
 
-const reducedMQ = window.matchMedia('(prefers-reduced-motion: reduce)');
-export const reduced = (): boolean => reducedMQ.matches;
+export { reduced } from '../shell/dom';
 
 export const pad = (n: number | string, w = 2): string => String(n).padStart(w, '0');
 

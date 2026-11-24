@@ -7,7 +7,6 @@
 /* eslint-disable @typescript-eslint/restrict-plus-operands -- markup concatenated as in the product's own code, from fixed data */
 import type { Lang } from '../../../shared/types';
 
-
 function L<T>(lang: Lang, ru: T, en: T): T {
   return lang === 'en' ? en : ru;
 }

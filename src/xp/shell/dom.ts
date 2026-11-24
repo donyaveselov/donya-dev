@@ -1,9 +1,10 @@
 // Small DOM, timing and storage helpers shared by the shell modules.
 
-const MQ_REDUCED = window.matchMedia('(prefers-reduced-motion: reduce)');
-export const MQ_COARSE = window.matchMedia('(pointer: coarse)');
-
-export const reduced = (): boolean => MQ_REDUCED.matches;
+// media queries made on first use, so the pure helpers here load without a window (in unit tests)
+let mqReduced: MediaQueryList | null = null;
+let mqCoarse: MediaQueryList | null = null;
+export const reduced = (): boolean => (mqReduced ??= window.matchMedia('(prefers-reduced-motion: reduce)')).matches;
+export const coarsePointer = (): boolean => (mqCoarse ??= window.matchMedia('(pointer: coarse)')).matches;
 /** A motion duration: 1 ms when the visitor asked for reduced motion. */
 export const D = (ms: number): number => (reduced() ? 1 : ms);
 export const now = (): number => performance.now();

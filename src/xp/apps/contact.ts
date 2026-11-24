@@ -70,7 +70,7 @@ const BADGES: Record<Contact['id'], string> = {
 };
 
 /** The contact `d` steps from the current one, wrapping around (or stopping at the ends). */
-export function stepContact(i: number, dir: 1 | -1, wrap: boolean): number {
+function stepContact(i: number, dir: 1 | -1, wrap: boolean): number {
   const n = CONTACTS.length;
   return wrap ? (i + dir + n) % n : Math.max(0, Math.min(n - 1, i + dir));
 }

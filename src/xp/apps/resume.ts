@@ -57,7 +57,7 @@ const T = {
 } as const satisfies Record<string, Bilingual>;
 
 /** Name, role and contacts as plain text, for the clipboard. */
-export function contactsText(t: (d: Text) => string): string {
+function contactsText(t: (d: Text) => string): string {
   return `${t(PERSON.name)} — ${t(PERSON.role)}\n${CONTACTS.map((c) => `${t(c.label)}: ${c.value}`).join('\n')}`;
 }
 

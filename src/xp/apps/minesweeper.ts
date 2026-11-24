@@ -4,8 +4,8 @@ import type { Bilingual, XPAppApi } from '../../shared/types';
 import { ico } from '../icons';
 import { registerApp } from '../shell/apps';
 import { ICONS } from './icons';
-import { pad, reduced, ui } from './kit';
-import { Board } from './minesweeper-board';
+import { reduced, ui } from './kit';
+import { Board, ledDigits } from './minesweeper-board';
 
 const d = (ru: string, en: string): Bilingual => ({ ru, en });
 
@@ -77,9 +77,6 @@ const FACES: Record<Face, string> = {
   dead: sprite('ms_dead', '0 0 17 17', 17),
   cool: sprite('ms_win', '0 0 17 17', 17),
 };
-
-/** The three digits of an LED counter: -99..999. */
-export const ledDigits = (n: number): string => (n < 0 ? `-${pad(Math.min(99, -n), 2)}` : pad(Math.min(999, n), 3));
 
 function led(n: number): string {
   const s = ledDigits(n);

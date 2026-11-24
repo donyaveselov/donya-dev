@@ -4,7 +4,7 @@ import type { XPDesktopApi, XPMountOptions, XPOpenOptions } from '../../shared/t
 import { openApp, registerApp, setRegisterHook } from './apps';
 import { clearBalloons, showBalloon } from './balloon';
 import { clockText, status } from './clock';
-import { closest, h, MQ_COARSE, now, on, reflow, sessSet } from './dom';
+import { closest, h, coarsePointer, now, on, reflow, sessSet } from './dom';
 import { dialog } from './dialog';
 import { forgetIcons, layoutIcons, wireDesk } from './desktop-icons';
 import { startGame } from './game';
@@ -40,7 +40,7 @@ function computeSize(): void {
   S.w = w;
   S.h = hgt;
   S.size = sizeClass(w);
-  S.touch = MQ_COARSE.matches || ('ontouchstart' in window && navigator.maxTouchPoints > 0);
+  S.touch = coarsePointer() || ('ontouchstart' in window && navigator.maxTouchPoints > 0);
   R.root.classList.toggle('xp--phone', S.size === 'phone');
   R.root.classList.toggle('xp--compact', S.size === 'compact');
   R.root.classList.toggle('xp--tiny', w < 400);

@@ -6,6 +6,7 @@ import { DEVICES, type StackItem } from '../content/stack';
 import { registerApp } from '../shell/apps';
 import { G16, ICONS } from './icons';
 import { pad, phuketNow, reduced, ui } from './kit';
+import { hms, nextLoad } from './about-stats';
 
 const d = (ru: string, en: string): Bilingual => ({ ru, en });
 
@@ -172,15 +173,6 @@ const TABS: readonly { id: TabId; label: Bilingual }[] = [
   { id: 'remote', label: T.remote },
 ];
 const isTab = (v: unknown): v is TabId => TABS.some((x) => x.id === v);
-
-/** hh:mm:ss of a duration in seconds. */
-export const hms = (s: number): string => `${pad(Math.floor(s / 3600))}:${pad(Math.floor(s / 60) % 60)}:${pad(s % 60)}`;
-
-/** The next sample of the focus graph: a random walk inside the status's load range. */
-export function nextLoad(last: number | undefined, [lo, hi]: [number, number], rnd: number): number {
-  const prev = last ?? (lo + hi) / 2;
-  return Math.max(lo, Math.min(hi, prev + (rnd - 0.5) * (hi - lo) * 0.6));
-}
 
 function render(content: HTMLElement, api: XPAppApi): () => void {
   const U = ui(api);

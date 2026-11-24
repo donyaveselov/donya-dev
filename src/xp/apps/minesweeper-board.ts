@@ -119,3 +119,7 @@ export class Board {
     return true;
   }
 }
+
+/** The three digits of an LED counter: -99..999. */
+export const ledDigits = (n: number): string =>
+  n < 0 ? `-${String(Math.min(99, -n)).padStart(2, '0')}` : String(Math.min(999, n)).padStart(3, '0');

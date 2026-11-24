@@ -7,7 +7,6 @@ import type { Lang } from '../../../shared/types';
 type BatchStatus = 'draft' | 'awaiting_platform' | 'awaiting_manufacturer' | 'confirmed';
 type JobStatus = 'running' | 'success' | 'failed' | 'cancelled';
 
-
 function esc(s: string | number): string {
   return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }

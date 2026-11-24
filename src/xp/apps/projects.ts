@@ -114,7 +114,7 @@ const README: Bilingual = {
 const bare = (url: string): string => url.replace(/^https?:\/\//, '');
 
 /** stack.txt of a project, in one language. */
-export function stackText(p: Project, lang: Lang): string {
+function stackText(p: Project, lang: Lang): string {
   return `${p.name[lang]} — ${T.stack[lang]}\r\n${'='.repeat(31)}\r\n\r\n${p.stack.map((s) => `  * ${s}`).join('\r\n')}\r\n`;
 }
 
@@ -132,7 +132,7 @@ interface Item {
 }
 
 /** The items of a folder; path is [] (the root) or [projectId]. */
-export function listItems(path: readonly string[], t: (d: Text) => string): Item[] {
+function listItems(path: readonly string[], t: (d: Text) => string): Item[] {
   const id = path[0];
   if (id === undefined)
     return [
