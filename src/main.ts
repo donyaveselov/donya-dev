@@ -1,10 +1,6 @@
-// Entry point. Evaluation order matters and matches build.py: styles, the XP icons, the XP shell, the XP apps
-// (in xp/apps/manifest.json order), then the room, which mounts the desktop on demand through window.XPDesktop.
+// Entry point. Evaluation order matters and matches build.py: the room's styles, the desktop (its styles, icons, shell
+// and apps), then the room, which mounts the desktop on demand through window.XPDesktop.
 import './room/room.css';
-import './styles/xp.css';
-import './styles/apps.css';
-import './styles/mocks-verifikat.css';
-import './styles/mocks-kompi.css';
 
 import './xp';
 

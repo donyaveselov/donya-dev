@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest';
 // NDA: the desktop must never name this employer or repository (the room's own resume sheet in index.html is not
 // part of the desktop).
 const FORBIDDEN = [/Жуковск/i, /Zhukovsk/i, /main-frontend/i];
-const DIRS = [fileURLToPath(new URL('.', import.meta.url)), fileURLToPath(new URL('../styles', import.meta.url))];
+const DIRS = [fileURLToPath(new URL('.', import.meta.url))];
 
 function files(dir: string): string[] {
   return readdirSync(dir).flatMap((n) => {

@@ -11,13 +11,17 @@ harness. Ports replace the legacy modules one at a time, and the harness checks 
 
 ```
 index.html                 page head (fonts, title) and the room's markup (top bar, drawer, resume sheet)
-src/main.ts                entry: CSS, then XP icons, XP shell, XP apps (old manifest order), then the room
+src/main.ts                entry: the room's CSS, then the desktop (src/xp), then the room
 src/room/                  the room (old parts/app.js), typed modules: room.ts boots and wires them (see its header)
-src/xp/legacy/             the desktop shell (core.ts) and the XP icon bitmaps (icons-xp.ts)
-src/xp/legacy/apps/        the desktop apps (old xp/apps/*.js)
-src/xp/apps/               ported apps go here
+src/xp/                    the Windows XD desktop: index.ts imports its CSS, install.ts (window.XPDesktop), the apps
+src/xp/shell/              the shell: window manager (window.ts, layout.ts), taskbar, start menu, menus, dialogs,
+                           desktop icons, session (boot / shutdown), screen savers, system apps, sounds, hotkeys,
+                           state/prefs, strings; desktop.ts is the public API
+src/xp/apps/               the apps (kit.ts is their UI kit), their DOM-free logic (*-board, *-parse, ...) and tests
+src/xp/content/            the desktop's content: projects, profile and contacts, the tech stack, the resume
+src/xp/assets/             the XP bitmaps (xp-icons.json), Bliss and the Wax screenshots
+src/xp/styles/             xp.css, apps.css, mocks-*.css
 src/shared/                types (window globals, the XPDesktop contract), i18n helpers
-src/styles/                xp.css, apps.css, mocks-*.css (the room's own CSS is src/room/room.css)
 public/room.json           the packed model ({"gz": base64(gzip(GLB))}), fetched at runtime with ?v=<md5>
 public/games, public/wall  splash screens and wallpapers the page loads by relative URL
 scripts/pack-room.mjs      blender/room.glb -> public/room.json (gltfpack 0.24.0, as build.py did)
@@ -88,5 +92,4 @@ additionally ignores pixels that differ between the baseline and re-runs of it.
   The rain's particles use the same stream, so anything that changes how many three objects exist before them (a
   removed mesh, three's own module-level objects dropped by tree shaking) moves the drops in `wx-rain` and `wx-storm`
   (about 0.02-0.04 %) without any change in behaviour.
-- The XP desktop must never mention the NDA employer or its repository; `src/xp/nda.test.ts` checks `src/xp` and
-  `src/styles`. The room's own resume sheet in `index.html` is a separate, public document.
+- The XP desktop must never mention the NDA employer or its repository; `src/xp/nda.test.ts` checks all of `src/xp`. The room's own resume sheet in `index.html` is a separate, public document.

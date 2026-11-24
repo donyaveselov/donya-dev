@@ -1,4 +1,8 @@
-// The Windows XD desktop: the shell, then the apps in registration order (the order of the desktop icons).
+// The Windows XD desktop: its styles, the shell, then the apps in registration order (the order of the desktop icons).
+import './styles/xp.css';
+import './styles/apps.css';
+import './styles/mocks-verifikat.css';
+import './styles/mocks-kompi.css';
 import './install';
 import './apps/projects';
 import './apps/resume';
