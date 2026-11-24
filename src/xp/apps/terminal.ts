@@ -715,6 +715,7 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
     const cols = Math.ceil(w / size);
     const drops: number[] = [];
     for (let i = 0; i < cols; i++) drops.push(Math.random() * -20);
+    const font = `${String(size)}px monospace`;
     const chars = 'アイウエオカキクケコサシスセソ0123456789VUEDJANGOPYTHON<>{}=/';
     let id = 0;
     let stopT = 0;
@@ -722,7 +723,7 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
       if (!ctx) return;
       ctx.fillStyle = 'rgba(0,0,0,.08)';
       ctx.fillRect(0, 0, w, hh);
-      ctx.font = `${String(size)}px monospace`;
+      ctx.font = font;
       for (let i = 0; i < cols; i++) {
         const ch = chars[Math.floor(Math.random() * chars.length)] ?? '0';
         ctx.fillStyle = Math.random() < 0.05 ? '#d7ffd7' : '#00e040';

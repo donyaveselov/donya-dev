@@ -66,6 +66,8 @@ export function startSaver(kind: SaverKind = S.prefs.saver): void {
       c.fillStyle = 'rgba(0,0,0,.45)';
       c.fillRect(0, 0, W, H);
       const speed = reduced() ? 0.5 : 6;
+      // one white fill, each star's brightness as the global alpha: no colour string per star per frame
+      c.fillStyle = '#fff';
       for (const s of stars) {
         s.z -= speed;
         if (s.z <= 1) {
@@ -81,11 +83,12 @@ export function startSaver(kind: SaverKind = S.prefs.saver): void {
           s.z = 0;
           continue;
         }
-        c.fillStyle = `rgba(255,255,255,${String(Math.min(1, 1.2 - s.z / W))})`;
+        c.globalAlpha = Math.min(1, 1.2 - s.z / W);
         c.beginPath();
         c.arc(x, y, r, 0, 6.283);
         c.fill();
       }
+      c.globalAlpha = 1;
     } else {
       c.fillStyle = '#0a1a4a'; // the room's monitors show the same deep blue (the room's SAVER_BG)
       c.fillRect(0, 0, W, H);
