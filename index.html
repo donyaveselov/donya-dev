@@ -31,16 +31,38 @@
   .bar, .loading, .note, .sheet-back, .cv-print { display: none !important; }
   html body.booting > :not(.loading) { visibility: visible !important; }
 </style></noscript>
+<script>
+  /* The sky's colours before the first paint: the Phuket hour (or a previewed one) gives the owner's status, the status
+     its backdrop. A copy of statusAt (src/modules/room/store/clock.ts) and BACKDROP (scene/lighting.ts) without the
+     Discord reading, which arrives later; src/modules/room/boot-sky.test.ts keeps the two in step. */
+  (function () {
+    var BACKDROP = { work: ['#0B3B4A', '#1C7A78'], play: ['#241B52', '#8A3A4A'], sleep: ['#050B24', '#10245A'], outside: ['#0A4A6E', '#18807E'] };
+    var HOURS = { day: 13, sunset: 18.2, night: 1.5 };
+    var GAMES = { dota: 1, cs: 1, pcdota: 1 };
+    var own = function (o, k) { return Object.prototype.hasOwnProperty.call(o, k); };
+    var hash = location.hash.slice(1);
+    var status;
+    if (own(BACKDROP, hash)) status = hash;
+    else if (own(GAMES, hash)) status = 'play';
+    else {
+      var now = new Date();
+      var h = own(HOURS, hash) ? HOURS[hash] : ((now.getUTCHours() + 7) % 24) + now.getUTCMinutes() / 60;
+      status = h < 8 || h >= 23.5 ? 'sleep' : h >= 10 && h < 19 ? 'work' : h >= 20.5 ? 'play' : 'outside';
+    }
+    var root = document.documentElement.style;
+    root.setProperty('--sky-top', BACKDROP[status][0]);
+    root.setProperty('--sky-bottom', BACKDROP[status][1]);
+  })();
+</script>
 <style>
   /* The first paint, before any script, stylesheet or font arrives: the sky and the talkie's mouth talking. The mouth
      is a pixel-art SVG in a data URL that animates itself (scripts/talkie-loader.mjs). */
-  html, body { margin: 0; height: 100%; background: #0d1630; color: #fff; }
+  html, body { margin: 0; height: 100%; background: var(--sky-top, #0d1630); color: #fff; }
   /* until the room (or the plain page without 3D) is ready, the loader is all there is: no half-filled top bar */
   body.booting > :not(.loading) { visibility: hidden !important; }
-  /* a curtain of its own colour: the sky behind it takes the hour's colours as soon as the script runs, and shows
-     only when the curtain fades out over the room */
+  /* the loader stands on the very sky the room will have (the script above), and fades out over the room */
   .loading { position: fixed; inset: 0; z-index: 8; display: grid; place-content: center; pointer-events: none;
-    background: #0d1630; transition: opacity 0.4s; }
+    background: linear-gradient(var(--sky-top, #0d1630), var(--sky-bottom, #25325a)); transition: opacity 0.4s; }
   .talkie-loader { display: block; overflow: hidden; filter: drop-shadow(0 4px 0 rgba(0, 0, 0, 0.25)); }
   @media (prefers-reduced-motion: reduce) {
     .loading { transition: none; }
