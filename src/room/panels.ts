@@ -5,6 +5,7 @@ import { EXPERIENCE } from '../shared/experience';
 import type { Lang, Status } from '../shared/types';
 import { isStatus } from './clock';
 import { isAriaKey, isMarkupKey, t, timeChip } from './i18n';
+import { fitPixelBox } from './tags';
 import { byId } from './util';
 
 const hash = (): string => location.hash.replace('#', '');
@@ -20,6 +21,9 @@ export class Panels {
   private returnFocus: HTMLElement | null = null;
 
   constructor() {
+    void document.fonts.ready.then(() => {
+      this.fitChips(); // the pixel font changes the widths
+    });
     byId('open-resume').addEventListener('click', () => {
       this.openResume();
     });
@@ -98,6 +102,12 @@ export class Panels {
       document.createElement('i'),
       document.createTextNode(timeChip(lang, h, m, status, gameName)),
     );
+    fitPixelBox(this.time);
+  }
+
+  /** The top bar's pixel badges on whole pixels (an even width each), or their frames smear. */
+  private fitChips(): void {
+    document.querySelectorAll<HTMLElement>('.bar .chip').forEach((el) => fitPixelBox(el));
   }
 
   /** The page in a language: every data-t string and accessible name, the language switch. */
@@ -115,6 +125,7 @@ export class Panels {
     byId('cv-note').hidden = !T.resumeNote;
     byId('lang-ru').setAttribute('aria-pressed', String(lang === 'ru'));
     byId('lang-en').setAttribute('aria-pressed', String(lang === 'en'));
+    this.fitChips();
   }
 }
 
