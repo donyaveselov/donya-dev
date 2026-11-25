@@ -42,7 +42,9 @@ export class Panels {
       if (e.key === 'Escape') this.closeResume();
       else if (e.key === 'Tab' && !this.sheet.hidden) this.trapTab(e);
     });
-    byId('cv-years').textContent = EXPERIENCE.ru; // the sheet is in Russian; the markup holds the value for no-JS
+    // the markup holds a value for no-JS; the years go on counting
+    byId('cv-years').textContent = EXPERIENCE.ru;
+    byId('cv-years-en').textContent = EXPERIENCE.en;
   }
 
   /** Whether the resume sheet covers the page (the room need not be drawn under it). */
@@ -140,9 +142,11 @@ export class Panels {
       const key = el.getAttribute('data-room-aria');
       if (isAriaKey(key)) el.setAttribute('aria-label', T.aria[key]);
     });
-    byId('cv-note').hidden = !T.resumeNote;
-    byId('lang-ru').setAttribute('aria-pressed', String(lang === 'ru'));
-    byId('lang-en').setAttribute('aria-pressed', String(lang === 'en'));
+    // the resume sheet holds both languages (index.html): the page's language shows one, names the dialog, prints
+    for (const block of this.sheet.querySelectorAll<HTMLElement>('.cv-lang')) block.hidden = block.lang !== lang;
+    this.sheet.setAttribute('aria-labelledby', lang === 'ru' ? 'cv-name' : 'cv-name-en');
+    for (const b of document.querySelectorAll('button[data-lang]'))
+      b.setAttribute('aria-pressed', String(b.getAttribute('data-lang') === lang));
     this.fitChips();
   }
 }

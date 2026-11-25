@@ -259,11 +259,34 @@ button.chip:active {
   text-decoration-color: rgba(0, 0, 0, 0.25);
   text-underline-offset: 2px;
 }
-.cv-print {
+/* the sheet's top right: its own language switch (the sheet covers the bar's) and Print */
+.cv-tools {
   position: fixed;
   z-index: 31;
   right: max(16px, env(safe-area-inset-right, 0px));
   top: calc(env(safe-area-inset-top, 0px) + 14px);
+  display: flex;
+  gap: 8px;
+}
+.cv-langs {
+  display: flex;
+  padding: 2px;
+  border: 1.5px solid var(--ink);
+  border-radius: 999px;
+}
+.cv-langs button {
+  background: transparent;
+  color: var(--ink-muted);
+  border: 0;
+  border-radius: 999px;
+  padding: 4.5px 10px;
+  font-weight: 500;
+}
+.cv-langs button[aria-pressed='true'] {
+  background: var(--ink);
+  color: #fff;
+}
+.cv-print {
   background: transparent;
   color: var(--ink);
   border: 1.5px solid var(--ink);
@@ -273,11 +296,6 @@ button.chip:active {
 }
 .cv p {
   margin: 0;
-}
-.cv-note {
-  color: var(--ink-muted);
-  font-size: 13px;
-  margin: 0 0 14px !important;
 }
 .cv-top {
   display: flex;
@@ -700,8 +718,7 @@ body.no-3d .note span {
     background: #fff;
   }
   .sheet-back,
-  .cv-print,
-  .cv-note {
+  .cv-tools {
     display: none !important;
   }
   .cv {

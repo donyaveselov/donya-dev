@@ -130,12 +130,11 @@ class RoomApp {
   start(): void {
     psx.on = currentRoute().ps1;
     this.layout();
-    byId('lang-ru').addEventListener('click', () => {
-      this.setLang('ru');
-    });
-    byId('lang-en').addEventListener('click', () => {
-      this.setLang('en');
-    });
+    // the top bar's language switch, and the resume sheet's own (the sheet covers the bar)
+    for (const b of document.querySelectorAll<HTMLButtonElement>('button[data-lang]'))
+      b.addEventListener('click', () => {
+        if (b.dataset.lang === 'ru' || b.dataset.lang === 'en') this.setLang(b.dataset.lang);
+      });
     this.pin.el.addEventListener('click', () => {
       if (this.room) this.room.handoff.sitDown('L');
       else if (document.body.classList.contains('no-3d')) this.flat.open();
