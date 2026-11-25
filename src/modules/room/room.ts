@@ -30,7 +30,7 @@ import { watchPointer } from './scene/pointer';
 import type { Pointer } from './scene/pointer';
 import { GAME_NAMES, pollPresence } from '../../services/presence.service';
 import { psx, render, setBackdrop } from './scene/psx';
-import { addressEvent, currentRoute, leftByPage, tidyAddress } from './routes';
+import { currentRoute, onRouteChange, tidyAddress } from '../../services/router.service';
 import type { Route } from './routes';
 import { animateScene, buildScene, fitScene, lightScene, tourSights } from './scene/scene';
 import type { RoomScene } from './scene/scene';
@@ -142,15 +142,14 @@ class RoomApp {
     window.addEventListener('resize', this.layout);
     // Back or Forward (the resume sheet opened or closed), or an old #route typed into the address bar; the boot
     // handles the address the page was loaded with
-    window.addEventListener(addressEvent(), () => {
-      const closed = leftByPage(); // the sheet closed: back to /projects must not open My Projects once more
-      tidyAddress();
+    onRouteChange((route) => {
       // the loader route on an open page: load it again, so that it stays on the loading screen
-      if (currentRoute().holdLoader) {
+      if (route.holdLoader) {
         location.reload();
         return;
       }
-      if (this.applyRoute().sit === 'projects' && !closed) this.openProjects();
+      this.applyRoute(route);
+      if (route.sit === 'projects') this.openProjects();
     });
     // the debug panel is a chunk of its own: visitors never download it
     if (debugWanted()) void import('./debug/debug-panel').then((m) => m.makeDebugPanel(this.debugHost()));
@@ -223,12 +222,10 @@ class RoomApp {
   }
 
   /** Shows what the address asks for (a preview, the resume sheet) and returns the route. */
-  private applyRoute(): Route {
-    const route = currentRoute();
-    if (route.game) this.showGame(route.game);
+  private applyRoute(route: Route = currentRoute()): void {
+    if (route.game) this.showGame({ kind: route.game, name: GAME_NAMES[route.game] });
     this.panels.showResume(route.resume);
     this.preview(route.forced, route.preview);
-    return route;
   }
 
   private watchWeather(): void {

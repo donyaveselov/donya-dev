@@ -4,7 +4,7 @@ import { DESKTOP_DOM, DESKTOP_ROOT_ID } from '../../../services/desktop-registry
 import { EXPERIENCE } from '../../../content/experience';
 import type { Lang, Status } from '../../../types';
 import { isAriaKey, isMarkupKey, t, timeChip } from '../i18n';
-import { goTo, leave } from '../routes';
+import { currentRoute, go } from '../../../services/router.service';
 import { fitPixelBox } from './tags';
 import { byId } from '../../../utils/dom';
 
@@ -57,7 +57,7 @@ export class Panels {
     this.sheet.hidden = false;
     this.sheet.style.opacity = '1';
     this.sheetBack.hidden = false;
-    goTo('resume');
+    go('resume');
     if (wasOpen) return;
     this.sheet.scrollTop = 0;
     const active = document.activeElement;
@@ -69,7 +69,7 @@ export class Panels {
     if (this.sheet.hidden) return;
     this.sheet.hidden = true;
     this.sheetBack.hidden = true;
-    leave('resume');
+    if (currentRoute().resume) go('');
     const back = this.returnFocus;
     this.returnFocus = null;
     // back to what opened it; a Start menu item has gone by now, so at the PC the desktop takes the keyboard again

@@ -2,7 +2,9 @@
 // fallback to index.html.
 import { describe, expect, it } from 'vitest';
 import { routeNames, routePages } from '../../../vite.config';
-import { PAGES } from './routes';
+import { ROUTES } from './routes';
+
+const PAGES = Object.keys(ROUTES);
 
 interface Emitted {
   fileName: string;
@@ -30,7 +32,7 @@ async function run(bundle: Record<string, unknown>, names: readonly string[]): P
 const page = { 'index.html': { type: 'asset', fileName: 'index.html', source: '<html>built</html>' } };
 
 describe('the route pages', () => {
-  it('take their names from the route tables', async () => {
+  it('take their names from the route table', async () => {
     expect(await routeNames()).toEqual(PAGES);
   });
   it('are the built page in a folder per name', async () => {

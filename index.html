@@ -40,9 +40,8 @@
     var HOURS = { day: 13, sunset: 18.2, night: 1.5 };
     var GAMES = { dota: 1, cs: 1, pcdota: 1 };
     var own = function (o, k) { return Object.prototype.hasOwnProperty.call(o, k); };
-    /* the route: an old link's hash (#night), else the path's one folder (/night, /night/); routeName in routes.ts */
-    var path = /^\/([^/]+)(?:\/(?:index\.html)?)?$/.exec(location.pathname);
-    var route = location.hash.slice(1) || (path && path[1] !== 'index.html' ? path[1] : '');
+    /* the route: an old link's hash (#night), else the path's first folder (/night, /night/); routeName in router.service.ts */
+    var route = location.hash.slice(1) || location.pathname.split('/')[1] || '';
     var status;
     if (own(BACKDROP, route)) status = route;
     else if (own(GAMES, route)) status = 'play';

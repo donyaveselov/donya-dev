@@ -31,15 +31,15 @@ function roomCacheBust(): Plugin {
 }
 
 /**
- * The names the page answers to, from the route tables themselves (PAGES in src/modules/room/routes.ts). Loaded
+ * The names the page answers to: the routes in src/modules/room/routes.ts. Loaded
  * through Vite, as the app's own code is, rather than imported into this config.
  */
 export async function routeNames(): Promise<readonly string[]> {
-  const { module } = await runnerImport<{ PAGES: readonly string[] }>(ROUTES_TS, {
+  const { module } = await runnerImport<{ ROUTES: Record<string, unknown> }>(ROUTES_TS, {
     configFile: false,
     logLevel: 'warn',
   });
-  return module.PAGES;
+  return Object.keys(module.ROUTES);
 }
 
 /**

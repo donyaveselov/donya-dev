@@ -16,7 +16,7 @@ md5 of `public/room.json`) and the page fetches `room.json?v=<that>`. The build 
 
 **Routes are paths** (`/resume`, `/pc`, `/night`, ...; the list is at the top of `src/modules/room/routes.ts`). The
 host has no fallback to `index.html`, so `vite build` also writes a copy of the page into a folder per route
-(`dist/resume/index.html`, ...); the names come from the route tables (`PAGES` in `routes.ts`, loaded by the
+(`dist/resume/index.html`, ...); the names come from the route table (`ROUTES` in `routes.ts`, loaded by the
 `route-pages` plugin in `vite.config.ts`), so a new route gets its page without a second list. That is why the site
 is built with `base: '/'` (absolute URLs, the same HTML works one folder down) and the files of `public/` are fetched
 through `asset()` (`src/utils/asset.ts`). An old link (`/#resume`) is rewritten to its path on load, and `/resume/`

@@ -2,7 +2,8 @@
 // colours. This keeps that copy in step with the real statusAt, phuketTime, BACKDROP and the routes.
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { PAGES, parseRoute, routeName } from './routes';
+import { routeName, routeOf } from '../../services/router.service';
+import { ROUTES } from './routes';
 import { BACKDROP } from './scene/lighting';
 import { phuketTime, statusAt } from './store/clock';
 
@@ -30,7 +31,7 @@ function bootSky(utc: Date, [pathname, hash]: Address): [string, string] {
 
 /** What the room itself shows first: the route's preview and forced status, no Discord reading yet. */
 function roomSky(utc: Date, [pathname, hash]: Address): readonly [string, string] {
-  const route = parseRoute(routeName(pathname, hash));
+  const route = routeOf(routeName(pathname, hash));
   return BACKDROP[statusAt(phuketTime(utc, route.preview), route.forced, null)];
 }
 
@@ -39,7 +40,7 @@ describe('the sky before the first paint', () => {
     expect(script).toContain('BACKDROP');
   });
   it('matches the room at every quarter hour, for every route', () => {
-    const names = ['', ...PAGES, 'constructor', 'nonsense'];
+    const names = ['', ...Object.keys(ROUTES), 'constructor', 'nonsense'];
     // each name as a path in every form the host serves it and as an old link's hash; a hash over a path
     const addresses: Address[] = [
       ['/index.html', ''],

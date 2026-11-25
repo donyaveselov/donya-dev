@@ -4,7 +4,7 @@
 
 const DEBUG_KEY = 'donya-debug';
 
-/** The address asks for debug mode: /debug (a page of its own, see PAGES in routes.ts) or the artifact's #debug. */
+/** The address asks for debug mode: /debug (a route of its own in routes.ts) or the artifact's #debug. */
 const askedFor = (): boolean => location.hash === '#debug' || /^\/debug\/?$/.test(location.pathname);
 
 export function debugWanted(): boolean {
