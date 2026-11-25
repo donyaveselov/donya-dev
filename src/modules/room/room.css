@@ -591,8 +591,11 @@ body.at-pc .talkie {
     align-items: center;
     bottom: calc(env(safe-area-inset-bottom, 0px) + 8px);
   }
+  /* here the tail points down, over the buttons, and its tip is 8 px below the bubble's frame: the gap keeps two
+     pixel steps (8 px) between the tip and the buttons' frames, so it never touches them */
   .talkie__say {
     align-items: center;
+    gap: 28px;
     margin: 0 16px 10px;
     order: 0;
   }
@@ -608,6 +611,7 @@ body.at-pc .talkie {
     right: auto;
     left: 50%;
     bottom: -8px;
+    margin-left: -2px; /* centred on the bubble, like the buttons and the mouth under it */
     box-shadow:
       0 4px #fff,
       -4px 4px #111,
