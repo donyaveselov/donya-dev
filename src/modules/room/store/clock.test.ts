@@ -23,7 +23,7 @@ describe('statusAt', () => {
     expect(statusAt(at(10), null, null)).toBe('work');
     expect(statusAt(at(18, 59), null, null)).toBe('work');
     expect(statusAt(at(19), null, null)).toBe('outside');
-    expect(statusAt(at(20, 30), null, null)).toBe('play');
+    expect(statusAt(at(20, 30), null, null)).toBe('outside');
     expect(statusAt(at(23, 30), null, null)).toBe('sleep');
   });
   it('lets a forced status win, then a game being played', () => {
@@ -32,8 +32,9 @@ describe('statusAt', () => {
     expect(statusAt(at(13), null, playing)).toBe('play');
     expect(statusAt(at(3), null, playing)).toBe('play');
   });
-  it('guesses "play" in the evening only without a presence reading', () => {
-    expect(statusAt(at(21), null, null)).toBe('play');
+  it('never guesses "play" from the clock: the evening is "outside" until a reading says a game runs', () => {
+    expect(statusAt(at(21), null, null)).toBe('outside');
     expect(statusAt(at(21), null, { playing: false, status: 'online' })).toBe('outside');
+    expect(statusAt(at(21), null, { playing: true, game: 'Dota 2', kind: 'dota' })).toBe('play');
   });
 });

@@ -47,7 +47,7 @@
     else {
       var now = new Date();
       var h = own(HOURS, route) ? HOURS[route] : ((now.getUTCHours() + 7) % 24) + now.getUTCMinutes() / 60;
-      status = h < 8 || h >= 23.5 ? 'sleep' : h >= 10 && h < 19 ? 'work' : h >= 20.5 ? 'play' : 'outside';
+      status = h < 8 || h >= 23.5 ? 'sleep' : h >= 10 && h < 19 ? 'work' : 'outside'; // 'play' only comes from Discord
     }
     var root = document.documentElement.style;
     root.setProperty('--sky-top', BACKDROP[status][0]);

@@ -29,7 +29,9 @@ describe('the tour script', () => {
     for (const s of shown) {
       const hour = s.hour ?? NaN;
       const time = { h: Math.floor(hour), m: Math.round((hour % 1) * 60) };
-      expect(statusAt(time, null, null), s.key).toBe(s.state);
+      // 'play' never comes from the clock, only from a presence reading, so that step is checked with a game running
+      const presence = s.state === 'play' ? ({ playing: true, game: 'Counter-Strike 2', kind: 'cs' } as const) : null;
+      expect(statusAt(time, null, presence), s.key).toBe(s.state);
     }
   });
   it('brings the real status back before it points at anything', () => {

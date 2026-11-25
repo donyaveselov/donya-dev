@@ -237,10 +237,13 @@ class RoomApp {
   private watchPresence(): void {
     pollPresence((p) => {
       const was = live.presence?.playing ? live.presence.game : null;
+      const before = status();
       live.presence = p;
       if (p?.playing && !live.forced) this.showGame({ kind: p.kind, name: p.game });
-      // re-light only when the game changes; a failed reading mid-game counts (the room must not stay in the game)
-      if (was !== (p?.playing ? p.game : null)) this.applyTime();
+      // re-light when the status or the game changes. Comparing the game alone missed the first reading: "no reading yet"
+      // (evening by the schedule = gaming) and "online, not playing" (evening = outside) both have no game, so the room
+      // stayed in the scheduled game until the next minute
+      if (status() !== before || was !== (p?.playing ? p.game : null)) this.applyTime();
     });
   }
 

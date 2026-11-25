@@ -30,6 +30,5 @@ export function statusAt(time: PhuketTime, forced: Status | null, presence: Pres
   const h = time.h + time.m / 60;
   if (h < 8 || h >= 23.5) return 'sleep';
   if (h >= 10 && h < 19) return 'work';
-  if (h >= 20.5) return presence ? 'outside' : 'play'; // with a presence reading, 'play' only ever comes from it
-  return 'outside'; // mornings and the hour around sunset
+  return 'outside'; // mornings and evenings: 'play' only ever comes from a real presence reading, never from the clock
 }
