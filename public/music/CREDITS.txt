@@ -1,4 +1,3 @@
 lofi-loop.mp3
 "Lofi Hip Hop Loop" by omfgdude, https://opengameart.org/content/lofi-hip-hop-loop
-License: CC0 (public domain dedication). Both files are re-encodes of the original OGG for the web (mono, 22 kHz): Ogg Vorbis at about 43 kbps, and an MP3 at
-48 kbps for older Safari.
+License: CC0 (public domain dedication). The file is a re-encode of the original OGG for the web: MP3, mono, 22 kHz, 48 kbps CBR.
