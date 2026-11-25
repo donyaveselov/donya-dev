@@ -3,6 +3,7 @@
 import { fill, type Text } from '../../shared/i18n';
 import type { Bilingual, Lang, XPAppApi, XPAppParams } from '../../shared/types';
 import { findProject, type Project, PROJECTS } from '../content/projects';
+import { PROJECTS_README } from '../content/readme';
 import { registerApp } from '../shell/apps';
 import { G16, G24, ICONS } from './icons';
 import { copyText, reduced, ui } from './kit';
@@ -93,11 +94,6 @@ const T = {
   openOverview: { ru: 'Открыть описание', en: 'Open the overview' },
 } as const satisfies Record<string, Bilingual>;
 
-const README: Bilingual = {
-  ru: 'Привет! Это папка с проектами.\r\n\r\nКаждая подпапка — один проект: описание, «скриншоты»,\r\nстек и ссылка, если проект публичный.\r\n\r\nДвойной щелчок открывает, Backspace — на уровень вверх,\r\nAlt+← / Alt+→ — назад и вперёд.\r\n\r\nСтарые проекты лежат в Корзине. Восстановить их нельзя.\r\nМы пробовали.',
-  en: 'Hi! This is the projects folder.\r\n\r\nEach subfolder is one project: an overview, "screenshots",\r\nthe stack and a link when the project is public.\r\n\r\nDouble-click opens, Backspace goes up a level,\r\nAlt+Left / Alt+Right go back and forward.\r\n\r\nOld projects live in the Recycle Bin. They cannot be restored.\r\nWe tried.',
-};
-
 const bare = (url: string): string => url.replace(/^https?:\/\//, '');
 
 /** stack.txt of a project, in one language. */
@@ -139,7 +135,7 @@ function listItems(path: readonly string[], t: (d: Text) => string): Item[] {
         type: T.textDoc,
         desc: T.readmeDesc,
         sub: '1 KB',
-        open: { app: 'notepad', params: { title: 'README.txt', text: README } },
+        open: { app: 'notepad', params: { title: 'README.txt', text: PROJECTS_README } },
       },
     ];
   const p = findProject(id);

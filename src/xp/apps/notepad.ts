@@ -1,6 +1,7 @@
 // Notepad (it opens the README by default) and Calculator.
 import { isBilingual, type Text } from '../../shared/i18n';
-import type { Bilingual, XPAppApi } from '../../shared/types';
+import type { XPAppApi } from '../../shared/types';
+import { DESKTOP_README } from '../content/readme';
 import { registerApp } from '../shell/apps';
 import { Calculator } from './calculator';
 import { ICONS } from './icons';
@@ -33,11 +34,6 @@ const T = {
   calcAbout: d('Считает точнее, чем оценки сроков.', 'More accurate than time estimates.'),
 } as const;
 
-const README: Bilingual = {
-  ru: 'README.txt\r\n==========\r\n\r\nЭтот рабочий стол живёт внутри монитора на сайте Даниила Иванова.\r\n\r\nС чего начать:\r\n  * «Мои проекты» — над чем я работаю сейчас\r\n  * «Резюме» — коротко и по делу\r\n  * «Написать мне» — контакты, которые можно скопировать\r\n  * «Командная строка» — введите help\r\n  * «Сапёр» — первый ход всегда безопасен\r\n\r\nМелочи, которые стоит найти:\r\n  * F5 в Блокноте вставляет время на Пхукете\r\n  * В Корзине лежат старые проекты. Попробуйте их восстановить\r\n  * В консоли есть скрытые команды\r\n\r\nP.S. Этот файл можно редактировать. Сохранять — тоже.\r\n',
-  en: "README.txt\r\n==========\r\n\r\nThis desktop lives inside a monitor on Daniil Ivanov's website.\r\n\r\nWhere to start:\r\n  * My Projects: what I am working on now\r\n  * Resume: short and to the point\r\n  * Contact me: contacts you can copy\r\n  * Command Prompt: type help\r\n  * Minesweeper: the first click is always safe\r\n\r\nSmall things worth finding:\r\n  * F5 in Notepad inserts the time in Phuket\r\n  * The Recycle Bin holds old projects. Try restoring them\r\n  * The console has hidden commands\r\n\r\nP.S. You can edit this file. And save it, too.\r\n",
-};
-
 /** Line and column (1-based) of a caret offset. */
 function lineCol(text: string, caret: number): [number, number] {
   const before = text.slice(0, caret).split('\n');
@@ -49,7 +45,7 @@ function renderNotepad(content: HTMLElement, api: XPAppApi): () => void {
   const { h, t } = U;
   const root = U.root(content, 'xpa-notepad', 400);
   const p = api.params ?? {};
-  let src: Text | null = typeof p.text === 'string' || isBilingual(p.text) ? p.text : README;
+  let src: Text | null = typeof p.text === 'string' || isBilingual(p.text) ? p.text : DESKTOP_README;
   let name = typeof p.title === 'string' && p.title ? p.title : 'README.txt';
   let modified = false;
   let wrap = true;

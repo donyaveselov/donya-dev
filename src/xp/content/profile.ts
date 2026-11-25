@@ -63,8 +63,24 @@ export const CONTACTS: readonly [Contact, ...Contact[]] = [
   },
 ];
 
+/** The desktop's programs that can be opened by name, in the order of their icons. */
+export const APP_IDS = [
+  'projects',
+  'resume',
+  'about',
+  'contact',
+  'terminal',
+  'minesweeper',
+  'paint',
+  'recycle',
+  'browser',
+  'notepad',
+  'calc',
+] as const;
+export type AppId = (typeof APP_IDS)[number];
+
 /** App ids the terminal and the browser open, with friendly aliases. */
-export const APP_ALIASES: Readonly<Record<string, string>> = {
+export const APP_ALIASES: Readonly<Record<string, AppId>> = {
   projects: 'projects',
   project: 'projects',
   explorer: 'projects',
@@ -99,3 +115,6 @@ export const APP_ALIASES: Readonly<Record<string, string>> = {
   calc: 'calc',
   calculator: 'calc',
 };
+
+/** What the terminal's `open` lists and completes: every program the aliases reach, once. */
+export const OPENABLE: readonly AppId[] = [...new Set(Object.values(APP_ALIASES))];

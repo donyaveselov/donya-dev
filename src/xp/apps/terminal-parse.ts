@@ -20,20 +20,6 @@ const COLORS: Readonly<Record<string, string>> = {
   f: '#ffffff',
 };
 
-export const OPENABLE = [
-  'projects',
-  'resume',
-  'about',
-  'contact',
-  'minesweeper',
-  'paint',
-  'recycle',
-  'browser',
-  'notepad',
-  'calc',
-  'terminal',
-];
-
 /** The owner's home folder, where the console starts (the same C:\Users\Daniil the Projects folder lives in). */
 export const HOME_DIR: readonly [string, string, string] = ['C:', 'Users', 'Daniil'];
 
