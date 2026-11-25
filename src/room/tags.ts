@@ -35,6 +35,8 @@ export interface TagView {
   isOn: (key: TagKey) => boolean;
   /** how solid each wall is, 0..1 */
   wallK: (wall: 0 | 1) => number;
+  /** the Projects button as placed this frame (anchor and size): labels move out of its way, it never moves */
+  pin: Placed | null;
 }
 
 /** The weather label: where I am, and the weather once a reading (or a forced kind) exists. */
@@ -50,6 +52,19 @@ function topOf(root: Object3D, name: string, dy: number): Vector3 | null {
   if (!o) return null;
   const b = new Box3().setFromObject(o);
   const v = b.getCenter(new Vector3());
+  v.y = b.max.y + dy;
+  return v;
+}
+
+/** A little into the top of the window's right pane (the glass is one mesh across both panes, the mullion in the
+ *  middle); "right" as the default camera sees it. */
+function rightPaneTop(root: Object3D, dy: number): Vector3 | null {
+  const o = root.getObjectByName('Window_Glass');
+  if (!o) return null;
+  const b = new Box3().setFromObject(o);
+  const v = b.getCenter(new Vector3());
+  if (b.max.x - b.min.x >= b.max.z - b.min.z) v.x = b.min.x + (b.max.x - b.min.x) * 0.75;
+  else v.z = b.max.z - (b.max.z - b.min.z) * 0.75;
   v.y = b.max.y + dy;
   return v;
 }
@@ -116,11 +131,12 @@ export interface Placed {
 /**
  * Keeps labels apart (on a phone the clock's, the diploma's and the weather's labels land on each other): each one,
  * from the lowest on screen up, stays where it is or moves up just enough to clear the ones already placed; then it is
- * kept inside the window sideways. Mutates and returns the list.
+ * kept inside the window sideways. `fixed` boxes (the Projects button) are cleared too but never move. Mutates and
+ * returns the list.
  */
-export function separate(tags: Placed[], width: number): Placed[] {
+export function separate(tags: Placed[], width: number, fixed: readonly Placed[] = []): Placed[] {
   const order = [...tags].sort((a, b) => b.y - a.y);
-  const done: Placed[] = [];
+  const done: Placed[] = [...fixed];
   for (const t of order) {
     t.x = Math.min(Math.max(t.x, t.w / 2 + GAP_X), Math.max(t.w / 2 + GAP_X, width - t.w / 2 - GAP_X));
     for (let moved = true, guard = 0; moved && guard < tags.length * 2; guard++) {
@@ -146,7 +162,7 @@ export class Tags {
   private lastPlace = performance.now();
 
   constructor(root: Object3D, frames: readonly Frame[], wx: Weather) {
-    const wp = topOf(root, 'Window_Glass', 0.02);
+    const wp = rightPaneTop(root, -0.15);
     const cp = topOf(root, 'Clock_case', 0.1) ?? topOf(root, 'Clock_display', 0.12);
     if (wp)
       this.tags.push({
@@ -234,6 +250,7 @@ export class Tags {
     separate(
       shown.map((s) => s.at),
       view.width,
+      view.pin ? [view.pin] : [],
     );
     for (const { tag, x, y, at } of shown) {
       // the layout's offset is followed smoothly, so a label stepping aside (or back) glides instead of jumping

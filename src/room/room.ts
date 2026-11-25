@@ -476,8 +476,10 @@ function tagView(r: Built): Parameters<Tags['place']>[0] {
     room: !r.handoff.atPC,
     isOn: (k) => tour.isOn(k),
     wallK: (w) => r.walls.k(w),
+    pin: null,
   };
 }
+const pinBox = { x: 0, y: 0, w: 0, h: 0, covered: false };
 let view: ReturnType<typeof tagView> | null = null;
 
 function frame(now: number): void {
@@ -510,18 +512,19 @@ function frame(now: number): void {
       render(r.renderer, r.scene, r.camera);
       r.anchor.getWorldPosition(pinAt).project(r.camera);
       // the pixel tail's tip on the desk
-      placePixelBox(
-        pin,
-        ((pinAt.x + 1) / 2) * stage.clientWidth,
-        ((1 - pinAt.y) / 2) * stage.clientHeight - 12,
-        pinSize,
-      );
+      pinBox.x = ((pinAt.x + 1) / 2) * stage.clientWidth;
+      pinBox.y = ((1 - pinAt.y) / 2) * stage.clientHeight - 12;
+      pinBox.w = pinSize.w;
+      pinBox.h = pinSize.h;
+      placePixelBox(pin, pinBox.x, pinBox.y, pinSize);
+      const pinOn = tour.isOn('projects') && !pin.hidden;
+      pin.style.visibility = pinOn ? 'visible' : 'hidden';
       view ??= tagView(r);
       view.width = stage.clientWidth;
       view.height = stage.clientHeight;
       view.room = !atPC;
+      view.pin = pinOn && !atPC ? pinBox : null; // labels give way to the Projects button
       r.tags.place(view);
-      pin.style.visibility = tour.isOn('projects') ? 'visible' : 'hidden';
       tour.drift(dt);
     }
   }

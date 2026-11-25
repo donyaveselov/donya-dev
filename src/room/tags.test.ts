@@ -63,6 +63,12 @@ describe('label layout', () => {
       for (const b of tags.slice(i + 1)) expect(overlap(a, b)).toBe(false);
     });
   });
+  it('moves a label out of the way of a fixed box, which stays put', () => {
+    const pin = { x: 200, y: 300, w: 100, h: 30 };
+    const [l] = separate([{ x: 220, y: 290, w: 150, h: 30 }], 1000, [pin]) as [Placed];
+    expect(pin).toEqual({ x: 200, y: 300, w: 100, h: 30 });
+    expect(overlap(l, pin)).toBe(false);
+  });
   it('keeps a label inside the window sideways', () => {
     const [l] = separate([{ x: 10, y: 200, w: 100, h: 30 }], 390) as [Placed];
     expect(l.x - l.w / 2).toBeGreaterThanOrEqual(0);
