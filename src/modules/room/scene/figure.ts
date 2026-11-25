@@ -8,7 +8,7 @@ import { STATUSES } from '../store/clock';
 import { smooth } from './lighting';
 import { bitmapTexture } from './textures';
 
-const PARTS = ['head', 'torso', 'arm_n', 'arm_p', 'prop', 'breath'] as const;
+const PARTS = ['head', 'torso', 'arm_n', 'arm_p', 'prop'] as const;
 type Part = (typeof PARTS)[number];
 type Rig = Partial<Record<Part, Object3D>>;
 

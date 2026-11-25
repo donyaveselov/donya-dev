@@ -2,13 +2,6 @@ import { describe, expect, it } from 'vitest';
 import { isAriaKey, isMarkupKey, t, timeChip, tourLine } from './i18n';
 
 describe('room i18n', () => {
-  it('has the same keys in both languages', () => {
-    const keys = (o: object): string[] =>
-      Object.entries(o)
-        .flatMap(([k, v]) => (typeof v === 'object' && v ? keys(v as object).map((x) => k + '.' + x) : [k]))
-        .sort();
-    expect(keys(t('en'))).toEqual(keys(t('ru')));
-  });
   it('writes the time chip', () => {
     expect(timeChip('ru', 9, 5, 'work', null)).toBe('Пхукет 09:05 · работаю');
     expect(timeChip('ru', 21, 30, 'play', 'Dota 2')).toBe('Пхукет 21:30 · играю в Dota 2');

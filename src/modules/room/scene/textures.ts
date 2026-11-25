@@ -61,7 +61,7 @@ const vertical = (g: CanvasRenderingContext2D, y0: number, y1: number, top: stri
   return gr;
 };
 
-export type ScreenKind = 'editor' | 'terminal' | 'dota' | 'cs' | 'youtube' | 'game';
+export type ScreenKind = 'editor' | 'dota' | 'cs' | 'youtube' | 'game';
 
 const PAINT: Record<ScreenKind, (g: CanvasRenderingContext2D) => void> = {
   editor(g) {
@@ -211,17 +211,9 @@ const PAINT: Record<ScreenKind, (g: CanvasRenderingContext2D) => void> = {
     rect(g, '#ffffff', 16, 32, 70, 8);
     g.fillRect(420, 14, 76, 12);
   },
-  terminal(g) {
-    rect(g, '#9ae6a0', 14, 16, 150, 10);
-    for (let i = 0; i < 10; i++) {
-      const c = i % 4 === 3 ? '#9ae6a0' : i % 4 === 1 ? '#7ee0ff' : '#8b97b8';
-      rect(g, c, 14, 40 + i * 23, 120 + ((i * 71) % 300), 9);
-    }
-    rect(g, '#ffffff', 14, 270, 12, 12);
-  },
 };
 
-/** What a monitor shows when nothing live runs on it: an editor, a terminal or a game, drawn as coloured shapes. */
+/** What a monitor shows when nothing live runs on it: an editor or a game, drawn as coloured shapes. */
 export function screenTexture(kind: ScreenKind): CanvasTexture {
   const c = canvas(512, 288);
   const g = ctx2d(c);
@@ -231,12 +223,12 @@ export function screenTexture(kind: ScreenKind): CanvasTexture {
 }
 
 /** The sea: one 64 px closed-cell caustic net in four colours, tiling on all sides. */
-export function seaTile(pal: readonly [number, number, number, number], seed: number): CanvasTexture {
+export function seaTile(pal: readonly [number, number, number, number]): CanvasTexture {
   const N = 64;
   const c = canvas(N);
   const g = ctx2d(c);
   const img = g.createImageData(N, N);
-  let s = seed;
+  let s = 7; // the same net for every colouring
   const rnd = (): number => {
     s = (s * 1664525 + 1013904223) >>> 0;
     return s / 4294967296;

@@ -81,7 +81,7 @@ const SHORE_PAL = [0x22c8c0, 0x4fe0d0, 0xa8f5e4, 0xffffff] as const;
 
 export function makeOutdoor(root: Object3D): Outdoor {
   const group = must(root.getObjectByName('Outdoor'), 'Outdoor');
-  const tiles: Record<string, Texture> = { Out_sea: seaTile(SEA_PAL, 7), Out_shallow: seaTile(SHORE_PAL, 7) };
+  const tiles: Record<string, Texture> = { Out_sea: seaTile(SEA_PAL), Out_shallow: seaTile(SHORE_PAL) };
   const mats: RoomMaterial[] = [];
   const layers: SeaLayer[] = [];
   const waves: Wave[] = [];

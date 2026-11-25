@@ -51,8 +51,7 @@ harness moves it, `Math.random` is seeded, the weather API gets a fixed reply, e
 Google Fonts is blocked, and fonts are cached in `.work/font-cache`.
 
 **Noise threshold.** `compare.mjs` fails an image above `--max=0.002` % (about 20 px of a 1280x800 frame).
-`--noise=dirA,dirB` additionally ignores pixels that differ between the baseline and re-runs of it. Frames in the
-middle of the slow (x20) fly-in are not reproducible (pointer timing), so compare those by eye.
+`--noise=dirA,dirB` additionally ignores pixels that differ between the baseline and re-runs of it.
 
 **Known diffs against the earlier site.** `14-wx-rain` and `15-wx-storm` differ by 0.02-0.04 %: the rain drops sit
 elsewhere (see Traps, `Math.random`). Everything else was identical at the time of the port.

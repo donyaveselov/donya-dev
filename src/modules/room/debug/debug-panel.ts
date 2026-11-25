@@ -1,6 +1,6 @@
-// The debug panel: pick what I am doing, the time of day, the weather, the fly-in speed, the PS1 look. It is loaded
-// only in debug mode (src/utils/debug.ts), so visitors download neither this code nor its styles. Every button
-// carries data-debug="row:choice" (time:sunset, state:dota, ...) for scripts; the visible labels are in Russian.
+// The debug panel: pick what I am doing, the time of day, the weather. It is loaded only in debug mode
+// (src/utils/debug.ts), so visitors download neither this code nor its styles. The labels are in Russian, and
+// scripts/regress.mjs finds the buttons by them.
 import type { GameKind, Status } from '../../../types';
 import { PREVIEW_HOURS } from '../store/clock';
 import type { WeatherKind } from '../../../services/weather.service';
@@ -11,19 +11,14 @@ export interface DebugHost {
   setState(state: Status | null, game: GameKind | null): void;
   setHour(hour: number | null): void;
   setWeather(kind: WeatherKind | null): void;
-  setSlow(k: number): void;
-  setPs1(on: boolean): void;
-  slow: number;
-  ps1: boolean;
 }
 
-/** One choice of a row: its data-debug id, its label, the value a click passes on. */
-type Option<T> = readonly [id: string, label: string, value: T];
+/** One choice of a row: its label, the value a click passes on. */
+type Option<T> = readonly [label: string, value: T];
 
 /** One row: a label and buttons, the pressed one marked; a click presses it and passes its value on. */
 function row<T>(
   box: HTMLElement,
-  id: string,
   label: string,
   options: readonly Option<T>[],
   initial: T,
@@ -33,11 +28,10 @@ function row<T>(
   const lab = document.createElement('b');
   lab.textContent = label;
   line.appendChild(lab);
-  for (const [choice, text, value] of options) {
+  for (const [text, value] of options) {
     const b = document.createElement('button');
     b.type = 'button';
     b.textContent = text;
-    b.dataset.debug = `${id}:${choice}`;
     b.setAttribute('aria-pressed', String(value === initial));
     b.addEventListener('click', () => {
       line.querySelectorAll('button').forEach((x) => {
@@ -57,16 +51,15 @@ export function makeDebugPanel(host: DebugHost): HTMLElement {
   box.className = 'dbg';
   row<StateChoice>(
     box,
-    'state',
     'debug',
     [
-      ['auto', 'auto', null],
-      ['work', 'работаю', ['work', null]],
-      ['dota', 'Dota', ['play', 'dota']],
-      ['cs', 'CS', ['play', 'cs']],
-      ['other', 'другая игра', ['play', 'other']],
-      ['sleep', 'сплю', ['sleep', null]],
-      ['outside', 'на улице', ['outside', null]],
+      ['auto', null],
+      ['работаю', ['work', null]],
+      ['Dota', ['play', 'dota']],
+      ['CS', ['play', 'cs']],
+      ['другая игра', ['play', 'other']],
+      ['сплю', ['sleep', null]],
+      ['на улице', ['outside', null]],
     ],
     null,
     (v) => {
@@ -75,13 +68,12 @@ export function makeDebugPanel(host: DebugHost): HTMLElement {
   );
   row<number | null>(
     box,
-    'time',
     'время',
     [
-      ['auto', 'auto', null],
-      ['day', 'день', PREVIEW_HOURS.day],
-      ['sunset', 'закат', PREVIEW_HOURS.sunset],
-      ['night', 'ночь', PREVIEW_HOURS.night],
+      ['auto', null],
+      ['день', PREVIEW_HOURS.day],
+      ['закат', PREVIEW_HOURS.sunset],
+      ['ночь', PREVIEW_HOURS.night],
     ],
     null,
     (v) => {
@@ -90,44 +82,17 @@ export function makeDebugPanel(host: DebugHost): HTMLElement {
   );
   row<WeatherKind | null>(
     box,
-    'weather',
     'погода',
     [
-      ['auto', 'auto', null],
-      ['clear', 'ясно', 'clear'],
-      ['cloud', 'облачно', 'cloud'],
-      ['rain', 'дождь', 'rain'],
-      ['storm', 'гроза', 'storm'],
+      ['auto', null],
+      ['ясно', 'clear'],
+      ['облачно', 'cloud'],
+      ['дождь', 'rain'],
+      ['гроза', 'storm'],
     ],
     null,
     (v) => {
       host.setWeather(v);
-    },
-  );
-  row(
-    box,
-    'flight',
-    'полёт',
-    [
-      ['slow', '×20', 20],
-      ['normal', 'обычный', 1],
-    ],
-    host.slow,
-    (v) => {
-      host.setSlow(v);
-    },
-  );
-  row(
-    box,
-    'ps1',
-    'ps1',
-    [
-      ['on', 'вкл', true],
-      ['off', 'выкл', false],
-    ],
-    host.ps1,
-    (v) => {
-      host.setPs1(v);
     },
   );
   document.body.appendChild(box);

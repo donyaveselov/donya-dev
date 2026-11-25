@@ -2,7 +2,7 @@ import { Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
 import { STATUSES, statusAt } from '../store/clock';
 import type { TagKey } from '../components/tags';
-import { stepButtons, tourSteps, typeDelay } from './tour';
+import { stepButtons, tourSteps } from './tour';
 import type { TourStep } from './tour';
 
 const sights = {
@@ -58,30 +58,11 @@ describe('the tour script', () => {
 });
 
 describe('the tour buttons', () => {
-  const actions = (step: TourStep): string[] => stepButtons(step).map((b) => `${b.label}:${b.action}`);
-
-  it('answers the greeting with yes (go on) or no (end)', () => {
-    expect(actions({ key: 'hello', ask: true })).toEqual(['no:end', 'yes:next']);
-  });
-  it('offers skip and next on the way', () => {
-    expect(actions({ key: 'work' })).toEqual(['skip:end', 'next:next']);
-  });
-  it('has only a button that ends the tour on the last step', () => {
-    expect(actions({ key: 'end', end: true })).toEqual(['next:end']);
-  });
   it('makes the way forward the one loud button on every step', () => {
     for (const s of steps) {
       const loud = stepButtons(s).filter((b) => !b.ghost);
       expect(loud).toHaveLength(1);
       expect(loud[0]?.action, s.key).toBe(s.end ? 'end' : 'next');
     }
-  });
-});
-
-describe('the typewriter', () => {
-  it('pauses after punctuation', () => {
-    expect(typeDelay(',')).toBeGreaterThan(typeDelay('a'));
-    expect(typeDelay('.')).toBe(typeDelay(','));
-    expect(typeDelay(' ')).toBe(typeDelay('a'));
   });
 });

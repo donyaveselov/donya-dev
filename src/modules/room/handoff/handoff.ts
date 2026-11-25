@@ -14,8 +14,6 @@ import type { GameKind, Status } from '../../../types';
 import { CAMERA_DISTANCE } from '../scene/camera';
 import { deskSnapshot, paintDesk, taskButton } from './desk-snapshot';
 import type { DeskSnapshot, GlassAlign } from './desk-snapshot';
-import { nextPhase } from './handoff-phase';
-import type { Phase } from './handoff-phase';
 import { ramp } from '../scene/lighting';
 import { isMesh } from '../scene/materials';
 import type { Monitors, Side } from '../scene/monitors';
@@ -24,7 +22,7 @@ import { cloneM, mdata, psx } from '../scene/psx';
 import { ctx2d, screenCanvasTexture } from '../scene/textures';
 import { must } from '../../../utils/dom';
 
-/** The flights, in seconds (times the debug panel's slow-motion factor). */
+/** The flights, in seconds. */
 const FLIGHT_IN_S = 1.35;
 const FLIGHT_OUT_S = 1.1;
 /** With reduced motion the camera jumps: one frame. */
@@ -82,8 +80,6 @@ export interface HandOffHost {
   root: Object3D;
   monitors: Monitors;
   reducedMotion: boolean;
-  /** the debug panel's slow-motion factor (1 = normal) */
-  slow(): number;
   status(): Status;
   game(): { kind: GameKind; name: string | null };
   /** the figures and the chair that melt away when the visitor sits down */
@@ -193,6 +189,10 @@ function fadeObjs(objs: readonly Object3D[], a: number): void {
   }
 }
 
+/** In the room, flying in to a monitor, at the desktop, flying back out. The two flights are not interruptible: a
+    request that does not fit the phase (a second click mid-flight, "stand up" twice) is ignored. */
+type Phase = 'room' | 'in' | 'seated' | 'out';
+
 const easeInOutCubic = (k: number): number => (k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2);
 
 export class HandOff {
@@ -222,7 +222,7 @@ export class HandOff {
   }
 
   private flightSeconds(normal: number): number {
-    return (this.host.reducedMotion ? FLIGHT_REDUCED_S : normal) * this.host.slow();
+    return this.host.reducedMotion ? FLIGHT_REDUCED_S : normal;
   }
 
   private tweenCam(to: CamPose, dur: number, done: () => void, tick?: (k: number) => void): void {
@@ -302,8 +302,7 @@ export class HandOff {
    * visitor is in the room.
    */
   sitDown(which: Side = 'L', arrived?: (desk: RoomDesktop) => void): void {
-    const flying = nextPhase(this.phase, 'sit');
-    if (!flying || this.waiting) return;
+    if (this.phase !== 'room' || this.waiting) return;
     const desk = this.desktop();
     if (!desk) {
       this.waiting = true;
@@ -331,7 +330,7 @@ export class HandOff {
     const aim = f.c.clone();
     if (align === 'left') aim.addScaledVector(f.across, (Math.min(f.w, (f.h * vw) / vh) - f.w) / 2);
     const from: CamPose = { p: camera.position.clone(), t: controls.target.clone(), z: camera.zoom };
-    this.phase = flying;
+    this.phase = 'in';
     const haloBase = monitors.list.map((m) => m.halo.opacity);
     this.host.chrome('pc');
     const gone = this.deskCompany();
@@ -343,7 +342,6 @@ export class HandOff {
     const st = this.host.status();
     const away = st === 'sleep' || st === 'outside';
     const A = f.w / f.h;
-    const slow = this.host.slow();
     // the real desktop opens at once, already in its final state (window minimized, saver gone), invisible: it is
     // measured for the painted copy on the glass and shown when the camera arrives
     desk.setLang(this.host.lang());
@@ -360,16 +358,13 @@ export class HandOff {
     requestAnimationFrame(() => {
       snap = deskSnapshot(this.xpRoot);
     });
-    const snapT = setInterval(
-      () => {
-        if (this.phase !== 'in') {
-          clearInterval(snapT);
-          return;
-        }
-        snap = deskSnapshot(this.xpRoot) ?? snap;
-      },
-      SNAPSHOT_EVERY_MS * Math.max(1, slow / 4),
-    );
+    const snapT = setInterval(() => {
+      if (this.phase !== 'in') {
+        clearInterval(snapT);
+        return;
+      }
+      snap = deskSnapshot(this.xpRoot) ?? snap;
+    }, SNAPSHOT_EVERY_MS);
     const reduced = this.host.reducedMotion;
     const paint = (k: number): void => {
       const m = reduced ? 1 : over(IN.fold, k);
@@ -457,11 +452,10 @@ export class HandOff {
    * Does nothing unless the visitor is seated: a second call during the flight out is ignored.
    */
   standUp(how?: 'off'): void {
-    const leaving = nextPhase(this.phase, 'stand');
     const seat = this.seat;
     const xpRoot = this.xpRoot;
-    if (!leaving || !seat || !xpRoot) return;
-    this.phase = leaving;
+    if (this.phase !== 'seated' || !seat || !xpRoot) return;
+    this.phase = 'out';
     const off = how === 'off';
     const { controls, monitors } = this.host;
     const { hand } = seat;
@@ -489,7 +483,7 @@ export class HandOff {
       hand.paint(1);
     }
     // the screen goes back to what the monitor shows (the camera has not moved yet), then the camera pulls away
-    const fade = this.host.reducedMotion ? 0 : DESKTOP_FADE_S * this.host.slow();
+    const fade = this.host.reducedMotion ? 0 : DESKTOP_FADE_S;
     fadeOut(xpRoot, fade, () => {
       const desk = this.desktop();
       if (desk?.isOpen()) desk.close();

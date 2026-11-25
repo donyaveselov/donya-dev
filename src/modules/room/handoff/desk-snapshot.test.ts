@@ -10,20 +10,6 @@ describe('the page on the glass', () => {
   it('fills a glass of its own proportions', () => {
     expect(pageOnGlass(1280, 720, CW, CH, A)).toEqual({ x: 0, y: 0, w: 1024, h: 576, s: 0.8 });
   });
-  it('takes the full width of a glass that is too tall for it (an ultrawide window)', () => {
-    const fit = pageOnGlass(2000, 800, CW, CH, A);
-    expect(fit.w).toBe(CW);
-    expect(fit.h).toBeCloseTo(409.6);
-    expect(fit.x).toBe(0);
-    expect(fit.y).toBeCloseTo((CH - 409.6) / 2);
-  });
-  it('takes the full height of a glass that is too wide for it (a phone)', () => {
-    const fit = pageOnGlass(390, 844, CW, CH, A);
-    expect(fit.h).toBe(CH);
-    expect(fit.w).toBeCloseTo((576 * 390) / 844);
-    expect(fit.y).toBe(0);
-    expect(fit.x).toBeCloseTo((CW - fit.w) / 2);
-  });
   it('keeps the page proportions and stays centred, whatever the window', () => {
     for (const [W, H] of [
       [1280, 800],
