@@ -546,24 +546,25 @@ body.at-pc .talkie {
   font-size: 15px;
   padding: 8px 12px;
   border: 0;
-  background: #fff;
-  color: #111;
-  cursor: pointer;
-  box-shadow:
-    0 -4px #111,
-    0 4px #111,
-    -4px 0 #111,
-    4px 0 #111;
-  transition: transform 80ms ease-out;
-}
-.tbtn--ghost {
   background: #111;
   color: #fff;
+  cursor: pointer;
   box-shadow:
     0 -4px #fff,
     0 4px #fff,
     -4px 0 #fff,
     4px 0 #fff;
+  transition: transform 80ms ease-out;
+}
+/* the picked button (the main one until the arrows or the mouse pick another) is white; the rest are black */
+.tbtn--on {
+  background: #fff;
+  color: #111;
+  box-shadow:
+    0 -4px #111,
+    0 4px #111,
+    -4px 0 #111,
+    4px 0 #111;
 }
 .tbtn:hover {
   transform: translateY(-2px);
@@ -571,7 +572,9 @@ body.at-pc .talkie {
 .tbtn:active {
   transform: translateY(1px);
 }
-.tbtn:focus-visible,
+.tbtn:focus-visible {
+  outline: none; /* the picked button is the white one */
+}
 .talkie__btn:focus-visible {
   outline: 3px solid #e2583e;
   outline-offset: 6px;
