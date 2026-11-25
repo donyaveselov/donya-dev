@@ -1,6 +1,6 @@
 import type { Bilingual, Lang } from './types';
 
-/** Picks the string for the language; the legacy code does the same inline as `o[lang]`. */
+/** Picks the string for the language. */
 export function pick<T>(text: Bilingual<T>, lang: Lang): T {
   return lang === 'en' ? text.en : text.ru;
 }

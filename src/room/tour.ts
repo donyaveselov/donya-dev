@@ -1,4 +1,4 @@
-/* The talkie: a pixel mouth that shows the room (design/TOUR.md).
+/* The talkie: a pixel mouth that shows the room.
    No labels on load. The talkie says hello and asks for a tour. "No": all labels appear and it folds into a corner
    button. "Yes": one line per step; the status steps switch the room to that state and hour, then the real one comes
    back; the labels appear one by one; the camera leans a little towards what is being talked about. */

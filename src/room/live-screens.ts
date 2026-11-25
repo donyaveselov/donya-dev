@@ -21,7 +21,7 @@ const SPINNER = '⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏';
 /** One row on screen: kind, text, whether the typing cursor follows it, whether it continues a wrapped line. */
 type Row = [LineKind, string, boolean, boolean];
 
-/** The opencode TUI at k device pixels per CSS pixel; the session itself is in Russian, its footer in the page's language. */
+/** The opencode TUI at k device pixels per CSS pixel; the session is in Russian, its footer in the page's language. */
 function paintCode(c: HTMLCanvasElement, s: CodeSession, t: number, k: number, lang: Lang): void {
   const g = ctx2d(c);
   const W = c.width / k;

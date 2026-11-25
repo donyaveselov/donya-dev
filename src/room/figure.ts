@@ -1,6 +1,6 @@
 /* The owner: one figure per status (Me_work, Me_play, Me_sleep, Me_outside), only the current one visible, with one
-   small idle loop each. Figure parts are separate meshes with their origins on the joints (see character.py), so each
-   is turned about its joint. In a figure's own axes: x is sideways, y is up, -z is forward. */
+   small idle loop each. Figure parts are separate meshes with their origins on the joints (the Blender model is built
+   that way), so each is turned about its joint. In a figure's own axes: x is sideways, y is up, -z is forward. */
 import { Euler, Quaternion, Sprite, SpriteMaterial, Vector3 } from 'three';
 import type { Object3D, Scene } from 'three';
 import type { Status } from '../shared/types';

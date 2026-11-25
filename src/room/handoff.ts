@@ -274,7 +274,7 @@ export class HandOff {
     if (this.mounted) this.desktop()?.setLang(lang);
   }
 
-  /** What the desktop opens with: the monitor's own picture as a full-screen window, or nothing while the owner is away. */
+  /** What the desktop opens with: the monitor's picture as a full-screen window, or nothing while the owner is away. */
   private openOptions(right: boolean, picture: HTMLCanvasElement, aspect: number): RoomOpenOptions {
     const st = this.host.status();
     if (st === 'sleep' || st === 'outside') return { noBoot: true, instant: true };

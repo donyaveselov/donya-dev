@@ -70,7 +70,7 @@ export function ps1<M extends Material>(m: M): M {
   return m;
 }
 
-/** A copy of a room material that keeps its userData (three's clone() round-trips it through JSON) and the PS1 hooks. */
+/** A copy of a room material that keeps its userData (three's clone() round-trips it through JSON) and its hooks. */
 export function cloneM<M extends Material>(m: M): M {
   const c = m.clone();
   c.userData = { ...(m.userData as MatData) };
