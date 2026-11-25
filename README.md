@@ -27,6 +27,14 @@ Both builds fetch `room.json`, `games/*.jpg` and `wall/*.jpg` next to the page, 
 artifact, publish `dist-artifact/index.html` with those files as supporting files. three.js is bundled from npm
 (`three@0.128.0`, pinned exactly: a different version renders differently), no CDN.
 
+### Deploying to donya.dev (REG.RU shared hosting)
+
+`npm run build`, then upload the contents of `dist/` (not the folder itself) to the site's directory on the hosting
+(ISPmanager: Sites → donya.dev → its folder, usually `www/donya.dev/`). `dist/.htaccess` (from `public/`) sets
+compression, caching (hashed assets and `room.json?v=` for a year, `index.html` revalidated) and the www → apex
+redirect. `.dev` is HTTPS-only in every browser (HSTS preload), so the site opens only once the hosting has an SSL
+certificate for donya.dev (a free Let's Encrypt one in the panel).
+
 ### Re-packing the room model
 
 ```sh

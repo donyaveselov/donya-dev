@@ -1,0 +1,42 @@
+# donya.dev on REG.RU shared hosting (Apache behind nginx). The site is static: index.html, hashed assets/, room.json.
+AddDefaultCharset utf-8
+DirectoryIndex index.html
+Options -Indexes
+
+# www.donya.dev -> donya.dev. No http -> https rule here: .dev is on the browsers' HSTS preload list (https only), and
+# behind the hosting's nginx Apache may see every request as plain http, which would make such a rule loop.
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteCond %{HTTP_HOST} ^www\.donya\.dev$ [NC]
+  RewriteRule ^ https://donya.dev%{REQUEST_URI} [L,R=301]
+</IfModule>
+
+<IfModule mod_mime.c>
+  AddType application/json .json
+  AddType image/svg+xml .svg
+</IfModule>
+
+# room.json is base64 text: compression takes about a quarter off it; the scripts and styles shrink 3-4x
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/css text/plain application/javascript text/javascript application/json image/svg+xml
+</IfModule>
+
+<IfModule mod_headers.c>
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+  # the page itself: always revalidated, so a new deploy shows at once
+  <FilesMatch "\.html$">
+    Header set Cache-Control "no-cache"
+  </FilesMatch>
+  # the model is fetched as room.json?v=<content hash>, the scripts and styles have hashed names: cached for good
+  <FilesMatch "^room\.json$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+  <FilesMatch "\.(js|css)$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+  # pictures keep their names between deploys: a week
+  <FilesMatch "\.(jpg|jpeg|png|svg|webp)$">
+    Header set Cache-Control "public, max-age=604800"
+  </FilesMatch>
+</IfModule>
