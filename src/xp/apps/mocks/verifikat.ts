@@ -1,5 +1,5 @@
-/* Verifikat project screens rebuilt from the real product UI (truesign-ui tokens, truesign-frontend
-   VerifyCodeView, truesign-manufacturer BatchesView / ExportsView). Real HTML + CSS at a fixed design
+/* Verifikat project screens rebuilt from the real product UI (the UI library's tokens, the public site's
+   code check, the manufacturer portal's batches and exports). Real HTML + CSS at a fixed design
    size, scaled to the container by mocks-verifikat.css. Each export: (lang) -> markup string. */
 /* eslint-disable @typescript-eslint/restrict-plus-operands -- markup concatenated as in the product's own code, from fixed data */
 import type { Lang } from '../../../shared/types';
@@ -40,7 +40,7 @@ function svg(w: number, h: number, vb: string, body: string, extra = ''): string
   );
 }
 
-/* ---- icons copied from the project (truesign-frontend/src/components/icons, truesign-ui icons) */
+/* ---- icons copied from the project (the public site's and the UI library's) */
 const LOGO = svg(
   46,
   46,
@@ -150,7 +150,7 @@ function jar(w: number, h: number, v: number): string {
   );
 }
 
-/* ================= Buyer: public verification page (truesign-frontend VerifyCodeView, mobile) */
+/* ================= Buyer: public verification page (the public site's code check, mobile) */
 function ntf(color: string, icon: string, title: string, sub: string, column?: boolean): string {
   return (
     '<div class="vfk-ntf vfk-' +
@@ -249,7 +249,7 @@ export function verify(lang: Lang): string {
   );
 }
 
-/* ================= Manufacturer portal (truesign-manufacturer ManufacturerLayout + u-datatable) */
+/* ================= Manufacturer portal (its layout and the UI library's datatable) */
 function shell(lang: Lang, active: number, table: string): string {
   const tabs = [L(lang, 'Товары', 'Products'), L(lang, 'Партии', 'Batches'), L(lang, 'Экспорты', 'Exports')];
   return (

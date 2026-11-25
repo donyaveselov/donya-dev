@@ -1,6 +1,6 @@
-/* Verifikat screens: ported from truesign-ui (themes/light.css, styles/spacing.styl, helpers.styl,
-   uNotification, uDatatable, uTabs), truesign-frontend (NavBar, ProductPreviewContent, Carousel) and
-   truesign-manufacturer (ManufacturerLayout, StatusBadge, ExportsView, ChatWidget).
+/* Verifikat screens — see apps/mocks/verifikat.ts. Ported from the product's UI library (the light theme,
+   spacing and helpers, notification, datatable, tabs), its public site (nav bar, product preview, carousel)
+   and the manufacturer portal (layout, status badge, exports, chat widget).
    The product font is Noto Sans TC, whose Latin and Cyrillic come from Source Sans. */
 .xp .xpa .vfk-root { position: relative; display: block; width: 100%; aspect-ratio: 16 / 10; overflow: hidden; container-type: inline-size; background: #fff; text-align: left; }
 .xp .xpa .vfk-root .vfk-stage {

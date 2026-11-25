@@ -1,6 +1,6 @@
-/* Kompi (kompy.app) gallery screens — see mocks-kompi.js. Ported from relocator/frontend
-   (style.css, QuizApp.vue, QuestionCard.vue, CitizenshipPicker.vue, ResultList.vue,
-   LangSwitcher.vue, KompiLogo.vue) and backend/scoring/report_pdf.py (_style). Each screen is
+/* Kompi (kompy.app) gallery screens — see apps/mocks/kompi.ts. Ported from the product's frontend
+   (its base styles, the quiz, the question card, the citizenship picker, the result list,
+   the language switcher, the logo) and the styles of the backend's PDF report. Each screen is
    laid out at a fixed 960x600 design size and scaled to its container with CSS only. */
 
 /* ---------------------------------------------------------------- frame + scaling */

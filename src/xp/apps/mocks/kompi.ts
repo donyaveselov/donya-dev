@@ -1,9 +1,8 @@
 /* Kompi (kompy.app) screens for the project gallery, rebuilt from the real product:
-   markup and class rules ported from relocator/frontend (QuizApp.vue, QuestionCard.vue,
-   CitizenshipPicker.vue, ResultList.vue, LangSwitcher.vue, KompiLogo.vue + brand.ts,
-   style.css) and the PDF cover/country page from backend/scoring/report_pdf.py.
-   Copy comes from src/locales/{ru,en}.ts, demo data from src/mockReport.ts and the
-   sample report (frontend/public/landing/kompi-example*.pdf). Styles: mocks-kompi.css. */
+   markup and class rules ported from its frontend (the quiz, the question card, the
+   citizenship picker, the result list, the language switcher, the logo) and the PDF
+   cover and country page from the backend's report builder. Copy comes from the
+   product's locales, demo data from its sample report. Styles: mocks-kompi.css. */
 /* eslint-disable @typescript-eslint/restrict-plus-operands -- markup concatenated as in the product's own code, from fixed data */
 import type { Lang } from '../../../shared/types';
 
