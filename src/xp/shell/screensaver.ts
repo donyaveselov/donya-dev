@@ -1,6 +1,7 @@
 // Screen savers: the floating "Windows XD" logo (optionally driven by the host, to match the copy on its monitor) and
 // a starfield. Any input after the first 400 ms stops them.
 import { XP_ICO } from '../icons';
+import { SAVER_BG } from '../../shared/saver';
 import { SAVER_LOGO } from './constants';
 import { clamp, D, h, now, on, reduced } from './dom';
 import { localPt } from './geometry';
@@ -91,7 +92,7 @@ export function startSaver(kind: SaverKind = S.prefs.saver): void {
       }
       c.globalAlpha = 1;
     } else {
-      c.fillStyle = '#0a1a4a'; // the room's monitors show the same deep blue (the room's SAVER_BG)
+      c.fillStyle = SAVER_BG; // the room's monitors show the same deep blue
       c.fillRect(0, 0, W, H);
       // The host can drive the logo (saverPos -> {u, v}, 0..1 of the free travel) and give the width its own copy of
       // the saver is drawn at (saverBase): then this one matches it in place and in relative size, with no jump. The

@@ -15,6 +15,7 @@ import './apps/paint';
 import './apps/recycle';
 import './apps/browser';
 import './apps/notepad';
+import './apps/calculator-app';
 
 export { XP_ICO, XP_WALL } from './icons';
 export { api } from './shell/desktop';

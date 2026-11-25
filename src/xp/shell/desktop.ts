@@ -1,5 +1,5 @@
 // The public API (XPDesktopApi): mount the desktop into the host, open and close it, switch its language, register
-// apps. Also published as window.XPDesktop for the room and the regression harness.
+// apps. The room imports it from src/xp/index.ts; window.XPDesktop exists only in debug mode (src/xp/install.ts).
 import type { Lang, XPDesktopApi, XPMountOptions, XPOpenOptions } from '../../shared/types';
 import { openApp, registerApp, setRegisterHook, setSystemOpener } from './apps';
 import { clearBalloons, showBalloon } from './balloon';

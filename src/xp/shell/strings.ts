@@ -186,7 +186,7 @@ export const T = {
   bsodKey: d('Нажмите любую клавишу для перезагрузки', 'Press any key to restart'),
   standingBy: d('Ждущий режим. Щёлкните, чтобы проснуться.', 'Standing by. Click to wake up.'),
   typeLabel: d('Тип: приложение', 'Type: Application'),
-  locLabel: d('Расположение: C:\\Andaman\\Programs', 'Location: C:\\Andaman\\Programs'),
+  locLabel: d('Расположение: C:\\Users\\Daniil\\Programs', 'Location: C:\\Users\\Daniil\\Programs'),
   endTaskQ: d('Завершить «%s»? Несохранённые данные будут потеряны.', 'End “%s”? Any unsaved data will be lost.'),
   bsod: d(
     `Обнаружена проблема, и ${BRAND} была остановлена, чтобы не испортить\nвпечатление от этого портфолио.\n\nOWNER_TOO_RELAXED\n\nЕсли вы видите этот экран впервые, перезагрузите компьютер.\nЕсли он появится снова, выполните следующее:\n\nУбедитесь, что кофе горячий, а море на месте. Попросите Даниила всё починить:\nон всё-таки fullstack-разработчик.\n\nТехническая информация:\n\n*** STOP: 0x0000D0E7 (0x07880983, 0x00000000, 0xC0FFEE00, 0x00000001)\n\n***  donya.sys - Address 7.88N base at 98.39E, DateStamp 2026-11\n\n`,

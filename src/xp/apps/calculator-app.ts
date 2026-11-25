@@ -1,5 +1,6 @@
 // Calculator's window: the keypad, the display and the keyboard (the arithmetic is in calculator.ts).
 import type { XPAppApi, XPAppDef } from '../../shared/types';
+import { registerApp } from '../shell/apps';
 import { d } from '../content/text';
 import { Calculator } from './calculator';
 import { ICONS } from './icons';
@@ -144,7 +145,7 @@ function renderCalc(content: HTMLElement, api: XPAppApi): () => void {
 }
 
 /** Registered by notepad.ts, after Notepad. */
-export const calcApp: XPAppDef = {
+const calcApp: XPAppDef = {
   id: 'calc',
   title: T.calculator,
   icon: ICONS.calc,
@@ -155,3 +156,5 @@ export const calcApp: XPAppDef = {
   singleton: true,
   render: renderCalc,
 };
+
+registerApp(calcApp);

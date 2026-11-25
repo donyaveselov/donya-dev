@@ -17,7 +17,7 @@ export const COMPACT_MAX_W = 820;
 export const TINY_W = 400;
 
 /** The screen saver's floating logo: the box that bounces off the edges (the room's copy uses the same one). */
-export const SAVER_LOGO = { w: 250, h: 78 } as const;
+export { SAVER_LOGO } from '../../shared/saver'; // the room's monitors draw the same logo box
 
 /**
  * Stacking order inside .xp-wins; the layers above the windows (taskbar 5000, menus 6000, tips 7000, overlays 9000)

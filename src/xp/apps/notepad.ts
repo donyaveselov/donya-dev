@@ -1,10 +1,8 @@
-// Notepad (it opens the README by default). Calculator (calculator-app.ts) is registered here after it, as the
-// programs are listed.
+// Notepad (it opens the README by default).
 import { isBilingual, type Text } from '../../shared/i18n';
 import type { XPAppApi } from '../../shared/types';
 import { DESKTOP_README } from '../content/readme';
 import { registerApp } from '../shell/apps';
-import { calcApp } from './calculator-app';
 import { ICONS } from './icons';
 import { lineCol } from './notepad-text';
 import { copyText, pad, phuketNow, ui } from './kit';
@@ -238,4 +236,3 @@ registerApp({
   singleton: false,
   render: renderNotepad,
 });
-registerApp(calcApp);
