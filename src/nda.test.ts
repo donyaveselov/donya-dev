@@ -18,7 +18,7 @@ const FORBIDDEN = new Set([
 const PREFIX = 7;
 
 // all of src: the desktop and everything it imports (the room has nothing to hide, so it is scanned too)
-const DIRS = [fileURLToPath(new URL('.', import.meta.url))];
+const SRC = fileURLToPath(new URL('.', import.meta.url));
 
 const sha = (s: string): string => createHash('sha256').update(s, 'utf8').digest('hex');
 
@@ -58,9 +58,8 @@ describe('XP desktop NDA', () => {
   });
 
   it('names no NDA employer or repository', () => {
-    const scanned = DIRS.flatMap(files);
+    const scanned = files(SRC);
     expect(scanned.length).toBeGreaterThan(0);
-    for (const dir of DIRS) expect(scanned.some((f) => f.startsWith(dir))).toBe(true);
     const found = scanned.flatMap((f) => (hits(readFileSync(f, 'utf8')).length ? [f] : []));
     expect(found).toEqual([]);
   });

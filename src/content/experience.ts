@@ -1,6 +1,7 @@
 // Years in development, counted from the first job (RANKS LLC, February 2022) in whole half-years, so "4,5 года" on the
 // resume never goes stale. Every place that states the experience takes it from here.
 import type { Bilingual } from '../types';
+import { plural } from './text';
 
 /** The first month of the first job. */
 export const CAREER_START = { year: 2022, month: 2 };
@@ -15,13 +16,7 @@ export function experienceYears(now: Date = new Date()): number {
 export function yearsText(years: number): Bilingual {
   const whole = Number.isInteger(years);
   const n = Math.floor(years);
-  const ru = !whole
-    ? 'года'
-    : n % 10 === 1 && n % 100 !== 11
-      ? 'год'
-      : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14)
-        ? 'года'
-        : 'лет';
+  const ru = whole ? plural(n, 'год', 'года', 'лет') : 'года';
   return {
     ru: `${String(years).replace('.', ',')} ${ru}`,
     en: `${String(years)} ${years === 1 ? 'year' : 'years'}`,
