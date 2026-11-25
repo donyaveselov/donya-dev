@@ -1,4 +1,5 @@
 // The desktop's sounds: original motifs synthesised with WebAudio, nothing is downloaded.
+import { isMuted } from '../../shared/sound';
 import { now } from './dom';
 import { S } from './state';
 
@@ -11,13 +12,10 @@ export type SoundName =
   | 'maximize'
   | 'error'
   | 'notify'
-  | 'balloonPop'
   | 'start'
   | 'shutdown'
   | 'recycle'
-  | 'tada'
-  | 'crtOn'
-  | 'keyclack';
+  | 'crtOn';
 
 interface OscOpts {
   glide?: number;
@@ -37,7 +35,7 @@ let voices = 0;
 let noiseBuf: AudioBuffer | null = null;
 const last = new Map<string, number>();
 
-const level = (): number => (S.prefs.muted ? 0 : (0.22 * S.prefs.volume) / 0.8);
+const level = (): number => (isMuted() ? 0 : (0.22 * S.prefs.volume) / 0.8);
 
 function init(): AudioContext | null {
   if (ctx) return ctx;
@@ -237,9 +235,6 @@ const SOUNDS: Record<SoundName, (t: number) => void> = {
     bell(740, t, 0.25, 0.18, { pan: -0.3 });
     bell(987.8, t + 0.11, 0.3, 0.3, { pan: 0.3 });
   },
-  balloonPop: (t) => {
-    bell(740, t, 0.2, 0.16);
-  },
   start: (t) => {
     pad([146.8, 220, 370], t, 0.6, 1.1, 0.9, 0.16);
     for (const [f, dt, peak] of [
@@ -276,25 +271,15 @@ const SOUNDS: Record<SoundName, (t: number) => void> = {
       );
     osc('sine', 150, t + 0.3, 0.005, 0.3, 0.09, { glide: 70 });
   },
-  tada: (t) => {
-    [587.3, 740, 880, 1174.7].forEach((f, i) => {
-      bell(f, t + i * 0.08, 0.22, 0.6, { delay: true });
-    });
-  },
   crtOn: (t) => {
     osc('sine', 60, t, 0.02, 0.08, 0.3);
     osc('sine', 12000, t, 0.01, 0.015, 0.3, { glide: 200 });
   },
-  keyclack: (t) => {
-    for (let i = 0; i < 3; i++) noise(t + i * 0.03 + Math.random() * 0.01, 0.012, 0.06, 'highpass', 2500, 0.8);
-  },
 };
 
-const isSound = (n: string): n is SoundName => n in SOUNDS;
-
-/** Plays a sound by name; unknown names, a muted desktop or audio not yet unlocked play nothing. */
-export function sound(name: string): void {
-  if (!unlocked || !ctx || S.prefs.muted || !isSound(name)) return;
+/** Plays a sound; a muted desktop or audio not yet unlocked play nothing. */
+export function sound(name: SoundName): void {
+  if (!unlocked || !ctx || isMuted()) return;
   const n = now();
   const prev = last.get(name);
   if (prev && n - prev < 60) return;
@@ -303,7 +288,14 @@ export function sound(name: string): void {
   if (ctx.state === 'suspended') void ctx.resume();
   try {
     SOUNDS[name](ctx.currentTime + 0.01);
-  } catch {
-    /* a voice failed to schedule: stay quiet */
+  } catch (e) {
+    console.debug(`XP sound "${name}" failed to schedule`, e);
   }
+}
+
+const isSound = (n: string): n is SoundName => Object.hasOwn(SOUNDS, n);
+
+/** The apps' and the host's entry (XPAppApi.sound, XPDesktop.sound): names come as strings, unknown ones are silent. */
+export function soundByName(name: string): void {
+  if (isSound(name)) sound(name);
 }

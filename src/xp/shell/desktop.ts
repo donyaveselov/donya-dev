@@ -14,7 +14,7 @@ import { setLang } from './lang';
 import { closeMenus } from './menu';
 import { saverRunning, startSaver, stopSaver } from './screensaver';
 import { bsod, boot, preDesktop } from './session';
-import { sound, unlockSound } from './sound';
+import { soundByName, unlockSound } from './sound';
 import { closeStart } from './start-menu';
 import { domOrNull, type Refs, S, setDom, type SizeClass } from './state';
 import { BRAND, L, VERSION } from './strings';
@@ -247,7 +247,7 @@ export const api: XPDesktopApi = {
   balloon: (o) => {
     showBalloon(o);
   },
-  sound,
+  sound: soundByName,
   bsod,
   screensaver: (k) => {
     startSaver(k ?? 'logo');

@@ -33,18 +33,22 @@ export function startSaver(kind: SaverKind = S.prefs.saver): void {
   if (saverEl || kind === 'none') return;
   closeMenus(0);
   Tip.hide();
+  const cv = h('canvas');
+  const c = cv.getContext('2d');
+  if (!c) {
+    // nothing is on screen yet: a saver that cannot draw must not come up as a blank overlay nothing dismisses
+    console.warn('XP screen saver: no 2D canvas context');
+    return;
+  }
   const ov = h('div', 'xp-ov xp-saver');
   dom().root.appendChild(ov);
   saverEl = ov;
-  const cv = h('canvas');
   ov.appendChild(cv);
   const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
   const W = S.w;
   const H = S.h;
   cv.width = Math.round(W * dpr);
   cv.height = Math.round(H * dpr);
-  const c = cv.getContext('2d');
-  if (!c) return;
   c.scale(dpr, dpr);
   const stars: Star[] = [];
   for (let i = 0; i < 220; i++)

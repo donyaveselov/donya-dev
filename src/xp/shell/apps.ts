@@ -9,7 +9,7 @@ import { showBalloon } from './balloon';
 import { work } from './geometry';
 import { ICON } from './glyphs';
 import { requestedRect, type Rect } from './layout';
-import { sound } from './sound';
+import { sound, soundByName } from './sound';
 import { S } from './state';
 import { L, tr } from './strings';
 import { sysApp } from './system-apps';
@@ -77,7 +77,7 @@ function makeApi(w: Win, params: XPAppParams | undefined): XPAppApi {
         if (i >= 0) w.langCbs.splice(i, 1);
       };
     },
-    sound,
+    sound: soundByName,
     balloon: (o) => {
       showBalloon(o);
       if (S.active !== w) startFlash(w);
@@ -139,8 +139,8 @@ export function openApp(id: string, params?: XPAppParams, origin?: Rect | null):
       // re-render with the new params
       try {
         ex.cleanup?.();
-      } catch {
-        /* the old render's cleanup failed: render anew anyway */
+      } catch (e) {
+        console.warn(`XP: cleanup of "${app.id}" failed before its re-render; rendering anew anyway`, e);
       }
       ex.body.innerHTML = '';
       ex.langCbs = [];

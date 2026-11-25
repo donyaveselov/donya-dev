@@ -5,7 +5,7 @@ import { Z } from './constants';
 import { clamp, css, h } from './dom';
 import { work } from './geometry';
 import { ICON, messageIcon } from './glyphs';
-import { sound } from './sound';
+import { sound, soundByName } from './sound';
 import { dom, S } from './state';
 import { BRAND, L, tr } from './strings';
 import { growIn, startFlash, Win } from './window';
@@ -111,7 +111,8 @@ export function dialog(o: DialogOptions = {}): XPDialogHandle {
   };
   w.focus();
   if (owner?.state === 'min') startFlash(owner);
-  sound(o.icon === 'error' || o.icon === 'warn' ? 'error' : (o.sound ?? 'notify'));
+  if (o.icon === 'error' || o.icon === 'warn') sound('error');
+  else soundByName(o.sound ?? 'notify');
   growIn(w.el);
   setTimeout(() => {
     primaryBtn?.focus();
