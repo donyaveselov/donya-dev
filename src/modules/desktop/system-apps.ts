@@ -4,7 +4,7 @@ import { openApp } from './apps';
 import { bsod, turnOffDialog } from './session/session';
 import { clamp, esc, h, qs, storeGet, storeSet } from './dom';
 import { dialog } from './windows/dialog';
-import { ICON, wordmark } from './glyphs';
+import { ICON, WORDMARK } from './glyphs';
 import { startSaver } from './session/screensaver';
 import { sound } from './sound';
 import { appList, domOrNull, type Prefs, type SaverKind, S, savePrefs } from './store/state';
@@ -87,7 +87,7 @@ const run: SysDef = {
       const box = h('div', 'xp-sys xp-run');
       box.innerHTML =
         `<div class="xp-sys__row xp-run__top"><span class="xp-run__ic">${ICON.run}</span><span>${esc(L('runText'))}</span></div>` +
-        `<div class="xp-sys__row"><label>${esc(L('runOpen'))}</label><input class="xp-field xp-run__in" list="xp-run-list" autocomplete="off" spellcheck="false"></div>` +
+        `<div class="xp-sys__row"><label>${esc(L('runOpen'))}</label><input class="xp-field xp-run__in" autocomplete="off" spellcheck="false"></div>` +
         '<div class="xp-sys__btns">' +
         `<button class="xp-btn xp-btn--default xp-run__ok">${esc(L('ok'))}</button>` +
         `<button class="xp-btn xp-run__cancel">${esc(L('cancel'))}</button>` +
@@ -140,7 +140,7 @@ const about: SysDef = {
     const repaint = (): void => {
       const box = h('div', 'xp-about');
       box.innerHTML =
-        `<div class="xp-about__band"><div class="xp-boot__mark">${ICON.logo}</div>${wordmark(true)}</div>` +
+        `<div class="xp-about__band"><div class="xp-boot__mark">${ICON.logo}</div>${WORDMARK}</div>` +
         '<div class="xp-about__txt">' +
         `<b>${esc(VERSION)}</b><br>${esc(L('aboutText'))}<hr>` +
         `${esc(L('aboutLicensed'))}<br>&nbsp;&nbsp;${esc(L('aboutVisitor'))}<br>&nbsp;&nbsp;${PC_NAME}<hr>` +
@@ -332,7 +332,7 @@ const taskmgr: SysDef = {
   },
 };
 
-type Draft = Pick<Prefs, 'wall' | 'tint' | 'crt' | 'saver' | 'saverMin'>;
+type Draft = Pick<Prefs, 'wall' | 'crt' | 'saver' | 'saverMin'>;
 
 const display: SysDef = {
   title: T.display,
@@ -343,7 +343,6 @@ const display: SysDef = {
     // what the visitor has chosen but not applied yet
     const draft: Draft = {
       wall: S.prefs.wall,
-      tint: S.prefs.tint,
       crt: S.prefs.crt,
       saver: S.prefs.saver,
       saverMin: S.prefs.saverMin,
@@ -473,8 +472,7 @@ export function applyCrt(): void {
 }
 
 /** Opens a built-in program ('run', 'about', 'taskmgr', 'display'; 'bsod' crashes on purpose). */
-export function sysApp(rawId: string): Win | null {
-  const id = rawId.replace(/^sys[:-]/, '');
+export function sysApp(id: string): Win | null {
   if (id === 'bsod') {
     bsod();
     return null;

@@ -31,8 +31,6 @@ export interface XPMountOptions {
   /** The tray's volume slider moved (0..1): the host's own audio (the room's music) follows it. Mute is not here: it is
    *  the page's one switch, src/store/sound.ts, shared by the room and the desktop. */
   onVolumeChange?: (volume: number) => void;
-  /** Where the wallpaper JPEGs are (default: wall/ of the site, see src/utils/asset.ts). */
-  wallBase?: string;
 }
 
 export interface XPSaverPos {
@@ -100,17 +98,8 @@ export interface XPBalloonOptions {
 
 /** What an app's window offers the app. */
 export interface XPAppWindow {
-  el: HTMLElement;
-  body: HTMLElement;
   setTitle(title: string | Bilingual | null): void;
   close(): void;
-  minimize(): void;
-  maximize(): void;
-  restore(): void;
-  focus(): void;
-  flash(): void;
-  isActive(): boolean;
-  state(): 'normal' | 'max' | 'min';
   resize(w: number, h: number): void;
 }
 
@@ -157,23 +146,12 @@ export interface XPAppDef {
 }
 
 export interface XPDesktopApi {
-  readonly __shell: true;
-  readonly version: string;
   mount(root: HTMLElement, opts: XPMountOptions): void;
   open(opts?: XPOpenOptions): void;
   close(opts?: { instant?: boolean }): void;
   isOpen(): boolean;
   setLang(lang: Lang): void;
-  lang(): Lang;
-  registerApp(def: XPAppDef): void;
   openApp(id: string, params?: XPAppParams): unknown;
-  dialog(opts?: XPDialogOptions): XPDialogHandle;
-  balloon(opts?: XPBalloonOptions): void;
-  sound(name: string): void;
-  bsod(): void;
-  screensaver(kind?: 'logo' | 'stars'): void;
-  stopScreensaver(): void;
-  unmount(): void;
 }
 
 declare global {

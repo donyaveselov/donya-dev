@@ -1,6 +1,5 @@
-// The wallpapers Windows XP shipped with: Bliss is inlined, the rest load from <wallBase><id>.jpg on demand.
+// The wallpapers Windows XP shipped with: Bliss is inlined, the rest load from /wall/<id>.jpg on demand.
 import { XP_WALL } from '../icons';
-import { timeOfDay } from '../taskbar/clock';
 import { domOrNull, S } from '../store/state';
 import { L } from '../strings';
 
@@ -42,19 +41,16 @@ const PLAIN =
 
 export function wallSVG(id: string): string {
   if (!wall(id)) return PLAIN;
-  const src = id === 'bliss' ? XP_WALL : `${S.opts?.wallBase ?? '/wall/'}${id}.jpg`;
+  const src = id === 'bliss' ? XP_WALL : `/wall/${id}.jpg`;
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><rect width="800" height="600" fill="#3A6EA5"/><image href="${src}" width="800" height="600"/></svg>`;
 }
 
-/** Paints the wallpaper and the time-of-day class; skipped when neither changed, unless forced. */
+/** Paints the wallpaper; skipped when it did not change, unless forced. */
 export function paintWall(force = false): void {
   const R = domOrNull();
   if (!R) return;
-  const tod = timeOfDay();
-  const key = `${S.prefs.wall}/${tod}`;
+  const key = S.prefs.wall;
   if (!force && R.wall.getAttribute('data-k') === key) return;
   R.wall.setAttribute('data-k', key);
   R.wall.innerHTML = wallSVG(S.prefs.wall);
-  R.root.classList.remove('xp--day', 'xp--dusk', 'xp--night');
-  R.root.classList.add(`xp--${tod}`);
 }

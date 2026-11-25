@@ -34,7 +34,6 @@ export const T = {
   size: d('Размер', 'Size'),
   minimize: d('Свернуть', 'Minimize'),
   maximize: d('Развернуть', 'Maximize'),
-  help: d('Справка', 'Help'),
   desktop: d('Рабочий стол', 'Desktop'),
   arrangeBy: d('Упорядочить значки', 'Arrange Icons By'),
   byName: d('Имя', 'Name'),

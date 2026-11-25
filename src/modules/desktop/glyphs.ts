@@ -75,6 +75,4 @@ export const STATUS_DOT: Record<Status, string> = {
   outside: '#4FC0FA',
 };
 
-export function wordmark(big: boolean): string {
-  return `<div class="xp-word${big ? ' xp-word--big' : ''}">Windows<sup>XD</sup></div>`;
-}
+export const WORDMARK = '<div class="xp-word">Windows<sup>XD</sup></div>';

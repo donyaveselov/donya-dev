@@ -10,7 +10,6 @@ describe('saved preferences', () => {
     const saved = {
       volume: 0.35,
       wall: 'autumn',
-      tint: false,
       crt: false,
       saver: 'stars',
       saverMin: 10,
@@ -21,7 +20,7 @@ describe('saved preferences', () => {
   });
 
   it('fall back field by field, keeping the good ones', () => {
-    const p = parsePrefs({ volume: 'loud', wall: 7, tint: 'yes', crt: false, saver: 'matrix', saverMin: null });
+    const p = parsePrefs({ volume: 'loud', wall: 7, crt: false, saver: 'matrix', saverMin: null });
     expect(p).toEqual({ ...defaultPrefs(), crt: false });
   });
 
@@ -49,7 +48,7 @@ describe('saved preferences', () => {
   });
 
   it('drop keys the shell no longer keeps there', () => {
-    expect(parsePrefs({ muted: true, theme: 'luna' })).toEqual(defaultPrefs());
+    expect(parsePrefs({ muted: true, theme: 'luna', tint: false })).toEqual(defaultPrefs());
   });
 
   it('give each caller its own defaults', () => {

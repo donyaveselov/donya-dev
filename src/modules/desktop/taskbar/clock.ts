@@ -1,7 +1,7 @@
 // Phuket time and the owner's status, from the host when it provides them.
 import type { PhuketTime, Status } from '../../../types';
 import { S } from '../store/state';
-import { formatClock, statusAt, type TimeOfDay, timeOfDayAt } from './time';
+import { formatClock, statusAt } from './time';
 
 const PHUKET_MS = 7 * 3600e3;
 
@@ -41,7 +41,3 @@ export function dateText(): string {
     return d.toUTCString().slice(0, 16);
   }
 }
-
-export const timeOfDay = (): TimeOfDay => (S.prefs.tint ? timeOfDayAt(phuketTime()) : 'day');
-
-export type { TimeOfDay };

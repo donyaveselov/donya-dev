@@ -16,12 +16,6 @@ import { ghost, growIn, startFlash, Win } from './windows/window';
 
 export const appTitle = (app: XPAppDef): string => tr(app.title) || app.id;
 
-let onRegister: (() => void) | null = null;
-/** The desktop's hook to refresh its icons and Quick Launch after a late registration. */
-export function setRegisterHook(fn: (() => void) | null): void {
-  onRegister = fn;
-}
-
 type SystemOpener = (id: string) => Win | null;
 let openSystem: SystemOpener | null = null;
 /** The built-in programs (system-apps.ts, a layer above) take the ids no app registered; desktop.ts connects them. */
@@ -29,20 +23,14 @@ export function setSystemOpener(fn: SystemOpener | null): void {
   openSystem = fn;
 }
 
-let regT = 0;
+/** Apps register when their module is imported (src/modules/desktop/index.ts), before the desktop mounts. */
 export function registerApp(def: XPAppDef): void {
   S.apps.set(def.id, def);
-  if (S.mounted) {
-    clearTimeout(regT);
-    regT = window.setTimeout(() => onRegister?.(), 0);
-  }
 }
 
 function makeApi(w: Win, params: XPAppParams | undefined): XPAppApi {
   return {
     win: {
-      el: w.el,
-      body: w.body,
       setTitle: (s) => {
         w.customTitle = s == null ? null : tr(s);
         w.renderTitle();
@@ -50,22 +38,6 @@ function makeApi(w: Win, params: XPAppParams | undefined): XPAppApi {
       close: () => {
         w.close();
       },
-      minimize: () => void w.minimize(),
-      maximize: () => {
-        w.maximize();
-      },
-      restore: () => {
-        if (w.state === 'min') void w.restore();
-        else if (w.state === 'max') w.toggleMax();
-      },
-      focus: () => {
-        w.focus();
-      },
-      flash: () => {
-        startFlash(w);
-      },
-      isActive: () => S.active === w,
-      state: () => w.state,
       resize: (ww, hh) => {
         if (w.state !== 'normal') return;
         w.rect = requestedRect(w.rect, ww, hh, { w: w.minW, h: w.minH }, work());

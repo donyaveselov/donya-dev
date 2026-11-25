@@ -93,17 +93,16 @@ function topWindow(excl?: Win): Win | null {
 }
 
 interface GhostOpts {
-  caption?: string;
+  caption: string;
   icon?: string;
   easing?: string;
 }
 
-/** The outline (or caption strip) that flies between a window and its taskbar button. */
-export function ghost(from: Rect, to: Rect, ms: number, o: GhostOpts = {}): Promise<void> {
+/** The caption strip that flies between a window and its taskbar button. */
+export function ghost(from: Rect, to: Rect, ms: number, o: GhostOpts): Promise<void> {
   if (reduced()) return Promise.resolve();
-  const g = h('div', `xp-ghost${o.caption ? ' xp-ghost--cap' : ''}`);
-  if (o.caption)
-    g.innerHTML = `<span class="xp-ghost__ic">${o.icon ?? ''}</span><span class="xp-ghost__t">${esc(o.caption)}</span>`;
+  const g = h('div', 'xp-ghost');
+  g.innerHTML = `<span class="xp-ghost__ic">${o.icon ?? ''}</span><span class="xp-ghost__t">${esc(o.caption)}</span>`;
   dom().root.appendChild(g);
   const frame = (r: Rect): Keyframe => ({
     left: `${String(r.x)}px`,
@@ -367,7 +366,7 @@ export class Win {
       });
       for (const b of el.querySelectorAll<HTMLButtonElement>('.xp-tbtn')) {
         const a = b.dataset.a;
-        if (!Tip.get(b)) Tip.set(b, () => (a === 'min' ? L('minimize') : a === 'close' ? L('close') : L('help')));
+        if (!Tip.get(b)) Tip.set(b, () => (a === 'min' ? L('minimize') : L('close')));
         b.addEventListener('pointerdown', (e) => {
           e.stopPropagation();
           this.focus();
