@@ -1,0 +1,24 @@
+# /api: only the two endpoints answer. analytics-lib.php (included by both) and anything else here is refused; no
+# directory listing. The configuration, the logs and the state are not here at all: they live outside the site's
+# folder, in <home>/donya-private (see analytics-lib.php and deploy/analytics.sample.php).
+Options -Indexes
+DirectoryIndex disabled
+
+<IfModule mod_authz_core.c>
+  Require all denied
+  <FilesMatch "^(collect|digest)\.php$">
+    Require all granted
+  </FilesMatch>
+</IfModule>
+<IfModule !mod_authz_core.c>
+  Order deny,allow
+  Deny from all
+  <FilesMatch "^(collect|digest)\.php$">
+    Allow from all
+  </FilesMatch>
+</IfModule>
+
+<IfModule mod_headers.c>
+  Header always set Cache-Control "no-store"
+  Header always set X-Robots-Tag "noindex"
+</IfModule>

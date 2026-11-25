@@ -75,15 +75,76 @@ src/
     apps/<name>/       the desktop's programs: projects, resume, about, contact, terminal, browser, notepad,
                        calculator, paint, minesweeper, recycle
     music/             the background lofi loop
-  services/            *.service.ts: the room model, weather, Discord presence, the lazily loaded desktop
+  services/            *.service.ts: the room model, weather, Discord presence, the lazily loaded desktop, analytics
   store/               page-wide state: the one mute switch
   content/             texts: projects, resume, profile, stack
   components/kit/      the apps' small DOM kit (h(), menus, bindings)
   i18n/  types/  enums/  utils/  assets/
 scripts/           deploy.mjs (FTP deploy), pack-room.mjs (Blender export -> room.json), regress.mjs + compare.mjs
-public/            room.json, wallpapers, screenshots, music/ (the lofi loop, with its CREDITS.txt), .htaccess
+public/            room.json, wallpapers, screenshots, music/ (the lofi loop, with its CREDITS.txt), .htaccess,
+                   api/ (the analytics endpoint and the daily digest, PHP)
+deploy/            analytics.sample.php: the template of the analytics' private config on the host
 docs/              DEVELOPMENT.md
 ```
+
+## Analytics and notifications
+
+The site counts visits without personal data and tells me about them in Telegram. The page
+(`src/services/analytics.service.ts`) sends a short list of events to `/api/collect.php` (`public/api/`, PHP on the
+host), which logs them and sends one message per visit, for example:
+
+```
+👀 Визит 3 мин 12 с (активно 2:40) · телефон · RU · пришёл: hh.ru · Safari/iOS
+экскурсия: да, до конца → компьютер → Проекты, Резюме → Компи (сайт)
+```
+
+and `/api/digest.php` sends a daily summary (visits, unique visitors, median and average active time, referrers, how
+many took the tour, sat at the PC, opened the resume, the top apps).
+
+**What is collected.** The events and their props are a fixed list (`SCHEMA` in the service, mirrored in
+`public/api/analytics-lib.php`; anything else is dropped on both sides): the visit's start (the route, the page's and
+the browser's language, the device class phone / tablet / desktop, the window size rounded to tens of pixels, the
+referrer's host, `utm_source`), the tour (offered, accepted, declined, each step, skipped, completed), sitting down at
+the PC and leaving it, the apps opened, the resume sheet, the diploma, projects and their site windows, a language
+switch, and the visit's end: total time, active time (the tab visible and some input within the last minute) and the
+milestones reached. The server adds the time, a browser and OS family ("Chrome/Android") and a visitor hash.
+
+**What is not.** No cookies, no ids in localStorage, no fingerprinting: the visit's id is random and lives in the tab's
+sessionStorage. No IP address and no User-Agent are stored: the visitor is `sha256(salt . ip . ua)[:16]` with a random
+salt that is replaced every day, so a visitor counts once per day and cannot be followed from one day to the next. No
+referrer paths or queries, no text typed anywhere. Nothing is sent with Do Not Track or Global Privacy Control on, from
+bots, headless or automated browsers (`navigator.webdriver`), in `?debug` mode, or from `npm run dev` (unless it is
+started with `VITE_ANALYTICS=1`).
+
+**Setting it up on the host (once).** The config lives outside the site's folder, where the deploy never writes and
+the web never serves it: `<home>/donya-private/analytics.php`, next to `www/` (the site is `<home>/www/donya.dev`;
+another path can be given in the `DONYA_ANALYTICS_CONFIG` environment variable).
+
+1. Create the bot with [@BotFather](https://t.me/BotFather) (`/newbot`) and keep its token.
+2. Write anything to the bot, then open `https://api.telegram.org/bot<token>/getUpdates` in a browser: the chat id is
+   `result[0].message.chat.id`.
+3. In ISPmanager's file manager (or over FTP) create the folder `donya-private` in the home folder, next to `www`
+   (permissions 700), and put [`deploy/analytics.sample.php`](deploy/analytics.sample.php) in it as `analytics.php`
+   (permissions 600) with the real `tg_token`, `tg_chat_id` and a long random `digest_key`. The `logs/` and `state/`
+   folders appear next to it with the first event. Never commit the real file.
+4. Deploy (`npm run deploy` uploads `dist/api/` with the rest), open the site, leave it after a few seconds: a message
+   arrives. Logs: `donya-private/logs/YYYY-MM-DD.jsonl`, one JSON line per event.
+
+**The daily digest.** ISPmanager → _Scheduler_ (cron) → _Create_: run every hour (minute `5`, every hour, every day),
+with the command
+
+```sh
+/usr/bin/wget -q -O - "https://donya.dev/api/digest.php?key=<digest_key>"
+```
+
+or, without the key in a URL, the host's PHP binary on the file (its path is in the hosting panel, e.g.
+`/opt/php/8.3/bin/php`): `/opt/php/8.3/bin/php ~/www/donya.dev/api/digest.php`. It sends once a day, in the hour
+`digest_hour` of the config (Phuket time), a summary of the previous day, and then deletes logs older than 180 days.
+`?force=1` sends now, `?print=1` only shows the text, `?day=2026-11-24` picks the day.
+
+**Turning it off.** Messages only: `'notify' => false` in the config (the log and the digest go on). Everything on the
+server: `'enabled' => false`, or delete the config (collect.php then answers 503 and stores nothing). In the page:
+build with `VITE_ANALYTICS=0`, and nothing is sent at all.
 
 ## Credits
 
