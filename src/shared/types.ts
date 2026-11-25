@@ -28,9 +28,9 @@ export interface XPMountOptions {
   saverPos?: () => XPSaverPos | null | undefined;
   /** The width the host draws its saver at; with saverPos the desktop's saver matches it in place and size. */
   saverBase?: number;
-  /** The desktop's sound was muted, unmuted or its volume moved (the tray's volume control): the host's own audio
-   *  (the room's music) follows it. volume is 0..1. */
-  onSoundChange?: (muted: boolean, volume: number) => void;
+  /** The tray's volume slider moved (0..1): the host's own audio (the room's music) follows it. Mute is not here: it is
+   *  the page's one switch, src/shared/sound.ts, shared by the room and the desktop. */
+  onVolumeChange?: (volume: number) => void;
   /** Where the wallpaper JPEGs are (default 'wall/'). */
   wallBase?: string;
 }

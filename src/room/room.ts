@@ -287,9 +287,9 @@ function mountOptions(): RoomMountOptions {
     onLangChange: (l: Lang) => {
       if (l !== live.lang) setLang(l);
     },
-    // the tray's volume control turns the room's music down too
-    onSoundChange: (muted: boolean, volume: number) => {
-      music.follow(muted, volume);
+    // the tray's volume slider turns the room's music down too (mute is the shared switch: src/shared/sound.ts)
+    onVolumeChange: (volume: number) => {
+      music.follow(volume);
     },
   };
 }
@@ -594,8 +594,8 @@ function openFlatDesktop(then?: (desk: RoomDesktop) => void): void {
         onLangChange: (l: Lang) => {
           if (l !== live.lang) setLang(l);
         },
-        onSoundChange: (muted: boolean, volume: number) => {
-          music.follow(muted, volume);
+        onVolumeChange: (volume: number) => {
+          music.follow(volume);
         },
       });
     }

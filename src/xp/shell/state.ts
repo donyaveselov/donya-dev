@@ -1,4 +1,5 @@
 // The shell's state, the visitor's saved preferences, and the DOM it builds on mount.
+import { isMuted, muteChosen, setMuted } from '../../shared/sound';
 import type { Lang, XPAppDef, XPMountOptions } from '../../shared/types';
 import { sessGet, storeGet, storeSet } from './dom';
 import type { Cell } from './layout';
@@ -72,6 +73,9 @@ export const S = {
 export function savePrefs(): void {
   storeSet('prefs', S.prefs);
 }
+// mute is the page's one switch (src/shared/sound.ts): a desktop muted before that existed moves it over once
+if (!muteChosen() && S.prefs.muted) setMuted(true);
+S.prefs.muted = isMuted();
 // the default wallpaper changed: move earlier visitors to it once
 if (!storeGet('wall3')) {
   S.prefs.wall = 'bliss';

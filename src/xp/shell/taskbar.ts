@@ -1,5 +1,6 @@
 // The taskbar: Start button, Quick Launch, window buttons, and the notification area (status, language, volume,
 // clock) with its pop-ups.
+import { isMuted, onMutedChange, setMuted } from '../../shared/sound';
 import { appTitle } from './apps';
 import { showBalloon } from './balloon';
 import { clockText, dateText, status } from './clock';
@@ -185,16 +186,24 @@ export function updateTray(): void {
   if (t) t.textContent = L('start');
 }
 
+/** The tray's Mute: the page's one sound switch (src/shared/sound.ts), the same one as the room's speaker button. */
 function toggleMute(v?: boolean): void {
-  S.prefs.muted = v ?? !S.prefs.muted;
-  savePrefs();
-  setSoundLevel();
-  updateTray();
-  if (!S.prefs.muted) {
+  setMuted(v ?? !isMuted());
+  if (!isMuted()) {
     unlockSound();
     sound('click');
   }
 }
+
+// the switch flipped (here, or by the room's button): the desktop's sounds, its tray icon and an open volume popup
+onMutedChange((m) => {
+  S.prefs.muted = m;
+  savePrefs();
+  setSoundLevel();
+  updateTray();
+  const box = volPop?.querySelector<HTMLInputElement>('.xp-vol__m');
+  if (box) box.checked = m;
+});
 
 let volPop: HTMLDivElement | null = null;
 export const volumeOpen = (): boolean => !!volPop;
@@ -220,10 +229,7 @@ function volumePopup(): void {
   m.checked = S.prefs.muted;
   r.addEventListener('input', () => {
     S.prefs.volume = Number(r.value) / 100;
-    if (S.prefs.muted && Number(r.value) > 0) {
-      S.prefs.muted = false;
-      m.checked = false;
-    }
+    if (isMuted() && Number(r.value) > 0) setMuted(false); // turning it up unmutes, as in XP
     savePrefs();
     setSoundLevel();
     updateTray();

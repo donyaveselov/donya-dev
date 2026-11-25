@@ -1,21 +1,13 @@
-// Background music: one lofi loop ("Lofi Hip Hop Loop" by omfgdude, CC0: public/music/CREDITS.txt), on by default,
-// with a mute button in the top bar (remembered). Browsers start audio only from a gesture, so it begins on the
+// Background music: one lofi loop ("Lofi Hip Hop Loop" by omfgdude, CC0: public/music/CREDITS.txt), on by default.
+// The speaker button in the top bar flips the page's one sound switch (src/shared/sound.ts), the same one the
+// desktop's tray Mute flips, and the music follows that switch wherever it is flipped. Browsers start audio only from a gesture, so it begins on the
 // visitor's first click, tap or key and fades in. The file is fetched while the page is idle (not at all while muted)
 // and looped gaplessly with Web Audio; an MP3 copy serves browsers without Ogg Vorbis (older Safari), and the MP3
-// encoder's silence at both ends is cut off the loop. A hidden tab pauses it. At the PC the desktop's own volume
-// control (the tray) mutes and turns it down too.
+// encoder's silence at both ends is cut off the loop. A hidden tab pauses it. The tray's volume slider turns it down.
+import { isMuted, onMutedChange, setMuted } from '../shared/sound';
 
-const KEY = 'music';
 const LEVEL = 0.5;
 const FADE_IN = 2;
-
-function saved(): boolean {
-  try {
-    return localStorage.getItem(KEY) !== 'off';
-  } catch {
-    return true;
-  }
-}
 
 /** Where the sound really starts and ends in a decoded buffer (skips an encoder's leading and trailing silence). */
 export function audibleSpan(data: Float32Array, threshold = 1e-3): [number, number] {
@@ -27,9 +19,8 @@ export function audibleSpan(data: Float32Array, threshold = 1e-3): [number, numb
 }
 
 export class Music {
-  private on = saved();
-  /** the desktop's tray: muted, and its volume 0..1 */
-  private desk = { muted: false, volume: 1 };
+  /** the desktop tray's volume, 0..1 */
+  private volume = 1;
   private ctx: AudioContext | null = null;
   private gain: GainNode | null = null;
   private file: Promise<ArrayBuffer> | null = null;
@@ -37,14 +28,17 @@ export class Music {
 
   constructor(private readonly button: HTMLButtonElement) {
     button.addEventListener('click', () => {
-      this.set(!this.on);
+      setMuted(!isMuted());
+    });
+    onMutedChange(() => {
+      this.changed();
     });
     this.paint();
     // the first gesture anywhere starts it (the button's own click included: then it is a "turn on")
     const first = (): void => {
       window.removeEventListener('pointerdown', first, true);
       window.removeEventListener('keydown', first, true);
-      if (this.on) void this.start();
+      if (!isMuted()) void this.start();
     };
     window.addEventListener('pointerdown', first, true);
     window.addEventListener('keydown', first, true);
@@ -57,7 +51,7 @@ export class Music {
 
   /** The file, fetched once: Ogg Vorbis where the browser plays it, else the MP3. */
   prefetch(): void {
-    if (!this.on || this.file) return;
+    if (isMuted() || this.file) return;
     const ogg = new Audio().canPlayType('audio/ogg; codecs="vorbis"') !== '';
     this.file = fetch(ogg ? 'music/lofi-loop.ogg' : 'music/lofi-loop.mp3').then((r) => {
       if (!r.ok) throw new Error(`music: HTTP ${String(r.status)}`);
@@ -68,32 +62,27 @@ export class Music {
     });
   }
 
-  /** The desktop's tray changed the sound. */
-  follow(muted: boolean, volume: number): void {
-    this.desk = { muted, volume };
+  /** The desktop tray's volume slider moved. */
+  follow(volume: number): void {
+    this.volume = volume;
     this.level(0.15);
   }
 
   private get audible(): boolean {
-    return this.on && !this.desk.muted;
+    return !isMuted();
   }
 
-  private set(on: boolean): void {
-    this.on = on;
-    try {
-      localStorage.setItem(KEY, on ? 'on' : 'off');
-    } catch {
-      // private mode: for this visit only
-    }
+  /** The sound switch flipped (the button here or the desktop's tray). */
+  private changed(): void {
     this.paint();
-    if (on && !this.started) void this.start();
+    if (this.audible && !this.started) void this.start();
     else this.level(0.2);
-    if (on) void this.ctx?.resume();
+    if (this.audible) void this.ctx?.resume();
   }
 
   private paint(): void {
-    this.button.setAttribute('aria-pressed', String(this.on));
-    this.button.classList.toggle('music--off', !this.on);
+    this.button.setAttribute('aria-pressed', String(this.audible));
+    this.button.classList.toggle('music--off', !this.audible);
   }
 
   /** Moves the volume to where the button and the tray put it. */
@@ -101,7 +90,7 @@ export class Music {
     const c = this.ctx;
     const g = this.gain;
     if (!c || !g) return;
-    const to = this.audible ? LEVEL * this.desk.volume : 0;
+    const to = this.audible ? LEVEL * this.volume : 0;
     g.gain.cancelScheduledValues(c.currentTime);
     g.gain.setTargetAtTime(to, c.currentTime, time / 3);
   }
