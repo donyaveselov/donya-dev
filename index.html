@@ -9,7 +9,7 @@
 <meta name="author" content="Даниил Иванов">
 <meta name="theme-color" content="#0d1630">
 <link rel="canonical" href="https://donya.dev/">
-<link rel="icon" href="favicon.ico" sizes="16x16 32x32 48x48">
+<link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48">
 <meta property="og:type" content="profile">
 <meta property="og:site_name" content="donya.dev">
 <meta property="og:locale" content="ru_RU">
@@ -40,13 +40,15 @@
     var HOURS = { day: 13, sunset: 18.2, night: 1.5 };
     var GAMES = { dota: 1, cs: 1, pcdota: 1 };
     var own = function (o, k) { return Object.prototype.hasOwnProperty.call(o, k); };
-    var hash = location.hash.slice(1);
+    /* the route: an old link's hash (#night), else the path's one folder (/night, /night/); routeName in routes.ts */
+    var path = /^\/([^/]+)(?:\/(?:index\.html)?)?$/.exec(location.pathname);
+    var route = location.hash.slice(1) || (path && path[1] !== 'index.html' ? path[1] : '');
     var status;
-    if (own(BACKDROP, hash)) status = hash;
-    else if (own(GAMES, hash)) status = 'play';
+    if (own(BACKDROP, route)) status = route;
+    else if (own(GAMES, route)) status = 'play';
     else {
       var now = new Date();
-      var h = own(HOURS, hash) ? HOURS[hash] : ((now.getUTCHours() + 7) % 24) + now.getUTCMinutes() / 60;
+      var h = own(HOURS, route) ? HOURS[route] : ((now.getUTCHours() + 7) % 24) + now.getUTCMinutes() / 60;
       status = h < 8 || h >= 23.5 ? 'sleep' : h >= 10 && h < 19 ? 'work' : h >= 20.5 ? 'play' : 'outside';
     }
     var root = document.documentElement.style;

@@ -9,7 +9,7 @@ export function isStatus(s: string): s is Status {
   return (STATUSES as readonly string[]).includes(s);
 }
 
-/** The hours the previews show (#day / #sunset / #night, the debug panel, the tour); 18.2 is 18:12. */
+/** The hours the previews show (/day, /sunset, /night, the debug panel, the tour); 18.2 is 18:12. */
 export const PREVIEW_HOURS = { day: 13, sunset: 18.2, night: 1.5 } as const;
 
 let fmt: Intl.DateTimeFormat | null = null;

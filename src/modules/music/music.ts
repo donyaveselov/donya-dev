@@ -8,6 +8,7 @@
 // until it has also fetched the file's end (Ogg keeps no duration up front), which on this host is seconds after the
 // click; a CBR MP3 starts after one request. Nothing is fetched before that first gesture.
 import { isMuted, onMutedChange, setMuted } from '../../store/sound';
+import { asset } from '../../utils/asset';
 
 const LEVEL = 0.5;
 const FADE_IN = 2;
@@ -99,7 +100,7 @@ export class Music {
       const el = new Audio();
       el.loop = true;
       el.preload = 'auto';
-      el.src = 'music/lofi-loop.mp3';
+      el.src = asset('music/lofi-loop.mp3');
       const c = new AudioContext();
       const g = c.createGain();
       g.gain.value = 0;

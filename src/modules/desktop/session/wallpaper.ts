@@ -3,6 +3,7 @@ import { XP_WALL } from '../icons';
 import { timeOfDay } from '../taskbar/clock';
 import { domOrNull, S } from '../store/state';
 import { L } from '../strings';
+import { asset } from '../../../utils/asset';
 
 export const WALLS: readonly (readonly [id: string, ru: string, en: string])[] = [
   ['bliss', 'Безмятежность', 'Bliss'],
@@ -42,7 +43,7 @@ const PLAIN =
 
 export function wallSVG(id: string): string {
   if (!wall(id)) return PLAIN;
-  const src = id === 'bliss' ? XP_WALL : `${S.opts?.wallBase ?? 'wall/'}${id}.jpg`;
+  const src = id === 'bliss' ? XP_WALL : `${S.opts?.wallBase ?? asset('wall/')}${id}.jpg`;
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><rect width="800" height="600" fill="#3A6EA5"/><image href="${src}" width="800" height="600"/></svg>`;
 }
 

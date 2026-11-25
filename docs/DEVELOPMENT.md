@@ -14,6 +14,16 @@ The model is cache-busted by the build: `vite.config.ts` defines `__ROOM_VERSION
 md5 of `public/room.json`) and the page fetches `room.json?v=<that>`. The build fails if the built scripts contain no
 `room.json?v=`.
 
+**Routes are paths** (`/resume`, `/pc`, `/night`, ...; the list is at the top of `src/modules/room/routes.ts`). The
+host has no fallback to `index.html`, so `vite build` also writes a copy of the page into a folder per route
+(`dist/resume/index.html`, ...); the names come from the route tables (`PAGES` in `routes.ts`, loaded by the
+`route-pages` plugin in `vite.config.ts`), so a new route gets its page without a second list. That is why the site
+is built with `base: '/'` (absolute URLs, the same HTML works one folder down) and the files of `public/` are fetched
+through `asset()` (`src/utils/asset.ts`). An old link (`/#resume`) is rewritten to its path on load, and `/resume/`
+(how the host serves the folder) to `/resume`. An unknown path (`/nonsense`) is the host's 404 on donya.dev;
+`vite dev` and `vite preview` fall back to the page for any path, so there it is the plain room. The artifact build
+keeps relative URLs and hash routes (`#resume`): it is published where paths are not its own.
+
 `lab/` is served by `vite dev` only (`http://127.0.0.1:5173/lab/music/`); the production build's only input is
 `index.html`.
 
@@ -41,7 +51,7 @@ binary is `$CHROME_PATH`, else Google Chrome on macOS, else the usual Linux path
 
 `regress.mjs` opens the page with `?debug` (it drives the debug panel) and captures 42 states in about 50 s: the
 talkie tour (hello, first step, last step), the room after the tour, day / sunset / night, every status (work, Dota,
-CS, sleep, outside), cloud / rain / storm, the `#night`, `#play` and `#resume` routes, the room in English, the
+CS, sleep, outside), cloud / rain / storm, the `/night`, `/play` and `/resume` routes, the room in English, the
 desktop after sitting down, every app opened once, the Start menu, the desktop in English, standing up, and a 390x844
 phone (tour, room, desktop, projects). `--only=name,name` limits the shots. Console errors, page errors and failed
 requests go to `errors.json`; each state's chip and label positions go to `states.json`.
@@ -87,8 +97,8 @@ node scripts/deploy.mjs --ls   # list the login's home folder (to find the site'
   `*.hosting.reg.ru` machine in `~/.netrc`. The site's folder is `$FTP_DIR`, by default `www/donya.dev`.
 - **What is uploaded.** The site's folder keeps `.deploy-manifest.json` with the sha256 of every file of the last
   deploy. A file is uploaded when its hash differs (or it is missing on the host, or its size there is wrong).
-- **Order.** Assets first, `index.html` last, then the manifest: a visitor never gets a page whose scripts are not
-  there yet.
+- **Order.** Assets first, then the route pages (`resume/index.html`, ...), `index.html` last, then the manifest: a
+  visitor never gets a page whose scripts are not there yet.
 - **What is removed.** Only files that are in neither this build nor the previous manifest. The previous deploy's
   files stay for one more deploy, because a tab opened before it still has the old `index.html` and loads its desktop
   chunk lazily. `.well-known/` (Let's Encrypt) and `cgi-bin/` are never touched.

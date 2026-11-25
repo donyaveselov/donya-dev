@@ -1,4 +1,5 @@
-# donya.dev on REG.RU shared hosting (Apache 2.4 behind nginx). The site is static: index.html, hashed assets/, room.json.
+# donya.dev on REG.RU shared hosting (Apache 2.4 behind nginx). The site is static: index.html, hashed assets/, room.json,
+# and a copy of index.html per route (resume/index.html, ...: there is no fallback to index.html for /resume).
 # The host's nginx may serve static files itself, without asking Apache: the Cache-Control headers below then do not
 # apply to them, and the panel's own cache settings do (check with curl -I after a deploy).
 AddDefaultCharset utf-8

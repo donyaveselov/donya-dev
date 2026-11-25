@@ -33,6 +33,8 @@ into one HTML file. That is why the history starts with an import and not with a
   captures. It caught, for example, a CSS minifier silently dropping `backdrop-filter`.
 - **Two build targets.** `npm run build` makes the multi-file site; `npm run build:artifact` inlines everything into
   one `index.html`, because the same page is also published as a claude.ai artifact, which takes a single HTML file.
+- **Routes are paths, pages are copies.** `/resume`, `/pc`, `/night` and the rest are real addresses: the host serves
+  files only, so the build writes the page into a folder per route, taking the names from the route tables.
 - **Fallbacks.** Without WebGL the page keeps its top bar and a plain projects button instead of an empty canvas
   (the desktop is DOM and still works); without JavaScript a `<noscript>` style makes the resume sheet the page. The
   resume is real markup in `index.html`, so it also prints.
