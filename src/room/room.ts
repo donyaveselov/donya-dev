@@ -8,7 +8,6 @@ import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { getDesktop } from '../shared/desktop';
 import type { RoomDesktop, RoomMountOptions } from '../shared/desktop';
 import type { Lang, Status } from '../shared/types';
-import { GAME_NAMES, gameKind } from './clock';
 import { debugWanted } from '../shared/debug';
 import type { DebugHost } from './debug-panel';
 import type { RoomDebugHandle } from './debug-handle';
@@ -28,10 +27,10 @@ import type { Side } from './monitors';
 import { lightCoast, makeOutdoor } from './outdoor';
 import type { Outdoor } from './outdoor';
 import { Panels, currentHash, parseRoute } from './panels';
+import { GAME_NAMES, pollPresence } from './presence';
 import { makePost, psx, render, setBackdrop } from './psx';
 import { Figure } from './figure';
 import { REDUCED_MOTION, hourOfDay, live, readClock, saveLang, status } from './state';
-import { pollSteam } from './steam';
 import { Tags, fitPixelBox, placePixelBox } from './tags';
 import { Tour } from './tour';
 import type { TourSights } from './tour';
@@ -631,10 +630,10 @@ function debugHost(): DebugHost {
         live.game.kind = game;
         live.game.name = GAME_NAMES[game];
       }
-      const steam = live.steam;
-      if (!state && steam?.state === 'in-game') {
-        live.game.kind = gameKind(steam.appid);
-        live.game.name = steam.game ?? null;
+      const now = live.presence;
+      if (!state && now?.playing) {
+        live.game.kind = now.kind;
+        live.game.name = now.game;
       }
       // the state and the hour are independent: the light follows the hour (asleep is night anyway)
       preview(state, manualHour);
@@ -748,18 +747,15 @@ export function startRoom(): void {
       });
   } else fail();
   route();
-  pollSteam((s) => {
-    const was = live.steam?.state === 'in-game' ? live.steam.game : null;
-    live.steam = s;
-    if (!s) {
-      if (was) applyTime(); // the reading failed mid-game: do not leave the room in the game until the next reading
-      return;
+  pollPresence((p) => {
+    const was = live.presence?.playing ? live.presence.game : null;
+    live.presence = p;
+    if (p?.playing && !live.forced) {
+      live.game.kind = p.kind;
+      live.game.name = p.game;
     }
-    if (s.state === 'in-game' && !live.forced) {
-      live.game.kind = gameKind(s.appid);
-      live.game.name = s.game ?? null;
-    }
-    if (was !== (s.state === 'in-game' ? s.game : null)) applyTime(); // re-light only when the game changes
+    // re-light only when the game changes; a failed reading mid-game counts (the room must not stay in the game)
+    if (was !== (p?.playing ? p.game : null)) applyTime();
   });
   requestAnimationFrame(frame);
 }
