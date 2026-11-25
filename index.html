@@ -77,13 +77,14 @@
 
 <div class="bar">
   <div class="tools">
-    <span class="chip time" id="time"></span>
     <button class="chip" id="open-resume" type="button" data-room-t="resume"></button>
     <div class="chip lang" role="group" aria-label="Язык" data-room-aria="lang">
       <button id="lang-ru" type="button" aria-pressed="false">RU</button>
       <button id="lang-en" type="button" aria-pressed="false">EN</button>
     </div>
     <button class="chip music" id="music" type="button" aria-pressed="true" aria-label="Музыка" data-room-aria="music"><svg viewBox="0 0 15 15" width="15" height="15" aria-hidden="true" shape-rendering="crispEdges" fill="currentColor"><rect x="0" y="5" width="3" height="5"/><rect x="3" y="4" width="1" height="7"/><rect x="4" y="3" width="1" height="9"/><rect x="5" y="2" width="1" height="11"/><rect x="6" y="1" width="1" height="13"/><g class="w"><rect x="8" y="6" width="2" height="3"/><rect x="11" y="3" width="1" height="2"/><rect x="12" y="5" width="2" height="5"/><rect x="11" y="10" width="1" height="2"/></g><g class="x"><rect x="8" y="4" width="2" height="2"/><rect x="12" y="4" width="2" height="2"/><rect x="10" y="6" width="2" height="2"/><rect x="8" y="8" width="2" height="2"/><rect x="12" y="8" width="2" height="2"/></g></svg></button>
+    <!-- the status chip comes last: its width changes with the status, and nothing after it can move -->
+    <span class="chip time" id="time"></span>
   </div>
 </div>
 
