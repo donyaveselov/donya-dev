@@ -1,6 +1,7 @@
 // Screen savers: the floating "Windows XD" logo (optionally driven by the host, to match the copy on its monitor) and
 // a starfield. Any input after the first 400 ms stops them.
 import { XP_ICO } from '../icons';
+import { SAVER_LOGO } from './constants';
 import { clamp, D, h, now, on, reduced } from './dom';
 import { localPt } from './geometry';
 import { closeMenus } from './menu';
@@ -48,8 +49,8 @@ export function startSaver(kind: SaverKind = S.prefs.saver): void {
   const stars: Star[] = [];
   for (let i = 0; i < 220; i++)
     stars.push({ x: (Math.random() - 0.5) * W, y: (Math.random() - 0.5) * H, z: Math.random() * W });
-  let lx = Math.random() * (W - 220);
-  let ly = Math.random() * (H - 90);
+  let lx = Math.random() * (W - SAVER_LOGO.w);
+  let ly = Math.random() * (H - SAVER_LOGO.h);
   let vx = 1.2;
   let vy = 1;
   const t0 = now();
@@ -97,18 +98,18 @@ export function startSaver(kind: SaverKind = S.prefs.saver): void {
         const g = hostWindow(W, H, base);
         k = g.k;
         const uv = S.opts?.saverPos?.() ?? { u: 0, v: 0 };
-        lx = uv.u * (g.bw - 250) - (g.bw * (1 - g.fw)) / 2;
-        ly = uv.v * (g.bh - 78) - (g.bh * (1 - g.fh)) / 2;
+        lx = uv.u * (g.bw - SAVER_LOGO.w) - (g.bw * (1 - g.fw)) / 2;
+        ly = uv.v * (g.bh - SAVER_LOGO.h) - (g.bh * (1 - g.fh)) / 2;
       } else {
         lx += vx;
         ly += vy;
-        if (lx < 0 || lx > W - 250) {
+        if (lx < 0 || lx > W - SAVER_LOGO.w) {
           vx = -vx;
-          lx = clamp(lx, 0, W - 250);
+          lx = clamp(lx, 0, W - SAVER_LOGO.w);
         }
-        if (ly < 0 || ly > H - 80) {
+        if (ly < 0 || ly > H - SAVER_LOGO.h) {
           vy = -vy;
-          ly = clamp(ly, 0, H - 80);
+          ly = clamp(ly, 0, H - SAVER_LOGO.h);
         }
       }
       c.save();

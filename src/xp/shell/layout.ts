@@ -1,4 +1,5 @@
 // Pure geometry of the window manager, the desktop icon grid and the menus (unit-tested in layout.test.ts).
+import { CAPTION_H } from './constants';
 import { clamp } from './dom';
 
 export interface Rect {
@@ -54,7 +55,7 @@ export function placeRect(area: Size, x: number, y: number, w: number, h: number
 
 /** A window dragged by its title: at least 40 px stays on screen sideways, and the title never leaves the top or bottom. */
 export function dragPos(area: Size, w: number, x: number, y: number): { x: number; y: number } {
-  return { x: Math.round(clamp(x, 40 - w, area.w - 40)), y: Math.round(clamp(y, 0, area.h - 28)) };
+  return { x: Math.round(clamp(x, 40 - w, area.w - 40)), y: Math.round(clamp(y, 0, area.h - CAPTION_H)) };
 }
 
 export type GripDir = 'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw';
@@ -81,7 +82,7 @@ export function resizeRect(r0: Rect, dir: GripDir, dx: number, dy: number, min: 
 export function keepReachable(r: Rect, area: Size): Rect {
   const w = Math.min(r.w, area.w);
   const h = Math.min(r.h, area.h);
-  return { x: clamp(r.x, 40 - w, area.w - 40), y: clamp(r.y, 0, Math.max(0, area.h - 28)), w, h };
+  return { x: clamp(r.x, 40 - w, area.w - 40), y: clamp(r.y, 0, Math.max(0, area.h - CAPTION_H)), w, h };
 }
 
 /** An app's own resize request: inside the work area, moved back in if it would stick out. */

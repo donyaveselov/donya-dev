@@ -4,6 +4,7 @@ import type { XPDesktopApi, XPMountOptions, XPOpenOptions } from '../../shared/t
 import { openApp, registerApp, setRegisterHook } from './apps';
 import { clearBalloons, showBalloon } from './balloon';
 import { clockText, status } from './clock';
+import { COMPACT_MAX_W, PHONE_MAX_W, TASKBAR_H, TINY_W } from './constants';
 import { closest, h, coarsePointer, now, on, reflow, sessSet } from './dom';
 import { dialog } from './dialog';
 import { forgetIcons, layoutIcons, wireDesk } from './desktop-icons';
@@ -15,7 +16,7 @@ import { saverRunning, startSaver, stopSaver } from './screensaver';
 import { bsod, boot, preDesktop } from './session';
 import { sound, unlockSound } from './sound';
 import { closeStart } from './start-menu';
-import { domOrNull, type Refs, S, setDom } from './state';
+import { domOrNull, type Refs, S, setDom, type SizeClass } from './state';
 import { BRAND, L, VERSION } from './strings';
 import { applyCrt } from './system-apps';
 import { buildQuickLaunch, buildTaskbar, closeVol, updateTray } from './taskbar';
@@ -25,9 +26,8 @@ import { clampWindows, closeAll } from './window';
 
 let teardown: (() => void)[] = [];
 
-/** Size classes: phone up to 520 px wide, compact up to 820, desk above; the taskbar is taller on phones. */
-function sizeClass(w: number): 'phone' | 'compact' | 'desk' {
-  return w <= 520 ? 'phone' : w <= 820 ? 'compact' : 'desk';
+function sizeClass(w: number): SizeClass {
+  return w <= PHONE_MAX_W ? 'phone' : w <= COMPACT_MAX_W ? 'compact' : 'desk';
 }
 
 function computeSize(): void {
@@ -43,9 +43,9 @@ function computeSize(): void {
   S.touch = coarsePointer() || ('ontouchstart' in window && navigator.maxTouchPoints > 0);
   R.root.classList.toggle('xp--phone', S.size === 'phone');
   R.root.classList.toggle('xp--compact', S.size === 'compact');
-  R.root.classList.toggle('xp--tiny', w < 400);
+  R.root.classList.toggle('xp--tiny', w < TINY_W);
   R.root.classList.toggle('xp--touch', S.touch);
-  S.tbH = S.size === 'phone' ? 40 : 30;
+  S.tbH = S.size === 'phone' ? TASKBAR_H.phone : TASKBAR_H.desk;
   if (prev !== S.size || S.lastH !== hgt || S.lastW !== w) {
     S.lastH = hgt;
     S.lastW = w;

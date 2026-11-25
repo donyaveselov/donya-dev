@@ -1,5 +1,6 @@
 // Coordinates inside the desktop. The room may CSS-scale the desktop's root (it sits on a 3D monitor), so pointer and
 // element positions are converted into the root's own, unscaled pixels.
+import { TINY_W } from './constants';
 import type { Rect } from './layout';
 import { dom, S } from './state';
 
@@ -37,3 +38,5 @@ export function work(): { w: number; h: number } {
 }
 
 export const isPhone = (): boolean => S.size === 'phone';
+/** Too narrow for a floating context menu. */
+export const isTiny = (): boolean => S.w < TINY_W;

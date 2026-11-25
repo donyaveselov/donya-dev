@@ -2,6 +2,7 @@
 // their XP-style "ghost" animations, title-bar dragging, edge resizing, cascade / tile and Show Desktop.
 import type { Lang, XPAppDef } from '../../shared/types';
 import type { Text } from '../../shared/i18n';
+import { CAPTION_H, DOUBLE_CLICK_MS, Z } from './constants';
 import { animate, clamp, closest, css, EASE_IN, EASE_OUT, EASE_STD, esc, h, now, reduced } from './dom';
 import { isPhone, localPt, localRect, type Pt, work } from './geometry';
 import { ICON } from './glyphs';
@@ -63,14 +64,13 @@ export interface WinHooks {
 }
 
 const GRIPS: readonly GripDir[] = ['n', 's', 'e', 'w', 'ne', 'nw', 'se', 'sw'];
-const CAPTION_H = 28;
 let seq = 0;
 let zCounter = 0;
 
 function zSort(): void {
   S.wins.sort((a, b) => a.modalRank - b.modalRank || a.zo - b.zo);
   S.wins.forEach((w, i) => {
-    w.el.style.zIndex = String(w.o.cover && w.state !== 'min' ? 8000 : 100 + i * 2);
+    w.el.style.zIndex = String(w.o.cover && w.state !== 'min' ? Z.cover : Z.windows + i * 2);
   });
 }
 
@@ -334,7 +334,7 @@ export class Win {
         e.stopPropagation();
         // a double click on the window icon closes the window, as in XP
         const t = now();
-        if (this.iconClickT && t - this.iconClickT < 450) {
+        if (this.iconClickT && t - this.iconClickT < DOUBLE_CLICK_MS) {
           closeMenus(0);
           this.close();
           return;
@@ -432,7 +432,7 @@ export class Win {
   }
 
   private taskRect(): Rect {
-    return this.task ? localRect(this.task) : { x: 0, y: S.h - 30, w: 160, h: 24 };
+    return this.task ? localRect(this.task) : { x: 0, y: S.h - S.tbH, w: 160, h: 24 };
   }
 
   /** quiet: no ghost and no sound (the host already showed the minimize). */
@@ -602,7 +602,7 @@ export class Win {
     const p = localPt(e);
     if (
       this.titleDownT &&
-      t - this.titleDownT < 380 &&
+      t - this.titleDownT < DOUBLE_CLICK_MS &&
       Math.abs(p.x - this.titleDownP.x) < 8 &&
       Math.abs(p.y - this.titleDownP.y) < 8
     ) {

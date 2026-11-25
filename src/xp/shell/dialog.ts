@@ -1,6 +1,7 @@
 // Message boxes. A dialog is modal to its owner window (or to the whole desktop when it has none): clicks on what it
 // blocks flash its title bar.
 import type { XPDialogButton, XPDialogHandle, XPDialogOptions } from '../../shared/types';
+import { Z } from './constants';
 import { clamp, css, h } from './dom';
 import { work } from './geometry';
 import { ICON, messageIcon } from './glyphs';
@@ -81,7 +82,7 @@ export function dialog(o: DialogOptions = {}): XPDialogHandle {
   } else {
     shield = h('div', 'xp-modal');
     dom().wins.appendChild(shield);
-    shield.style.zIndex = '99';
+    shield.style.zIndex = String(Z.modalShield);
     S.modalBlock = w;
     for (const x of S.wins) if (x !== w) x.blockedBy = w;
   }

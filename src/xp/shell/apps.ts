@@ -1,6 +1,7 @@
 // The app registry and app windows: an app registers once, opens into a window (singleton unless it says otherwise)
 // and gets an XPAppApi for its window, language, sounds and dialogs.
 import type { XPAppApi, XPAppDef, XPAppParams } from '../../shared/types';
+import { CAPTION_H } from './constants';
 import { EASE_OUT, reduced } from './dom';
 import { phuketTime, status } from './clock';
 import { dialog } from './dialog';
@@ -170,7 +171,9 @@ export function openApp(id: string, params?: XPAppParams, origin?: Rect | null):
   }, 350);
   // the opening animation: a caption ghost from the launcher, then fade and scale in
   const target: Rect =
-    w.state === 'max' ? { x: 0, y: 0, w: work().w, h: 28 } : { x: w.rect.x, y: w.rect.y, w: w.rect.w, h: 28 };
+    w.state === 'max'
+      ? { x: 0, y: 0, w: work().w, h: CAPTION_H }
+      : { x: w.rect.x, y: w.rect.y, w: w.rect.w, h: CAPTION_H };
   sound('open');
   w.focus();
   if (origin && !reduced()) {

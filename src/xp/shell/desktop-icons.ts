@@ -2,9 +2,10 @@
 // snapping, dropping onto the Recycle Bin, long-press menus on touch, and the desktop's context menu.
 import type { XPAppDef } from '../../shared/types';
 import { appTitle, openApp } from './apps';
+import { CAPTION_H, DOUBLE_CLICK_MS, LONG_PRESS_MS } from './constants';
 import { D, EASE_IN, EASE_OUT, animate, clamp, css, esc, h, now, reflow } from './dom';
 import { dialog } from './dialog';
-import { isPhone, localPt, localRect, type Pt, work } from './geometry';
+import { isPhone, isTiny, localPt, localRect, type Pt, work } from './geometry';
 import { ICON } from './glyphs';
 import {
   type Cell,
@@ -110,7 +111,7 @@ function iconOrigin(id: string): Rect | null {
   const img = els.get(id)?.querySelector('.xp-icon__img');
   if (!img) return null;
   const r = localRect(img);
-  return { x: r.x - 4, y: r.y, w: r.w + 8, h: Math.min(r.h, 28) };
+  return { x: r.x - 4, y: r.y, w: r.w + 8, h: Math.min(r.h, CAPTION_H) };
 }
 
 /** Opens an app from a launcher, its window flying out of `origin` (the desktop icon by default). */
@@ -138,7 +139,7 @@ function lpRing(p: Pt): () => void {
       { transform: 'scale(.2)', opacity: 0 },
       { transform: 'scale(1)', opacity: 1 },
     ],
-    500,
+    LONG_PRESS_MS,
     'linear',
   );
   return () => {
@@ -187,7 +188,7 @@ function wireIcon(el: HTMLDivElement, id: string): void {
       return;
     }
     selectIcons(sel.includes(id) ? sel : [id], id);
-    if (!touch && t - lastDown < 420) {
+    if (!touch && t - lastDown < DOUBLE_CLICK_MS) {
       lastDown = 0;
       launch(id);
       return;
@@ -216,7 +217,7 @@ function wireIcon(el: HTMLDivElement, id: string): void {
           buzz();
           iconMenu(id, dd.p.x, dd.p.y);
         }
-      }, 500);
+      }, LONG_PRESS_MS);
     }
   });
   el.addEventListener('pointermove', (e) => {
@@ -400,7 +401,7 @@ function iconMenu(id: string, x: number, y: number): void {
     ],
     x,
     y,
-    { bottomSheet: S.w < 400 },
+    { bottomSheet: isTiny() },
   );
 }
 
@@ -465,7 +466,7 @@ function deskMenu(x: number, y: number): void {
     ],
     x,
     y,
-    { bottomSheet: S.w < 400 },
+    { bottomSheet: isTiny() },
   );
 }
 
@@ -492,7 +493,7 @@ export function wireDesk(): void {
         offR();
         buzz();
         deskMenu(p.x, p.y);
-      }, 520);
+      }, LONG_PRESS_MS);
       const mvc = (ev: PointerEvent): void => {
         const q = localPt(ev);
         if (Math.abs(q.x - p.x) + Math.abs(q.y - p.y) > 10) cancel();

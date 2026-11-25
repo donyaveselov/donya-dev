@@ -1,6 +1,7 @@
 // The shell's state, the visitor's saved preferences, and the DOM it builds on mount.
 import { isMuted, muteChosen, setMuted } from '../../shared/sound';
 import type { Lang, XPAppDef, XPMountOptions } from '../../shared/types';
+import { TASKBAR_H } from './constants';
 import { sessGet, storeGet, storeSet } from './dom';
 import type { Cell } from './layout';
 import type { Win } from './window';
@@ -62,7 +63,7 @@ export const S = {
   touch: false,
   w: 0,
   h: 0,
-  tbH: 30,
+  tbH: TASKBAR_H.desk as number,
   lastW: 0,
   lastH: 0,
   lastInput: 0,

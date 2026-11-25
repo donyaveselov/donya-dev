@@ -5,7 +5,7 @@ import { appTitle } from './apps';
 import { showBalloon } from './balloon';
 import { clockText, dateText, status } from './clock';
 import { clamp, closest, css, esc, h, noop, qs } from './dom';
-import { localPt, localRect } from './geometry';
+import { isTiny, localPt, localRect } from './geometry';
 import { ICON, statusIcon } from './glyphs';
 import { closeMenus, openMenu } from './menu';
 import { setSoundLevel, sound, unlockSound } from './sound';
@@ -135,7 +135,7 @@ export function buildTaskbar(): TaskbarRefs {
       ],
       p.x,
       p.y,
-      { up: true, bottomSheet: S.w < 400 },
+      { up: true, bottomSheet: isTiny() },
     );
   });
   tb.addEventListener('pointerdown', (e) => {
