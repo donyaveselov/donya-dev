@@ -159,8 +159,6 @@ export class Win {
   cleanup: (() => void) | null = null;
   unblock: (() => void) | null = null;
   customTitle: string | null = null;
-  /** The tab a built-in program shows (kept across language repaints). */
-  tab: string | null = null;
   private readonly title: Text;
   private readonly textEl: HTMLSpanElement | null;
   private readonly iconEl: HTMLSpanElement | null;
