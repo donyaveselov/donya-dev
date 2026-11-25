@@ -740,10 +740,10 @@
 .xp.xp--phone .xpa-contact .xpa-ct-to, .xp.xp--phone .xpa-contact .xpa-ct-subj { height: 30px; }
 .xp.xp--phone .xpa-term .xpa-term-screen { font-size: 13px; }
 
-/* Wax: the live site in a window */
-.xpa-wax { display: flex; flex-direction: column; height: 100%; }
-.xpa-wax-bar { display: flex; gap: 14px; padding: 4px 8px; background: #ece9d8; border-bottom: 1px solid #aca899; font-size: 11px; }
-.xpa-wax-frame { flex: 1; width: 100%; height: 100%; min-height: 200px; border: 0; background: #000; display: block; }
-.xpa-wax-msg { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 24px; text-align: center; background: #fff; font-size: 12px; color: #222; }
-.xpa-wax-msg p { max-width: 380px; margin: 0; line-height: 1.45; color: #444; }
-.xpa-wax-msg b { font-size: 14px; }
+/* my live sites in a window (site-frame.ts) */
+.xpa-site { display: flex; flex-direction: column; height: 100%; }
+.xpa-site-bar { display: flex; gap: 14px; padding: 4px 8px; background: #ece9d8; border-bottom: 1px solid #aca899; font-size: 11px; }
+.xpa-site-frame { flex: 1; width: 100%; height: 100%; min-height: 200px; border: 0; background: #000; display: block; }
+.xpa-site-msg { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 24px; text-align: center; background: #fff; font-size: 12px; color: #222; }
+.xpa-site-msg p { max-width: 380px; margin: 0; line-height: 1.45; color: #444; }
+.xpa-site-msg b { font-size: 14px; }

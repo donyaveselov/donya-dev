@@ -532,3 +532,7 @@ export function ui(api: XPAppApi) {
 
   return { ...K, t, icon, glyph, sound, dialog, aboutDialog, root, scope, destroy, lang };
 }
+
+export type Ui = ReturnType<typeof ui>;
+/** What a helper that builds a piece of a window needs: the kit itself, or one of its scopes. */
+export type Builders = Pick<ReturnType<Ui['scope']>, 'h' | 'button' | 'onCleanup'>;

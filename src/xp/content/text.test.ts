@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { d, plural } from './text';
+import { counted, d, pad, plural } from './text';
 
 describe('bilingual text helpers', () => {
   it('pairs the two languages', () => {
@@ -10,5 +10,17 @@ describe('bilingual text helpers', () => {
     expect([1, 21, 101].map(f)).toEqual(['объект', 'объект', 'объект']);
     expect([2, 3, 4, 22, 104].map(f)).toEqual(['объекта', 'объекта', 'объекта', 'объекта', 'объекта']);
     expect([0, 5, 11, 12, 14, 20, 111].map(f)).toEqual(Array<string>(7).fill('объектов'));
+  });
+});
+
+describe('counted nouns', () => {
+  it('counts in both languages', () => {
+    const f = (n: number) => counted(n, ['объект', 'объекта', 'объектов'], ['object', 'objects']);
+    expect(f(1)).toEqual({ ru: '1 объект', en: '1 object' });
+    expect(f(4)).toEqual({ ru: '4 объекта', en: '4 objects' });
+    expect(f(15)).toEqual({ ru: '15 объектов', en: '15 objects' });
+  });
+  it('pads numbers with zeros', () => {
+    expect([pad(7), pad(12), pad(42, 6), pad('5')]).toEqual(['07', '12', '000042', '05']);
   });
 });

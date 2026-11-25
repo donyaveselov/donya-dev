@@ -17,6 +17,8 @@ export const APP = {
   forward: d('Вперёд', 'Forward'),
   address: d('Адрес', 'Address'),
   go: d('Переход', 'Go'),
+  document: d('Документ', 'Document'),
+  github: d('Код на GitHub', 'Code on GitHub'),
   myProjects: d('Мои проекты', 'My Projects'),
   myComputer: d('Мой компьютер', 'My Computer'),
   copy: d('Копировать', 'Copy'),

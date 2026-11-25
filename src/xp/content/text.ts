@@ -16,3 +16,17 @@ export function plural(n: number, one: string, few: string, many: string): strin
   if (u >= 2 && u <= 4) return few;
   return many;
 }
+
+/** A number with its noun in both languages: counted(4, ['объект', 'объекта', 'объектов'], ['object', 'objects']). */
+export function counted(
+  n: number,
+  ru: readonly [one: string, few: string, many: string],
+  en: readonly [one: string, many: string],
+): Bilingual {
+  return { ru: `${String(n)} ${plural(n, ...ru)}`, en: `${String(n)} ${n === 1 ? en[0] : en[1]}` };
+}
+
+/** Fills the `%s` of each language with that language's text. */
+export function fillEach(text: Bilingual, arg: Bilingual): Bilingual {
+  return { ru: text.ru.replace('%s', arg.ru), en: text.en.replace('%s', arg.en) };
+}
