@@ -2,7 +2,6 @@
 // Fetched as room.json?v=<md5> (vite.config.ts defines __ROOM_VERSION__ from the file), so the host can cache it for good.
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { asset } from '../utils/asset';
 
 /** The browser's own gzip (every current browser has it). Without it the room fails over to the plain page, rather
  *  than pulling an inflater from a CDN. */
@@ -13,7 +12,7 @@ function gunzip(buf: Uint8Array<ArrayBuffer>): Promise<ArrayBuffer> {
 
 /** Fetches, unpacks and parses the room. */
 export async function loadRoom(): Promise<GLTF> {
-  const res = await fetch(asset(`room.json?v=${__ROOM_VERSION__}`));
+  const res = await fetch(`/room.json?v=${__ROOM_VERSION__}`);
   if (!res.ok) throw new Error(`room.json: HTTP ${String(res.status)}`);
   const data = (await res.json()) as { gz: string };
   const bin = atob(data.gz);

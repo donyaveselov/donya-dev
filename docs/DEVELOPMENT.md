@@ -5,9 +5,8 @@ the traps.
 
 ## Builds
 
-`npm run build` makes the multi-file site (`dist/`); `npm run build:artifact` inlines every script and stylesheet into
-one `dist-artifact/index.html`. Both fetch `room.json`, `games/*.jpg` and `wall/*.jpg` next to the page at runtime;
-for the claude.ai artifact, publish `dist-artifact/index.html` with those as supporting files. three.js is bundled
+`npm run build` makes the site (`dist/`). It fetches `room.json`, `games/*.jpg` and `wall/*.jpg` from the site's root
+at runtime. three.js is bundled
 from npm (`three@0.128.0`, pinned exactly: another version renders differently), no CDN.
 
 The model is cache-busted by the build: `vite.config.ts` defines `__ROOM_VERSION__` (the first 10 hex digits of the
@@ -19,13 +18,9 @@ host has no fallback to `index.html`, so `vite build` also writes a copy of the 
 (`dist/resume/index.html`, ...); the names come from the route table (`ROUTES` in `routes.ts`, loaded by the
 `route-pages` plugin in `vite.config.ts`), so a new route gets its page without a second list. That is why the site
 is built with `base: '/'` (absolute URLs, the same HTML works one folder down) and the files of `public/` are fetched
-through `asset()` (`src/utils/asset.ts`). An old link (`/#resume`) is rewritten to its path on load, and `/resume/`
-(how the host serves the folder) to `/resume`. An unknown path (`/nonsense`) is the host's 404 on donya.dev;
-`vite dev` and `vite preview` fall back to the page for any path, so there it is the plain room. The artifact build
-keeps relative URLs and hash routes (`#resume`): it is published where paths are not its own.
-
-`lab/` is served by `vite dev` only (`http://127.0.0.1:5173/lab/music/`); the production build's only input is
-`index.html`.
+by absolute paths (`/room.json`). `/resume/` (how the host serves the folder) becomes `/resume` on load. An unknown
+path (`/nonsense`) is the host's 404 on donya.dev; `vite dev` and `vite preview` fall back to the page for any path,
+so there it is the plain room. The router is `src/services/router.service.ts`.
 
 ## Regression harness
 
@@ -35,11 +30,6 @@ node scripts/regress.mjs http://127.0.0.1:4173/ .work/candidate
 
 # against a baseline capture (of main, of the previous commit, of the earlier site...)
 node scripts/compare.mjs .work/baseline .work/candidate .work/diff     # exit 1 on any regression
-
-# the single-file build
-npm run build:artifact && npx vite preview --outDir dist-artifact --port 4174 --strictPort --host 127.0.0.1 &
-node scripts/regress.mjs http://127.0.0.1:4174/ .work/candidate-artifact
-node scripts/compare.mjs .work/baseline .work/candidate-artifact .work/diff-artifact
 ```
 
 The usual baseline is a capture of the build before the change. The original baseline was the earlier single-file

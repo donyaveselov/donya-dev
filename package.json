@@ -13,9 +13,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "build:artifact": "vite build --mode artifact",
     "preview": "vite preview",
-    "preview:artifact": "vite preview --mode artifact",
     "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.scripts.json",
     "lint": "eslint .",
     "format": "prettier --write .",
@@ -47,7 +45,6 @@
     "typescript": "5.9.3",
     "typescript-eslint": "8.74.0",
     "vite": "8.3.8",
-    "vite-plugin-singlefile": "2.3.4",
     "vitest": "5.1.1"
   }
 }

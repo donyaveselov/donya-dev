@@ -256,11 +256,11 @@ const dbg = (page, row, btn) =>
     },
     [row, btn],
   );
-// An old-style #route typed into the open page: the site rewrites it to its path (/night) and follows it, and a page
-// with hash routes (an earlier build, the artifact) follows the hash, so the same states work as a baseline for both.
+// A route on the open page, as Back or Forward would reach it.
 const setRoute = (page, name) =>
   page.evaluate((name) => {
-    location.hash = name;
+    history.pushState(null, '', `/${name}`);
+    window.dispatchEvent(new PopStateEvent('popstate'));
   }, name);
 const tourNext = (page) => click(page, '.talkie .tbtn:not(.tbtn--ghost)');
 const tourNo = (page) => click(page, '.talkie .tbtn--ghost');

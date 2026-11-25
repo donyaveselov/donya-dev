@@ -1,7 +1,6 @@
 // The room's one camera: orthographic (the isometric look), orbiting a point above the floor.
 import { OrthographicCamera, Vector3 } from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import type { CameraStart } from '../routes';
 
 /** How far the camera stands from what it looks at. Orthographic, so this changes no size: only what is clipped. */
 export const CAMERA_DISTANCE = 120;
@@ -9,17 +8,12 @@ export const CAMERA_DISTANCE = 120;
 /** The point the camera orbits: the middle of the room, a little above the floor. */
 const TARGET = new Vector3(0, 0.95, 0);
 
-/** The direction from the target to the camera, per start. */
-const START: Record<CameraStart, readonly [number, number, number]> = {
-  southeast: [1, 0.8, 1],
-  southwest: [-1, 0.8, 1],
-  northeast: [1, 0.6, -1],
-  low: [1, 0.35, 1],
-};
+/** The direction from the target to the camera: the room's south-east corner, from above. */
+const START = new Vector3(1, 0.8, 1).normalize();
 
-export function makeCamera(start: CameraStart): OrthographicCamera {
+export function makeCamera(): OrthographicCamera {
   const camera = new OrthographicCamera(-1, 1, 1, -1, 0.1, 600);
-  camera.position.copy(TARGET).addScaledVector(new Vector3(...START[start]).normalize(), CAMERA_DISTANCE);
+  camera.position.copy(TARGET).addScaledVector(START, CAMERA_DISTANCE);
   return camera;
 }
 

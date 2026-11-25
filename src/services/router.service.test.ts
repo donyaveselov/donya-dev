@@ -16,15 +16,10 @@ describe('routeOf', () => {
 
 describe('routeName', () => {
   it('reads the path in every form the host serves a route folder', () => {
-    expect(routeName('/resume', '')).toBe('resume');
-    expect(routeName('/resume/', '')).toBe('resume');
-    expect(routeName('/resume/index.html', '')).toBe('resume');
-    expect(routeName('/', '')).toBe('');
-  });
-  it('lets an old link hash win, but not a bare #', () => {
-    expect(routeName('/', '#resume')).toBe('resume');
-    expect(routeName('/night', '#pc')).toBe('pc');
-    expect(routeName('/night', '#')).toBe('night');
+    expect(routeName('/resume')).toBe('resume');
+    expect(routeName('/resume/')).toBe('resume');
+    expect(routeName('/resume/index.html')).toBe('resume');
+    expect(routeName('/')).toBe('');
   });
 });
 

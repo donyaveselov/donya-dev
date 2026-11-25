@@ -128,7 +128,6 @@ class RoomApp {
   }
 
   start(): void {
-    psx.on = currentRoute().ps1;
     this.layout();
     // the top bar's language switch, and the resume sheet's own (the sheet covers the bar)
     for (const b of document.querySelectorAll<HTMLButtonElement>('button[data-lang]'))
@@ -261,7 +260,7 @@ class RoomApp {
     // three tasks, not one: build the scene, compile its shaders, then show it. three r128 compiles every shader
     // program synchronously on the first frame (a few hundred ms on a phone), so it gets a task of its own here, and
     // the frame loop only sees the room once it is compiled.
-    const scene = buildScene(gl, gltf, this.stage, route.camera);
+    const scene = buildScene(gl, gltf, this.stage);
     await nextTask();
     gl.compile(scene.scene, scene.camera);
     await nextTask();

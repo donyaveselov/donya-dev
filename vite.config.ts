@@ -3,7 +3,6 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { runnerImport } from 'vite';
 import type { Plugin } from 'vite';
-import { viteSingleFile } from 'vite-plugin-singlefile';
 import { defineConfig } from 'vitest/config';
 
 const ROOM_JSON = fileURLToPath(new URL('./public/room.json', import.meta.url));
@@ -70,30 +69,21 @@ export function routePages(names: () => Promise<readonly string[]> = routeNames)
   };
 }
 
-// `vite build` makes the multi-file site for donya.dev (dist/); `vite build --mode artifact` inlines every script and
-// stylesheet into one index.html (dist-artifact/) for the claude.ai artifact. Both keep room.json, games/ and wall/ as
-// files next to the page, fetched at runtime. Only index.html is a build input: lab/ is served by `vite dev` alone.
-// The site routes by the path (/resume) and has a page per route, so its URLs are absolute; the artifact is served
-// from wherever it is published, so its URLs stay relative and it routes by the hash (src/modules/room/routes.ts).
-export default defineConfig(({ mode }) => {
-  const artifact = mode === 'artifact';
-  return {
-    base: artifact ? './' : '/',
-    define: { __HASH_ROUTES__: JSON.stringify(artifact) },
-    plugins: [roomCacheBust(), ...(artifact ? [viteSingleFile({ removeViteModuleLoader: true })] : [routePages()])],
-    build: {
-      outDir: artifact ? 'dist-artifact' : 'dist',
-      emptyOutDir: true,
-      // Two chunks of about 660-680 kB each: the room with three.js, and the desktop, whose XP icon bitmaps are
-      // inlined as base64 on purpose, so that the artifact build stays one file. Warn only when one outgrows that.
-      chunkSizeWarningLimit: 750,
-      // esbuild, not the default Lightning CSS: Lightning drops `backdrop-filter` when `-webkit-backdrop-filter` sits
-      // next to it (the blur is lost in Chrome); esbuild keeps both.
-      cssMinify: 'esbuild',
-    },
-    test: {
-      include: ['src/**/*.test.ts', 'lab/**/*.test.ts', 'scripts/**/*.test.mjs'],
-      environment: 'node',
-    },
-  };
+// `vite build` makes the site for donya.dev (dist/). Its URLs are absolute (base '/'), so the page works in every route
+// folder. Only index.html is a build input.
+export default defineConfig({
+  base: '/',
+  plugins: [roomCacheBust(), routePages()],
+  build: {
+    // Two chunks of about 660-680 kB each: the room with three.js, and the desktop with its XP icon bitmaps inlined
+    // as base64. Warn only when one outgrows that.
+    chunkSizeWarningLimit: 750,
+    // esbuild, not the default Lightning CSS: Lightning drops `backdrop-filter` when `-webkit-backdrop-filter` sits
+    // next to it (the blur is lost in Chrome); esbuild keeps both.
+    cssMinify: 'esbuild',
+  },
+  test: {
+    include: ['src/**/*.test.ts', 'scripts/**/*.test.mjs'],
+    environment: 'node',
+  },
 });

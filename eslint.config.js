@@ -6,7 +6,7 @@ import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
   {
-    ignores: ['dist/**', 'dist-artifact/**', '.work/**', 'public/**', 'node_modules/**'],
+    ignores: ['dist/**', '.work/**', 'public/**', 'node_modules/**'],
   },
   js.configs.recommended,
   {

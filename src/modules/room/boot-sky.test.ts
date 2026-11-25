@@ -10,14 +10,11 @@ import { phuketTime, statusAt } from './store/clock';
 const html = readFileSync(new URL('../../../index.html', import.meta.url), 'utf8');
 const script = /<script>([\s\S]*?BACKDROP[\s\S]*?)<\/script>/.exec(html)?.[1] ?? '';
 
-/** An address: the path and the hash, as location has them. */
-type Address = readonly [pathname: string, hash: string];
-
-/** Runs the inline script at a given UTC time and address; returns the colours it sets. */
-function bootSky(utc: Date, [pathname, hash]: Address): [string, string] {
+/** Runs the inline script at a given UTC time and path; returns the colours it sets. */
+function bootSky(utc: Date, pathname: string): [string, string] {
   const vars: Record<string, string> = {};
   const document = { documentElement: { style: { setProperty: (k: string, v: string) => (vars[k] = v) } } };
-  const location = { pathname, hash };
+  const location = { pathname };
   const FakeDate = class extends Date {
     constructor() {
       super(utc.getTime());
@@ -30,8 +27,8 @@ function bootSky(utc: Date, [pathname, hash]: Address): [string, string] {
 }
 
 /** What the room itself shows first: the route's preview and forced status, no Discord reading yet. */
-function roomSky(utc: Date, [pathname, hash]: Address): readonly [string, string] {
-  const route = routeOf(routeName(pathname, hash));
+function roomSky(utc: Date, pathname: string): readonly [string, string] {
+  const route = routeOf(routeName(pathname));
   return BACKDROP[statusAt(phuketTime(utc, route.preview), route.forced, null)];
 }
 
@@ -41,23 +38,11 @@ describe('the sky before the first paint', () => {
   });
   it('matches the room at every quarter hour, for every route', () => {
     const names = ['', ...Object.keys(ROUTES), 'constructor', 'nonsense'];
-    // each name as a path in every form the host serves it and as an old link's hash; a hash over a path
-    const addresses: Address[] = [
-      ['/index.html', ''],
-      ['/a/b', ''],
-      ['/night', '#'],
-      ['/night', '#pc'],
-      ...names.flatMap((n): Address[] => [
-        [`/${n}`, ''],
-        [`/${n}/`, ''],
-        [`/${n}/index.html`, ''],
-        ['/', n ? `#${n}` : ''],
-      ]),
-    ];
+    // each name as a path in every form the host serves it
+    const paths = ['/index.html', '/a/b', ...names.flatMap((n) => [`/${n}`, `/${n}/`, `/${n}/index.html`])];
     for (let q = 0; q < 24 * 4; q++) {
       const utc = new Date(Date.UTC(2026, 10, 25, 0, q * 15));
-      for (const a of addresses)
-        expect(bootSky(utc, a), `${a.join('')} at ${utc.toISOString()}`).toEqual(roomSky(utc, a));
+      for (const p of paths) expect(bootSky(utc, p), `${p} at ${utc.toISOString()}`).toEqual(roomSky(utc, p));
     }
   });
 });

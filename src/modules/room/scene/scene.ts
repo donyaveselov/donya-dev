@@ -17,7 +17,6 @@ import { Monitors } from './monitors';
 import { lightCoast, makeOutdoor } from './outdoor';
 import type { Outdoor } from './outdoor';
 import { makePost, psx } from './psx';
-import type { CameraStart } from '../routes';
 import { REDUCED_MOTION, hourOfDay, live, status } from '../store/state';
 import { Tags } from '../components/tags';
 import type { TourSights } from '../tour/tour';
@@ -60,7 +59,7 @@ export interface RoomScene {
 const SHOE_UPPER = 0x8b8473; // the tee's off-white
 const SHOE_SOLE = 0x15131c;
 
-export function buildScene(gl: WebGLRenderer, gltf: GLTF, stage: HTMLElement, start: CameraStart): RoomScene {
+export function buildScene(gl: WebGLRenderer, gltf: GLTF, stage: HTMLElement): RoomScene {
   gl.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
   gl.outputEncoding = sRGBEncoding;
   gl.setClearColor(0x000000, 0); // transparent: the page's gradient shows behind the room
@@ -69,7 +68,7 @@ export function buildScene(gl: WebGLRenderer, gltf: GLTF, stage: HTMLElement, st
   const scene = new Scene();
   const root = gltf.scene;
   scene.add(root);
-  const camera = makeCamera(start);
+  const camera = makeCamera();
   const controls = makeControls(camera, gl.domElement);
 
   const index = new MaterialIndex();

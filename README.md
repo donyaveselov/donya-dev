@@ -22,8 +22,7 @@ into one HTML file. That is why the history starts with an import and not with a
   tuned to that version's renderer, and later versions changed colour management and lighting units. An upgrade means
   re-tuning every preset against the pixel harness, so it is deferred on purpose and the version is pinned exactly.
 - **The model is one JSON request.** `public/room.json` is the Blender export quantized by gltfpack, gzipped and
-  base64-encoded, inflated in the browser with `DecompressionStream`. One file that any static host or a single-file
-  artifact can serve, fetched as `room.json?v=<content hash>` and cached for good.
+  base64-encoded, inflated in the browser with `DecompressionStream`. One file that any static host can serve, fetched as `room.json?v=<content hash>` and cached for good.
 - **The desktop loads after the room.** The room is the first paint; the desktop (about as much code again, mostly
   XP icon bitmaps) is a separate chunk fetched once the room is up, so it never delays the first frame.
 - **A pixel-exact 3D → DOM hand-off.** The monitor in the scene shows a snapshot painted from the real desktop's DOM.
@@ -31,10 +30,8 @@ into one HTML file. That is why the history starts with an import and not with a
 - **A deterministic pixel regression harness.** The port had to keep every pixel, so `scripts/regress.mjs` freezes the
   clock, seeds `Math.random`, stubs the weather and captures 42 states in Chrome; `scripts/compare.mjs` diffs two
   captures. It caught, for example, a CSS minifier silently dropping `backdrop-filter`.
-- **Two build targets.** `npm run build` makes the multi-file site; `npm run build:artifact` inlines everything into
-  one `index.html`, because the same page is also published as a claude.ai artifact, which takes a single HTML file.
 - **Routes are paths, pages are copies.** `/resume`, `/pc`, `/night` and the rest are real addresses: the host serves
-  files only, so the build writes the page into a folder per route, taking the names from the route tables.
+  files only, so the build writes the page into a folder per route, taking the names from the route table.
 - **Fallbacks.** Without WebGL the page keeps its top bar and a plain projects button instead of an empty canvas
   (the desktop is DOM and still works); without JavaScript a `<noscript>` style makes the resume sheet the page. The
   resume is real markup in `index.html`, so it also prints.
@@ -45,20 +42,19 @@ into one HTML file. That is why the history starts with an import and not with a
 
 Node 24 (`nvm use` reads `.nvmrc`), then `npm ci`.
 
-| Command                  | What                                                                           |
-| ------------------------ | ------------------------------------------------------------------------------ |
-| `npm run dev`            | dev server with hot reload                                                     |
-| `npm run build`          | the multi-file site in `dist/`                                                 |
-| `npm run build:artifact` | one self-contained `dist-artifact/index.html` (+ room.json, games/, wall/)     |
-| `npm run preview`        | serve `dist/` (port 4173); `preview:artifact` serves `dist-artifact/`          |
-| `npm run check`          | everything CI runs before the build: typecheck, lint, format check, tests      |
-| `npm run typecheck`      | `tsc --noEmit`, strict, for the app and the typed scripts                      |
-| `npm run lint`           | ESLint (typescript-eslint strict + stylistic, type-checked)                    |
-| `npm run format`         | Prettier (`format:check` only checks)                                          |
-| `npm test`               | Vitest: the DOM-free logic of the room, the desktop, the lab and the deploy    |
-| `npm run regress`        | pixel regression capture; `npm run compare` diffs two captures                 |
-| `npm run pack:room`      | re-pack `public/room.json` from a Blender export                               |
-| `npm run deploy`         | check, build, upload `dist/` over FTP with TLS (`-- --dry-run` shows the plan) |
+| Command             | What                                                                           |
+| ------------------- | ------------------------------------------------------------------------------ |
+| `npm run dev`       | dev server with hot reload                                                     |
+| `npm run build`     | the multi-file site in `dist/`                                                 |
+| `npm run preview`   | serve `dist/` (port 4173)                                                      |
+| `npm run check`     | everything CI runs before the build: typecheck, lint, format check, tests      |
+| `npm run typecheck` | `tsc --noEmit`, strict, for the app and the typed scripts                      |
+| `npm run lint`      | ESLint (typescript-eslint strict + stylistic, type-checked)                    |
+| `npm run format`    | Prettier (`format:check` only checks)                                          |
+| `npm test`          | Vitest: the DOM-free logic of the room, the desktop and the deploy             |
+| `npm run regress`   | pixel regression capture; `npm run compare` diffs two captures                 |
+| `npm run pack:room` | re-pack `public/room.json` from a Blender export                               |
+| `npm run deploy`    | check, build, upload `dist/` over FTP with TLS (`-- --dry-run` shows the plan) |
 
 The harness, re-packing the model, deploying and the traps worth knowing are in
 [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
@@ -82,7 +78,6 @@ src/
   content/             texts: projects, resume, profile, stack
   components/kit/      the apps' small DOM kit (h(), menus, bindings)
   i18n/  types/  enums/  utils/  assets/
-lab/music/         a NES-style synth sketch on Web Audio; dev only, not in the build
 scripts/           deploy.mjs (FTP deploy), pack-room.mjs (Blender export -> room.json), regress.mjs + compare.mjs
 public/            room.json, wallpapers, screenshots, music/ (the lofi loop, with its CREDITS.txt), .htaccess
 docs/              DEVELOPMENT.md

@@ -4,9 +4,6 @@
 import type { Status } from '../../types';
 import { PREVIEW_HOURS } from './store/clock';
 
-/** Where the camera starts: the default corner, or one of the extra ones. */
-export type CameraStart = 'southeast' | 'southwest' | 'northeast' | 'low';
-
 export interface Route {
   /** a previewed hour, or null for the clock */
   preview: number | null;
@@ -18,8 +15,6 @@ export interface Route {
   resume: boolean;
   /** sit down at the PC once the room is up: at the bare desktop, or with My Projects open */
   sit: 'desktop' | 'projects' | null;
-  ps1: boolean;
-  camera: CameraStart;
   /** keep the loading screen up: the room is never loaded (to look at the loader) */
   holdLoader: boolean;
 }
@@ -31,8 +26,6 @@ export const DEFAULT_ROUTE: Route = {
   game: null,
   resume: false,
   sit: null,
-  ps1: true,
-  camera: 'southeast',
   holdLoader: false,
 };
 
@@ -53,12 +46,7 @@ export const ROUTES = {
   pc: { sit: 'desktop' },
   pcdota: { sit: 'desktop', forced: 'play', game: 'dota' },
   projects: { sit: 'projects' },
-  nops1: { ps1: false },
   loader: { holdLoader: true },
-  // another camera start (handy for checking the window portal from outside)
-  southwest: { camera: 'southwest' },
-  northeast: { camera: 'northeast' },
-  low: { camera: 'low' },
   // the plain room in debug mode (src/utils/debug.ts reads the address itself)
   debug: {},
 } as const satisfies Record<string, Partial<Route>>;
