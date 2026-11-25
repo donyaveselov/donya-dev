@@ -12,8 +12,8 @@
 // file of the last deploy, and a file goes up when its hash differs from the one there (or it is missing on the host,
 // or its size there is wrong).
 //
-// Order: new and changed files, then index.html (a visitor never gets a page whose scripts are not there yet), then
-// the manifest, then the removals. The previous deploy's files stay for one more deploy: a tab opened before it still
+// Order: new and changed files, then the pages (the route copies, <route>/index.html, then index.html itself: a visitor
+// never gets a page whose scripts are not there yet), then the manifest, then the removals. The previous deploy's files stay for one more deploy: a tab opened before it still
 // has the old index.html and loads its desktop-*.js lazily. Only files that are in neither this build nor the previous
 // manifest are removed. `.well-known/` (Let's Encrypt's checks) and `cgi-bin/` are never touched.
 import { createHash } from 'node:crypto';
@@ -198,8 +198,16 @@ async function remoteManifest(client, dir) {
 }
 
 /**
+ * When a file goes up: the files a page loads, then the pages (every .html points at this build's scripts: the
+ * route copies, resume/index.html and the like), and the root index.html, the one most visitors get, last of all.
+ * @param {string} path
+ * @returns {number}
+ */
+const uploadRank = (path) => (path === 'index.html' ? 2 : path.endsWith('.html') ? 1 : 0);
+
+/**
  * What a deploy does. Uploads: every local file whose hash is not the one in the previous manifest, or that is missing
- * on the host, or has another size there; index.html goes last. Removals: remote files that are in neither this build
+ * on the host, or has another size there; the pages go last, the route copies and then index.html. Removals: remote files that are in neither this build
  * nor the previous manifest; the previous deploy's own files are kept for the tabs that still run it.
  * @param {Map<string, LocalFile>} local
  * @param {Map<string, number>} remote
@@ -211,7 +219,7 @@ export function plan(local, remote, previous) {
     // a server that hides dotfiles from LIST makes .htaccess look missing: it then goes up every time, harmlessly
     .filter(([p, f]) => previous?.files[p] !== f.sha256 || remote.get(p) !== f.size)
     .map(([p]) => p)
-    .sort((a, b) => (a === 'index.html' ? 1 : b === 'index.html' ? -1 : a.localeCompare(b)));
+    .sort((a, b) => uploadRank(a) - uploadRank(b) || a.localeCompare(b));
   const stale = [...remote.keys()].filter((p) => !local.has(p)).sort();
   // without a manifest nothing is known about the previous deploy: everything on the host stays this once
   const remove = previous ? stale.filter((p) => !Object.hasOwn(previous.files, p)) : [];

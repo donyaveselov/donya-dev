@@ -2,18 +2,21 @@
 // colours. This keeps that copy in step with the real statusAt, phuketTime, BACKDROP and the routes.
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { parseRoute } from './routes';
+import { PAGES, parseRoute, routeName } from './routes';
 import { BACKDROP } from './scene/lighting';
 import { phuketTime, statusAt } from './store/clock';
 
 const html = readFileSync(new URL('../../../index.html', import.meta.url), 'utf8');
 const script = /<script>([\s\S]*?BACKDROP[\s\S]*?)<\/script>/.exec(html)?.[1] ?? '';
 
-/** Runs the inline script at a given UTC time and hash; returns the colours it sets. */
-function bootSky(utc: Date, hash: string): [string, string] {
+/** An address: the path and the hash, as location has them. */
+type Address = readonly [pathname: string, hash: string];
+
+/** Runs the inline script at a given UTC time and address; returns the colours it sets. */
+function bootSky(utc: Date, [pathname, hash]: Address): [string, string] {
   const vars: Record<string, string> = {};
   const document = { documentElement: { style: { setProperty: (k: string, v: string) => (vars[k] = v) } } };
-  const location = { hash: hash ? `#${hash}` : '' };
+  const location = { pathname, hash };
   const FakeDate = class extends Date {
     constructor() {
       super(utc.getTime());
@@ -26,8 +29,8 @@ function bootSky(utc: Date, hash: string): [string, string] {
 }
 
 /** What the room itself shows first: the route's preview and forced status, no Discord reading yet. */
-function roomSky(utc: Date, hash: string): readonly [string, string] {
-  const route = parseRoute(hash);
+function roomSky(utc: Date, [pathname, hash]: Address): readonly [string, string] {
+  const route = parseRoute(routeName(pathname, hash));
   return BACKDROP[statusAt(phuketTime(utc, route.preview), route.forced, null)];
 }
 
@@ -36,27 +39,24 @@ describe('the sky before the first paint', () => {
     expect(script).toContain('BACKDROP');
   });
   it('matches the room at every quarter hour, for every route', () => {
-    const hashes = [
-      '',
-      'day',
-      'sunset',
-      'night',
-      'work',
-      'play',
-      'sleep',
-      'outside',
-      'dota',
-      'cs',
-      'pcdota',
-      'pc',
-      'resume',
-      'constructor',
-      'nonsense',
+    const names = ['', ...PAGES, 'constructor', 'nonsense'];
+    // each name as a path in every form the host serves it and as an old link's hash; a hash over a path
+    const addresses: Address[] = [
+      ['/index.html', ''],
+      ['/a/b', ''],
+      ['/night', '#'],
+      ['/night', '#pc'],
+      ...names.flatMap((n): Address[] => [
+        [`/${n}`, ''],
+        [`/${n}/`, ''],
+        [`/${n}/index.html`, ''],
+        ['/', n ? `#${n}` : ''],
+      ]),
     ];
     for (let q = 0; q < 24 * 4; q++) {
       const utc = new Date(Date.UTC(2026, 10, 25, 0, q * 15));
-      for (const hash of hashes)
-        expect(bootSky(utc, hash), `${hash} at ${utc.toISOString()}`).toEqual(roomSky(utc, hash));
+      for (const a of addresses)
+        expect(bootSky(utc, a), `${a.join('')} at ${utc.toISOString()}`).toEqual(roomSky(utc, a));
     }
   });
 });

@@ -256,10 +256,12 @@ const dbg = (page, row, btn) =>
     },
     [row, btn],
   );
-const setHash = (page, h) =>
-  page.evaluate((h) => {
-    location.hash = h;
-  }, h);
+// An old-style #route typed into the open page: the site rewrites it to its path (/night) and follows it, and a page
+// with hash routes (an earlier build, the artifact) follows the hash, so the same states work as a baseline for both.
+const setRoute = (page, name) =>
+  page.evaluate((name) => {
+    location.hash = name;
+  }, name);
 const tourNext = (page) => click(page, '.talkie .tbtn:not(.tbtn--ghost)');
 const tourNo = (page) => click(page, '.talkie .tbtn--ghost');
 
@@ -360,17 +362,18 @@ async function desktopSession(browser) {
   }
   await dbg(page, 'погода', 'auto');
   await advance(page, 2000);
-  // hash routes
-  await setHash(page, 'night');
+  // routes (the shots keep their old names, so that captures stay comparable)
+  await setRoute(page, 'night');
   await advance(page, 3000);
   await shot(page, 'hash-night');
-  await setHash(page, 'play');
+  await setRoute(page, 'play');
   await advance(page, 3000);
   await shot(page, 'hash-play');
-  await setHash(page, 'resume');
+  await setRoute(page, 'resume');
   await advance(page, 1500);
   await shot(page, 'hash-resume');
-  await setHash(page, '');
+  // closed as a visitor closes it: back to the plain room
+  await click(page, '#sheet-back');
   await advance(page, 3000);
   // language
   await click(page, '#lang-en');

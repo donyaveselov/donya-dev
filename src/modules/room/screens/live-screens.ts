@@ -10,6 +10,7 @@ import { saverPos } from './saver';
 import type { SaverPos } from './saver';
 import type { LineKind } from './opencode';
 import { canvas, ctx2d, screenCanvasTexture, screenFilter, screenTexture } from '../scene/textures';
+import { asset } from '../../../utils/asset';
 
 /** The live canvases (the saver, the opencode session) are all the saver's size. */
 const { w: LIVE_W, h: LIVE_H } = SAVER_SCREEN;
@@ -171,7 +172,7 @@ export class LiveScreens {
         ctx2d(c).drawImage(im, (c.width - w) / 2, (c.height - h) / 2, w, h);
         tex.needsUpdate = true;
       };
-      im.src = 'games/' + k + '.jpg';
+      im.src = asset(`games/${k}.jpg`);
     }
   }
 

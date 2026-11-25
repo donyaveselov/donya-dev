@@ -29,6 +29,23 @@ describe('plan', () => {
     expect([...upload].sort()).toEqual(Object.keys(files).sort());
   });
 
+  it('uploads the route pages after the assets and before index.html', () => {
+    const files = {
+      'index.html': 'page',
+      'resume/index.html': 'page',
+      'pc/index.html': 'page',
+      'assets/index-a.js': 'aa',
+      'zzz.jpg': 'jpg',
+    };
+    expect(plan(local(files), remote({}), null).upload).toEqual([
+      'assets/index-a.js',
+      'zzz.jpg',
+      'pc/index.html',
+      'resume/index.html',
+      'index.html',
+    ]);
+  });
+
   it('uploads a file the manifest knows but the host lost or truncated', () => {
     const files = { 'index.html': 'page', 'assets/index-a.js': 'aa', 'og.jpg': 'picture' };
     const onHost = remote({ 'index.html': 'page', 'og.jpg': 'pic' });

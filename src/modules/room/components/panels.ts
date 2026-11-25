@@ -4,7 +4,7 @@ import { DESKTOP_DOM, DESKTOP_ROOT_ID } from '../../../services/desktop-registry
 import { EXPERIENCE } from '../../../content/experience';
 import type { Lang, Status } from '../../../types';
 import { isAriaKey, isMarkupKey, t, timeChip } from '../i18n';
-import { setHash } from '../routes';
+import { goTo, leave } from '../routes';
 import { fitPixelBox } from './tags';
 import { byId } from '../../../utils/dom';
 
@@ -55,7 +55,7 @@ export class Panels {
     this.sheet.hidden = false;
     this.sheet.style.opacity = '1';
     this.sheetBack.hidden = false;
-    setHash('resume');
+    goTo('resume');
     if (wasOpen) return;
     this.sheet.scrollTop = 0;
     const active = document.activeElement;
@@ -67,7 +67,7 @@ export class Panels {
     if (this.sheet.hidden) return;
     this.sheet.hidden = true;
     this.sheetBack.hidden = true;
-    if (location.hash === '#resume') setHash('');
+    leave('resume');
     const back = this.returnFocus;
     this.returnFocus = null;
     // back to what opened it; a Start menu item has gone by now, so at the PC the desktop takes the keyboard again
@@ -94,7 +94,7 @@ export class Panels {
     }
   }
 
-  /** Opens or closes the sheet for the route (#resume). */
+  /** Opens or closes the sheet for the route (/resume). */
   showResume(open: boolean): void {
     if (open) this.openResume();
     else this.closeResume();

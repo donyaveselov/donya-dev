@@ -19,9 +19,9 @@ export const live = {
   lang: initialLang(savedLang(), navigator.language),
   /** the Phuket clock as last read (every 5 s) */
   time: { h: 12, m: 0 },
-  /** a previewed hour (#day, the debug panel, the tour) instead of the clock */
+  /** a previewed hour (/day, the debug panel, the tour) instead of the clock */
   preview: null as number | null,
-  /** a previewed status (#work, the debug panel, the tour) instead of the schedule */
+  /** a previewed status (/work, the debug panel, the tour) instead of the schedule */
   forced: null as Status | null,
   /** my Discord presence as last read; null before the first reading and after a failed one */
   presence: null as Presence | null,

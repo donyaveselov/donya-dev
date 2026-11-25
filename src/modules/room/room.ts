@@ -3,7 +3,7 @@
    This module is the page's composition root. startRoom() makes the app (the DOM chrome, the music, the talkie tour
    and, once the model arrives, the 3D room and the way into its monitors) and wires the parts to each other:
      state.ts          what the room is showing: language, Phuket time, status, game, weather
-     routes.ts         the hash routes
+     routes.ts         the routes (/resume, /night, ...)
      scene.ts          the 3D room: built from the model, lit, animated
      handoff.ts        sitting down at a monitor and standing up
      flat-desktop.ts   the desktop alone, when there is no 3D
@@ -30,7 +30,7 @@ import { watchPointer } from './scene/pointer';
 import type { Pointer } from './scene/pointer';
 import { GAME_NAMES, pollPresence } from '../../services/presence.service';
 import { psx, render, setBackdrop } from './scene/psx';
-import { currentRoute } from './routes';
+import { addressEvent, currentRoute, leftByPage, tidyAddress } from './routes';
 import type { Route } from './routes';
 import { animateScene, buildScene, fitScene, lightScene, tourSights } from './scene/scene';
 import type { RoomScene } from './scene/scene';
@@ -46,7 +46,7 @@ const CLOCK_EVERY_S = 5;
 const WEATHER_EVERY_MS = 15 * 60e3;
 /** A frame never counts for more than this (s): a tab that was in the background does not jump on its return. */
 const MAX_FRAME_S = 0.05;
-/** The visitor sees the room for a moment before the talkie speaks, or before a #pc link flies to the monitor. */
+/** The visitor sees the room for a moment before the talkie speaks, or before a /pc link flies to the monitor. */
 const GREET_AFTER_MS = 900;
 const SIT_AFTER_MS = 700;
 
@@ -141,14 +141,17 @@ class RoomApp {
       else if (document.body.classList.contains('no-3d')) this.flat.open();
     });
     window.addEventListener('resize', this.layout);
-    window.addEventListener('hashchange', () => {
-      // #loader typed into an open page: load it again, so that it stays on the loading screen
+    // Back or Forward (the resume sheet opened or closed), or an old #route typed into the address bar; the boot
+    // handles the address the page was loaded with
+    window.addEventListener(addressEvent(), () => {
+      const closed = leftByPage(); // the sheet closed: back to /projects must not open My Projects once more
+      tidyAddress();
+      // the loader route on an open page: load it again, so that it stays on the loading screen
       if (currentRoute().holdLoader) {
         location.reload();
         return;
       }
-      // a link to #projects followed on the page; the boot handles the hash the page was loaded with
-      if (this.applyRoute().sit === 'projects') this.openProjects();
+      if (this.applyRoute().sit === 'projects' && !closed) this.openProjects();
     });
     // the debug panel is a chunk of its own: visitors never download it
     if (debugWanted()) void import('./debug/debug-panel').then((m) => m.makeDebugPanel(this.debugHost()));
@@ -157,7 +160,7 @@ class RoomApp {
     this.applyLang();
     readClock();
     this.applyTime();
-    // #loader keeps the loading screen up for good (nothing is loaded): a way to look at the loader
+    // /loader keeps the loading screen up for good (nothing is loaded): a way to look at the loader
     if (currentRoute().holdLoader) return;
     const gl = createRenderer();
     if (gl)
@@ -220,7 +223,7 @@ class RoomApp {
     this.applyTime();
   }
 
-  /** Shows what the hash asks for (a preview, the resume sheet) and returns the route. */
+  /** Shows what the address asks for (a preview, the resume sheet) and returns the route. */
   private applyRoute(): Route {
     const route = currentRoute();
     if (route.game) this.showGame(route.game);
@@ -403,7 +406,7 @@ class RoomApp {
     this.tour.start(false);
   }
 
-  /** #projects (and the same link followed on the page): the desktop with My Projects open. */
+  /** /projects (and Back or Forward to it): the desktop with My Projects open. */
   private openProjects(): void {
     const show = (desk: RoomDesktop): void => {
       desk.openApp('projects');
@@ -547,5 +550,6 @@ class RoomApp {
 
 /** Starts the page; nothing is built before this call. */
 export function startRoom(): void {
+  tidyAddress(); // an old link (/#resume) becomes its path before anything reads the route
   new RoomApp().start();
 }
