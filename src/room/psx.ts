@@ -1,11 +1,10 @@
-/* The PS1 look (design/PS1.md).
-   The scene is drawn into a small render target (about 40 pixels per world unit) and one post pass blows it up with
-   hard square pixels, cuts the colour to 15 bits with the console's own 4x4 dither (half strength), and lays the
-   state's backdrop under it. Every room material can snap its vertices to that pixel grid and is lit per vertex
-   (Lambert = Gouraud in r128).
+/* The PS1 look.
+   The scene is drawn into a small render target and one post pass blows it up with hard square pixels, cuts the
+   colour to 15 bits with the console's own 4x4 dither (half strength), and lays the state's backdrop under it. Room
+   materials are lit per vertex (Lambert = Gouraud in r128). Vertices are not snapped to the pixel grid: two touching
+   surfaces snapped independently made laid-on details flicker against their base.
    psx.fx (1 = full PS1, 0 = clean) is faded by the monitor transition; at 0 the target is bypassed and the frame is
-   drawn exactly as before, so the hand-off to the DOM desktop stays pixel-exact. #nops1 or the debug row switches it
-   off. */
+   drawn directly, so the hand-off to the DOM desktop stays pixel-exact. #nops1 or the debug row switches it off. */
 import {
   BufferGeometry,
   Color,
@@ -19,21 +18,18 @@ import {
   Scene,
   ShaderMaterial,
   Vector2,
-  Vector3,
   WebGLRenderTarget,
   sRGBEncoding,
 } from 'three';
-import type { IUniform, Material, Shader, Texture, WebGLRenderer } from 'three';
+import type { Material, Shader, Texture, WebGLRenderer } from 'three';
 import { BACKDROP } from './lighting';
 
 /** What the room keeps in a material's userData. */
 export interface MatData {
-  /** not vertex-snapped (the figure: its idle motion would shimmer a pixel at every joint, CRASH.md §4) */
-  psxNoSnap?: boolean;
-  /** extra program cache key for the variants psxExtra makes */
-  psxKey?: string;
-  /** more shader edits on top of the snap */
+  /** edits to the built-in shader (the sea's bob, the lamp shade's gradient) */
   psxExtra?: (sh: Shader) => void;
+  /** the program cache key of that edited shader: materials with the same edit share a program */
+  psxKey?: string;
   /** the colour before a level was applied (LEDs, the lamp shade, the keyboard) */
   c0?: Color;
   /** outdoor: the colour before the hour's tint, whether it is a cloud, the tinted colour a lightning flash brightens */
@@ -54,29 +50,19 @@ export type RoomMaterial = MeshLambertMaterial | MeshBasicMaterial;
 export const psx = {
   /** the PS1 pipeline on (#nops1 or the debug row turns it off) */
   on: true,
+  /** 1 = the full PS1 look, 0 = clean; the hand-off fades it */
   fx: 1,
-  /** device pixels per PS1 pixel at zoom 1, rounded and clamped; base unrounded (set by the layout) */
-  S0: 3,
+  /** device pixels per PS1 pixel at zoom 1 (set by the layout) */
   base: 0,
-  snap: { value: new Vector3(1, 1, 0) } as IUniform<Vector3>,
-  time: { value: 0 } as IUniform<number>,
 };
 
-// r128 drops onBeforeCompile on Material.clone(): every scene material goes through ps1(), every copy through cloneM()
+/**
+ * Hooks a room material's shader edit (MatData.psxExtra, which may be set later) into three. r128 drops
+ * onBeforeCompile on Material.clone(), so every scene material goes through here and every copy through cloneM().
+ */
 export function ps1<M extends Material>(m: M): M {
   const d = mdata(m);
   m.onBeforeCompile = (sh) => {
-    sh.uniforms.uSnap = psx.snap;
-    sh.uniforms.uTime = psx.time;
-    sh.vertexShader =
-      'uniform vec3 uSnap;\nuniform float uTime;\n' +
-      sh.vertexShader.replace(
-        '#include <project_vertex>',
-        '#include <project_vertex>\n' +
-          (d.psxNoSnap
-            ? ''
-            : 'if (uSnap.z > 0.0) gl_Position.xy = floor(gl_Position.xy / gl_Position.w * uSnap.xy + 0.5) / uSnap.xy * gl_Position.w;'),
-      );
     d.psxExtra?.(sh);
   };
   m.customProgramCacheKey = () => 'psx' + (d.psxKey ?? '');
@@ -99,7 +85,7 @@ export function nearest<T extends Texture>(t: T): T {
   return t;
 }
 
-/** Draws a laid-on surface (decal, LED, glass) in front of its base despite vertex snapping and grazing angles. */
+/** Draws a laid-on surface (decal, LED, glass) in front of its base even at grazing angles. */
 export function biasForward(m: Material, factor = -2): void {
   m.polygonOffset = true;
   m.polygonOffsetFactor = factor;
@@ -221,7 +207,6 @@ export function render(renderer: WebGLRenderer, scene: Scene, camera: Orthograph
   const W = cv.width;
   const H = cv.height;
   if (!psx.on || psx.fx <= 0 || !post) {
-    psx.snap.value.z = 0;
     renderer.setRenderTarget(null);
     renderer.render(scene, camera);
     return;
@@ -229,7 +214,7 @@ export function render(renderer: WebGLRenderer, scene: Scene, camera: Orthograph
   // A PS1 pixel keeps the same size IN THE ROOM, not on the screen: zoomed out, the pixels shrink with everything else
   // (otherwise the room turns into mush), zoomed in they grow a little, capped so close-ups stay readable.
   const z = camera.zoom || 1;
-  const S0 = Math.max(1, Math.min(6, Math.round((psx.base || psx.S0) * Math.min(z, 1.6))));
+  const S0 = Math.max(1, Math.min(6, Math.round(psx.base * Math.min(z, 1.6))));
   const S = Math.max(1, Math.round(1 + (S0 - 1) * psx.fx));
   const w = Math.ceil(W / S);
   const h = Math.ceil(H / S);
@@ -243,9 +228,6 @@ export function render(renderer: WebGLRenderer, scene: Scene, camera: Orthograph
     });
     rt.texture.encoding = sRGBEncoding; // the target stores display-space colour, like the console's framebuffer
   } else if (rt.width !== w || rt.height !== h) rt.setSize(w, h); // only when the pixel scale steps
-  // vertex snapping off: Crash Bandicoot's geometry is famously steady, and snapping two touching surfaces to the pixel
-  // grid independently is what made laid-on details flicker against their base at some angles
-  psx.snap.value.set(w / 2, h / 2, 0);
   // the target is w*S x h*S device pixels, a little more than the canvas: widen the frustum to the right and up to
   // match, so a target pixel lands exactly on its S x S block and nothing is stretched
   camera.setViewOffset(W, H, 0, -(h * S - H), w * S, h * S);

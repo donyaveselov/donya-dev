@@ -70,7 +70,7 @@ export class Monitors {
       if (!sc) return;
       // the canvases keep their filtering: they are the hand-off surface
       const m = ps1(new MeshBasicMaterial({ map: pictures[i] ?? null }));
-      // the glass sits millimetres off the bezel: snapped, the bezel would win the depth test (only depth moves)
+      // the glass sits millimetres off the bezel, which would win the depth test at a grazing angle (only depth moves)
       biasForward(m);
       sc.material = m;
       made[s] = {

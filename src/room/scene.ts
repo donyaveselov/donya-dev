@@ -93,7 +93,7 @@ export function buildScene(gl: WebGLRenderer, gltf: GLTF, stage: HTMLElement, st
   );
   const tags = new Tags(root, frames, live.wx);
   walls.addCards(root);
-  const figure = new Figure(root, index, outdoor.mats);
+  const figure = new Figure(root);
   figure.addZzz(scene);
   const display = root.getObjectByName('Clock_display') as Mesh | undefined;
   const clock = display ? new WallClock(display) : null;
