@@ -1,33 +1,38 @@
 // The public API (XPDesktopApi): mount the desktop into the host, open and close it, switch its language, register
 // apps. Also published as window.XPDesktop for the room and the regression harness.
-import type { XPDesktopApi, XPMountOptions, XPOpenOptions } from '../../shared/types';
-import { openApp, registerApp, setRegisterHook } from './apps';
+import type { Lang, XPDesktopApi, XPMountOptions, XPOpenOptions } from '../../shared/types';
+import { openApp, registerApp, setRegisterHook, setSystemOpener } from './apps';
 import { clearBalloons, showBalloon } from './balloon';
+import { isBusy, resetBusy } from './busy';
 import { clockText, status } from './clock';
+import { COMPACT_MAX_W, PHONE_MAX_W, TASKBAR_H, TINY_W } from './constants';
 import { closest, h, coarsePointer, now, on, reflow, sessSet } from './dom';
 import { dialog } from './dialog';
 import { forgetIcons, layoutIcons, wireDesk } from './desktop-icons';
-import { startGame } from './game';
-import { onKey, onKeyUp, onRootDown } from './hotkeys';
-import { setLang } from './lang';
+import { startGame, syncGame } from './game';
+import { onKey, onKeyUp, onRootDown, resetHotkeys } from './hotkeys';
+import { onLang, setLang } from './lang';
 import { closeMenus } from './menu';
+import { registerPopup } from './popups';
 import { saverRunning, startSaver, stopSaver } from './screensaver';
-import { bsod, boot, preDesktop } from './session';
-import { sound, unlockSound } from './sound';
-import { closeStart } from './start-menu';
-import { domOrNull, type Refs, S, setDom } from './state';
+import { bindSession, bsod, boot, preDesktop } from './session';
+import { soundByName, unlockSound } from './sound';
+import { closeStart, openStart, startOpen } from './start-menu';
+import { domOrNull, loadSaved, type Refs, S, setDom, type SizeClass } from './state';
 import { BRAND, L, VERSION } from './strings';
-import { applyCrt } from './system-apps';
-import { buildQuickLaunch, buildTaskbar, closeVol, updateTray } from './taskbar';
+import { applyCrt, sysApp } from './system-apps';
+import { buildQuickLaunch, buildTaskbar, closeVol, updateTray, watchMute } from './taskbar';
 import { Tip } from './tooltip';
 import { paintWall } from './wallpaper';
-import { clampWindows, closeAll } from './window';
+import { clampWindows, closeAll, translateWindows } from './window';
+
+/** The tray clock, the owner's status, the wallpaper's time of day and the idle screen saver are checked this often. */
+const TICK_MS = 5000;
 
 let teardown: (() => void)[] = [];
 
-/** Size classes: phone up to 520 px wide, compact up to 820, desk above; the taskbar is taller on phones. */
-function sizeClass(w: number): 'phone' | 'compact' | 'desk' {
-  return w <= 520 ? 'phone' : w <= 820 ? 'compact' : 'desk';
+function sizeClass(w: number): SizeClass {
+  return w <= PHONE_MAX_W ? 'phone' : w <= COMPACT_MAX_W ? 'compact' : 'desk';
 }
 
 function computeSize(): void {
@@ -43,9 +48,9 @@ function computeSize(): void {
   S.touch = coarsePointer() || ('ontouchstart' in window && navigator.maxTouchPoints > 0);
   R.root.classList.toggle('xp--phone', S.size === 'phone');
   R.root.classList.toggle('xp--compact', S.size === 'compact');
-  R.root.classList.toggle('xp--tiny', w < 400);
+  R.root.classList.toggle('xp--tiny', w < TINY_W);
   R.root.classList.toggle('xp--touch', S.touch);
-  S.tbH = S.size === 'phone' ? 40 : 30;
+  S.tbH = S.size === 'phone' ? TASKBAR_H.phone : TASKBAR_H.desk;
   if (prev !== S.size || S.lastH !== hgt || S.lastW !== w) {
     S.lastH = hgt;
     S.lastW = w;
@@ -54,8 +59,80 @@ function computeSize(): void {
   }
 }
 
+/** The shell's own chrome in a new language; the windows' content repaints through its own subscriptions. */
+function translateShell(l: Lang): void {
+  const R = domOrNull();
+  if (!R) return;
+  updateTray();
+  layoutIcons();
+  buildQuickLaunch();
+  translateWindows(l);
+  if (startOpen()) {
+    closeStart();
+    openStart();
+  }
+  closeMenus(0);
+  R.desk.setAttribute('aria-label', L('desktop'));
+}
+
+/**
+ * The modules below this one do not import each other in circles: a lower layer (the window manager, the session
+ * screens, the app registry) reaches a higher one (menus, the Start menu, the built-in programs) through what is
+ * registered here. Returns the undo.
+ */
+function wireLayers(): (() => void)[] {
+  setSystemOpener(sysApp);
+  setRegisterHook(() => {
+    layoutIcons(false);
+    buildQuickLaunch();
+  });
+  return [
+    registerPopup('start', closeStart),
+    registerPopup('menus', () => {
+      closeMenus(0);
+    }),
+    registerPopup('volume', closeVol),
+    bindSession({ closeDesktop, layoutIcons }),
+    onLang(translateShell),
+    watchMute(),
+    () => {
+      setSystemOpener(null);
+      setRegisterHook(null);
+    },
+  ];
+}
+
+/** While the desktop is open: the tray, a balloon when the owner's status changes, the wallpaper, the idle saver. */
+function startTicking(): () => void {
+  let lastStatus = status();
+  const t = window.setInterval(() => {
+    const st = status();
+    if (S.open) {
+      updateTray();
+      if (st !== lastStatus && !isBusy())
+        showBalloon({ title: L(`statusChanged_${st}`), text: L('clockTipPre') + clockText() });
+      paintWall();
+      const idleMs = now() - (S.lastInput || now());
+      if (
+        !isBusy() &&
+        !saverRunning() &&
+        S.prefs.saver !== 'none' &&
+        !document.hidden &&
+        idleMs > S.prefs.saverMin * 60000
+      )
+        startSaver();
+    }
+    // a closed desktop only keeps track (open() repaints the tray and the wallpaper itself)
+    lastStatus = st;
+  }, TICK_MS);
+  return () => {
+    clearInterval(t);
+  };
+}
+
 function mount(host: HTMLElement, opts: XPMountOptions): XPDesktopApi {
   if (S.mounted) unmount();
+  loadSaved();
   S.opts = opts;
   S.lang = opts.lang === 'en' ? 'en' : 'ru';
   const root = h('div', 'xp xp--hidden');
@@ -102,47 +179,16 @@ function mount(host: HTMLElement, opts: XPMountOptions): XPDesktopApi {
   });
   const ro = new ResizeObserver(computeSize);
   ro.observe(root);
-  let lastStatus = status();
-  // both ticks idle while the desktop is closed (open() repaints the tray and the wallpaper itself)
-  const clock = window.setInterval(() => {
-    if (!S.open) {
-      lastStatus = status();
-      return;
-    }
-    updateTray();
-    const st = status();
-    if (st !== lastStatus && !S.busy)
-      showBalloon({ title: L(`statusChanged_${st}`), text: L('clockTipPre') + clockText() });
-    lastStatus = st;
-  }, 5000);
-  const slow = window.setInterval(() => {
-    if (!S.open) return;
-    paintWall();
-    if (
-      !S.busy &&
-      !saverRunning() &&
-      S.prefs.saver !== 'none' &&
-      !document.hidden &&
-      now() - (S.lastInput || now()) > S.prefs.saverMin * 60000
-    )
-      startSaver();
-  }, 5000);
   teardown = [
     on(document, 'pointerdown', unlockSound, true),
     on(document, 'keydown', unlockSound, true),
     () => {
       ro.disconnect();
     },
-    () => {
-      clearInterval(clock);
-      clearInterval(slow);
-    },
+    startTicking(),
+    ...wireLayers(),
   ];
   S.mounted = true;
-  setRegisterHook(() => {
-    layoutIcons(false);
-    buildQuickLaunch();
-  });
   computeSize();
   paintWall(true);
   updateTray();
@@ -150,18 +196,24 @@ function mount(host: HTMLElement, opts: XPMountOptions): XPDesktopApi {
   return api;
 }
 
+/** Takes the desktop down and leaves the shell's state as it was before mount (registered apps stay). */
 function unmount(): void {
   closeAll();
   closeMenus(0);
   closeStart();
+  closeVol();
   stopSaver();
   clearBalloons();
+  Tip.hide();
   for (const f of teardown) f();
   teardown = [];
   domOrNull()?.root.remove();
-  setDom(null);
+  setDom(null); // also ends the desktop's lifetime: boot, shutdown and hand-off sequences stop where they are
   forgetIcons();
-  setRegisterHook(null);
+  resetHotkeys();
+  resetBusy();
+  S.modalBlock = null;
+  S.active = null;
   S.mounted = false;
   S.open = false;
 }
@@ -187,6 +239,7 @@ function open(o: XPOpenOptions = {}): void {
   computeSize();
   paintWall();
   updateTray();
+  syncGame();
   if (o.game) {
     S.booted = true;
     sessSet('booted', '1');
@@ -206,7 +259,7 @@ function open(o: XPOpenOptions = {}): void {
     S.booted = true;
     sessSet('booted', '1');
   }
-  if (!S.busy) {
+  if (!isBusy()) {
     preDesktop(false);
     layoutIcons(!wasOpen && !o.instant);
   }
@@ -222,6 +275,7 @@ export function closeDesktop(o: { instant?: boolean } = {}): void {
   closeVol();
   stopSaver();
   Tip.hide();
+  syncGame();
   if (o.instant) {
     R.root.style.transition = 'none';
     R.root.classList.add('xp--hidden');
@@ -247,7 +301,7 @@ export const api: XPDesktopApi = {
   balloon: (o) => {
     showBalloon(o);
   },
-  sound,
+  sound: soundByName,
   bsod,
   screensaver: (k) => {
     startSaver(k ?? 'logo');

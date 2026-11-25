@@ -2,9 +2,11 @@
 // their XP-style "ghost" animations, title-bar dragging, edge resizing, cascade / tile and Show Desktop.
 import type { Lang, XPAppDef } from '../../shared/types';
 import type { Text } from '../../shared/i18n';
+import { CAPTION_H, DOUBLE_CLICK_MS, Z } from './constants';
 import { animate, clamp, closest, css, EASE_IN, EASE_OUT, EASE_STD, esc, h, now, reduced } from './dom';
-import { isPhone, localPt, localRect, type Pt, work } from './geometry';
+import { isPhone, localPt, localRect, type Pt, trackPointer, work } from './geometry';
 import { ICON } from './glyphs';
+import { closePopups } from './popups';
 import {
   arrangeRect,
   type ArrangeMode,
@@ -20,13 +22,13 @@ import {
 } from './layout';
 import { closeMenus, openMenu } from './menu';
 import { sound } from './sound';
-import { closeStart } from './start-menu';
 import { dom, domOrNull, S } from './state';
 import { L, tr } from './strings';
 import { Tip } from './tooltip';
+import { maximizedShape, transition, type WinState } from './win-state';
 
 export type WinKind = 'app' | 'dialog' | 'game';
-export type WinState = 'normal' | 'max' | 'min';
+export type { WinState };
 
 export interface WinOptions {
   kind?: WinKind;
@@ -49,8 +51,6 @@ export interface WinOptions {
   owner?: Win | null;
   noTask?: boolean;
   center?: boolean;
-  /** Size to the content (dialogs). */
-  autoSize?: boolean;
 }
 
 /** Behaviour hooks a window's creator may set after creating it. */
@@ -63,14 +63,13 @@ export interface WinHooks {
 }
 
 const GRIPS: readonly GripDir[] = ['n', 's', 'e', 'w', 'ne', 'nw', 'se', 'sw'];
-const CAPTION_H = 28;
 let seq = 0;
 let zCounter = 0;
 
 function zSort(): void {
   S.wins.sort((a, b) => a.modalRank - b.modalRank || a.zo - b.zo);
   S.wins.forEach((w, i) => {
-    w.el.style.zIndex = String(w.o.cover && w.state !== 'min' ? 8000 : 100 + i * 2);
+    w.el.style.zIndex = String(w.o.cover && w.state !== 'min' ? Z.cover : Z.windows + i * 2);
   });
 }
 
@@ -160,8 +159,6 @@ export class Win {
   cleanup: (() => void) | null = null;
   unblock: (() => void) | null = null;
   customTitle: string | null = null;
-  /** The tab a built-in program shows (kept across language repaints). */
-  tab: string | null = null;
   private readonly title: Text;
   private readonly textEl: HTMLSpanElement | null;
   private readonly iconEl: HTMLSpanElement | null;
@@ -215,25 +212,9 @@ export class Win {
     this.rect = placeRect(W, p.x, p.y, size.w, size.h);
     this.applyRect();
     dom().wins.appendChild(el);
-    if (o.autoSize) {
-      css(el, { width: 'auto', height: 'auto' });
-      const w = Math.min(el.offsetWidth, W.w - 16);
-      const hh = Math.min(el.offsetHeight, W.h - 16);
-      const c = centerIn(this.ownerRect(), w, hh);
-      this.rect = { x: Math.round(clamp(c.x, 0, W.w - w)), y: Math.round(clamp(c.y, 0, W.h - hh)), w, h: hh };
-      this.applyRect();
-    }
     if (o.cover) el.classList.add('xp--cover');
-    else if (isPhone() && this.kind === 'app') {
-      this.prev = { ...this.rect };
-      this.state = 'max';
-      this.autoMax = true;
-      el.classList.add('xp--max');
-    } else if (o.maximized && this.resizable) {
-      this.prev = { ...this.rect };
-      this.state = 'max';
-      el.classList.add('xp--max');
-    }
+    else if (isPhone() && this.kind === 'app') this.setState('max', true);
+    else if (o.maximized && this.resizable) this.setState('max');
     this.syncMaxBtn();
     S.wins.push(this);
     zSort();
@@ -241,12 +222,53 @@ export class Win {
     this.wire();
   }
 
-  /** The owner's rect (to centre over), or the whole work area. */
+  /** What to centre over: the owner window when it shows at its own rect, else the whole work area. */
   private ownerRect(): Rect {
     const ow = this.o.owner;
-    if (ow && !ow.closed && ow.state !== 'min') return ow.rect;
+    if (ow && !ow.closed && ow.state === 'normal') return ow.rect;
     const W = work();
     return { x: 0, y: 0, w: W.w, h: W.h };
+  }
+
+  /**
+   * The one place the window changes between normal, maximized and minimized (win-state.ts has the rules): the
+   * state, the rect to come back to, the classes and the Maximize button move together. `byLayout`: maximized by the
+   * phone layout, not by the visitor (clampWindows undoes it on a wider screen).
+   */
+  setState(next: WinState, byLayout = false): void {
+    if (next === this.state) return;
+    const { state, rect, prev, restoreState, autoMax } = this;
+    const to = transition({ state, rect, prev, restoreState, autoMax }, next, byLayout);
+    this.state = to.state;
+    this.rect = to.rect;
+    this.prev = to.prev;
+    this.restoreState = to.restoreState;
+    this.autoMax = to.autoMax;
+    this.el.classList.toggle('xp--max', maximizedShape(to));
+    this.el.classList.toggle('xp--min', to.state === 'min');
+    this.syncMaxBtn();
+  }
+
+  /** Sizes the window to its content and centres it over its owner, inside the work area (dialogs). */
+  fitToContent(): void {
+    const el = this.el;
+    css(el, { width: 'auto', height: 'auto' });
+    // offsetWidth/Height round fractional sizes, and a fraction of a pixel short is enough for a scrollbar: add a
+    // spare pixel, and only let the body scroll when the content really is taller than the screen
+    const W = work();
+    const fits = el.offsetHeight + 1 <= W.h - 16;
+    const w = Math.min(el.offsetWidth + 1, W.w - 16);
+    const hh = Math.min(el.offsetHeight + 1, W.h - 16);
+    this.body.style.overflow = fits ? 'hidden' : 'auto';
+    const c = centerIn(this.ownerRect(), w, hh);
+    this.rect = { x: Math.round(clamp(c.x, 0, W.w - w)), y: Math.round(clamp(c.y, 0, W.h - hh)), w, h: hh };
+    this.applyRect();
+  }
+
+  /** A modal dialog blocks this window (or lets it go): its title bar and content go inert meanwhile. */
+  setBlockedBy(dialog: Win | null): void {
+    this.blockedBy = dialog;
+    for (const part of [this.titleEl, this.body]) if (part) part.inert = !!dialog;
   }
 
   titleText(): string {
@@ -281,7 +303,7 @@ export class Win {
     b.tabIndex = -1;
     const span = b.querySelector('span');
     if (span) span.textContent = this.titleText();
-    Tip.set(b, () => this.titleText());
+    Tip.set(b, () => this.titleText(), false);
     b.addEventListener('click', () => {
       if (S.modalBlock && this.blockedBy) {
         this.blockedBy.focus();
@@ -334,7 +356,7 @@ export class Win {
         e.stopPropagation();
         // a double click on the window icon closes the window, as in XP
         const t = now();
-        if (this.iconClickT && t - this.iconClickT < 450) {
+        if (this.iconClickT && t - this.iconClickT < DOUBLE_CLICK_MS) {
           closeMenus(0);
           this.close();
           return;
@@ -378,7 +400,7 @@ export class Win {
     this.zo = ++zCounter;
     zSort();
     if (S.active !== this) setActive(this);
-    closeStart();
+    closePopups('start');
     const ae = document.activeElement;
     if (!silent && !(ae && this.el.contains(ae))) this.el.focus({ preventScroll: true });
     return this;
@@ -432,7 +454,7 @@ export class Win {
   }
 
   private taskRect(): Rect {
-    return this.task ? localRect(this.task) : { x: 0, y: S.h - 30, w: 160, h: 24 };
+    return this.task ? localRect(this.task) : { x: 0, y: S.h - S.tbH, w: 160, h: 24 };
   }
 
   /** quiet: no ghost and no sound (the host already showed the minimize). */
@@ -442,9 +464,7 @@ export class Win {
     // a full-screen window flies down as a caption strip, like XP did: not as a screen-sized blue slab
     const from = this.captionRect();
     const to = this.taskRect();
-    this.restoreState = this.state;
-    this.state = 'min';
-    this.el.classList.add('xp--min');
+    this.setState('min');
     if (!quiet) sound('minimize');
     if (S.active === this) setActive(topWindow(this));
     this.task?.classList.remove('xp--on');
@@ -465,10 +485,10 @@ export class Win {
       if (this.state === 'max') this.toggleMax();
       return Promise.resolve();
     }
-    this.state = this.restoreState;
-    this.el.classList.remove('xp--min');
+    this.setState(this.restoreState);
     this.zo = ++zCounter;
     zSort();
+    // measured where it will land, then kept hidden until the ghost has flown there
     const to = this.captionRect();
     this.el.classList.add('xp--min');
     const from = this.taskRect();
@@ -491,18 +511,8 @@ export class Win {
     if (this.closed || !this.resizable || this.o.maximizable === false) return;
     if (isPhone() && this.state === 'max') return;
     const before = localRect(this.el);
-    if (this.state === 'max') {
-      this.state = 'normal';
-      this.el.classList.remove('xp--max');
-      this.autoMax = false;
-      if (this.prev) this.rect = this.prev;
-    } else {
-      this.prev = { ...this.rect };
-      this.state = 'max';
-      this.el.classList.add('xp--max');
-    }
+    this.setState(this.state === 'max' ? 'normal' : 'max');
     this.applyRect();
-    this.syncMaxBtn();
     const after = localRect(this.el);
     sound('maximize');
     if (!reduced() && after.w && after.h) {
@@ -602,7 +612,7 @@ export class Win {
     const p = localPt(e);
     if (
       this.titleDownT &&
-      t - this.titleDownT < 380 &&
+      t - this.titleDownT < DOUBLE_CLICK_MS &&
       Math.abs(p.x - this.titleDownP.x) < 8 &&
       Math.abs(p.y - this.titleDownP.y) < 8
     ) {
@@ -616,35 +626,25 @@ export class Win {
     e.preventDefault();
     const { x: ox, y: oy } = this.rect;
     let moved = false;
-    try {
-      title.setPointerCapture(e.pointerId);
-    } catch {
-      /* the pointer is already gone */
-    }
-    const mv = (ev: PointerEvent): void => {
-      const q = localPt(ev);
-      const dx = q.x - p.x;
-      const dy = q.y - p.y;
-      if (!moved && Math.abs(dx) + Math.abs(dy) < 3) return;
-      if (!moved) {
-        moved = true;
-        this.el.classList.add('xp--dragging');
-        Tip.hide();
-      }
-      const np = dragPos(work(), this.rect.w, ox + dx, oy + dy);
-      this.rect.x = np.x;
-      this.rect.y = np.y;
-      this.applyRect();
-    };
-    const up = (): void => {
-      title.removeEventListener('pointermove', mv);
-      title.removeEventListener('pointerup', up);
-      title.removeEventListener('pointercancel', up);
-      this.el.classList.remove('xp--dragging');
-    };
-    title.addEventListener('pointermove', mv);
-    title.addEventListener('pointerup', up);
-    title.addEventListener('pointercancel', up);
+    trackPointer(
+      title,
+      e,
+      (dx, dy) => {
+        if (!moved && Math.abs(dx) + Math.abs(dy) < 3) return;
+        if (!moved) {
+          moved = true;
+          this.el.classList.add('xp--dragging');
+          Tip.hide();
+        }
+        const np = dragPos(work(), this.rect.w, ox + dx, oy + dy);
+        this.rect.x = np.x;
+        this.rect.y = np.y;
+        this.applyRect();
+      },
+      () => {
+        this.el.classList.remove('xp--dragging');
+      },
+    );
   }
 
   private gripDown(g: HTMLElement, d: GripDir, e: PointerEvent): void {
@@ -652,28 +652,19 @@ export class Win {
     e.preventDefault();
     e.stopPropagation();
     this.focus();
-    const p = localPt(e);
     const r0 = { ...this.rect };
-    try {
-      g.setPointerCapture(e.pointerId);
-    } catch {
-      /* the pointer is already gone */
-    }
     this.el.classList.add('xp--dragging');
-    const mv = (ev: PointerEvent): void => {
-      const q = localPt(ev);
-      this.rect = resizeRect(r0, d, q.x - p.x, q.y - p.y, { w: this.minW, h: this.minH }, work());
-      this.applyRect();
-    };
-    const up = (): void => {
-      g.removeEventListener('pointermove', mv);
-      g.removeEventListener('pointerup', up);
-      g.removeEventListener('pointercancel', up);
-      this.el.classList.remove('xp--dragging');
-    };
-    g.addEventListener('pointermove', mv);
-    g.addEventListener('pointerup', up);
-    g.addEventListener('pointercancel', up);
+    trackPointer(
+      g,
+      e,
+      (dx, dy) => {
+        this.rect = resizeRect(r0, d, dx, dy, { w: this.minW, h: this.minH }, work());
+        this.applyRect();
+      },
+      () => {
+        this.el.classList.remove('xp--dragging');
+      },
+    );
   }
 }
 
@@ -704,23 +695,27 @@ function stopFlash(w: Win): void {
 
 /* ------------------------------------------------------------------ all windows */
 
+/** A language switch: every title, then whatever each window's content subscribed (XPAppApi.onLang). */
+export function translateWindows(l: Lang): void {
+  for (const w of S.wins.slice()) {
+    w.renderTitle();
+    for (const cb of w.langCbs.slice()) {
+      try {
+        cb(l);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  }
+  Tip.relabel(dom().wins);
+}
+
 /** After the desktop changes size: phones show app windows maximized, and nothing is left out of reach. */
 export function clampWindows(): void {
   const W = work();
   for (const w of S.wins) {
-    if (isPhone() && w.kind === 'app' && w.state === 'normal' && !w.o.cover) {
-      w.prev = { ...w.rect };
-      w.state = 'max';
-      w.autoMax = true;
-      w.el.classList.add('xp--max');
-      w.syncMaxBtn();
-    } else if (!isPhone() && w.autoMax && w.state === 'max') {
-      w.state = 'normal';
-      w.autoMax = false;
-      w.el.classList.remove('xp--max');
-      if (w.prev) w.rect = w.prev;
-      w.syncMaxBtn();
-    }
+    if (isPhone() && w.kind === 'app' && w.state === 'normal' && !w.o.cover) w.setState('max', true);
+    else if (!isPhone() && w.autoMax && w.state === 'max') w.setState('normal');
     w.rect = keepReachable(w.rect, W);
     w.applyRect();
   }
@@ -732,11 +727,7 @@ export function arrangeWindows(mode: ArrangeMode): void {
   const n = list.length;
   if (!n) return;
   list.forEach((w, i) => {
-    if (w.state === 'max') {
-      w.state = 'normal';
-      w.el.classList.remove('xp--max');
-      w.syncMaxBtn();
-    }
+    w.setState('normal');
     w.rect = arrangeRect(mode, i, n, w.rect, { w: w.minW, h: w.minH }, W);
     w.applyRect();
     w.zo = ++zCounter;

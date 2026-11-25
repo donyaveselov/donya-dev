@@ -5,7 +5,7 @@ import { appTitle } from './apps';
 import { showBalloon } from './balloon';
 import { clockText, dateText, status } from './clock';
 import { clamp, closest, css, esc, h, noop, qs } from './dom';
-import { localPt, localRect } from './geometry';
+import { isTiny, localPt, localRect } from './geometry';
 import { ICON, statusIcon } from './glyphs';
 import { closeMenus, openMenu } from './menu';
 import { setSoundLevel, sound, unlockSound } from './sound';
@@ -45,7 +45,7 @@ export function buildTaskbar(): TaskbarRefs {
   r.startBtn.addEventListener('click', () => {
     toggleStart();
   });
-  Tip.set(r.startBtn, () => L('startTip'));
+  Tip.set(r.startBtn, () => L('startTip'), false);
   r.lang.addEventListener('pointerdown', (e) => {
     e.stopPropagation();
     closeMenus(0);
@@ -75,14 +75,14 @@ export function buildTaskbar(): TaskbarRefs {
       { up: true },
     );
   });
-  Tip.set(r.lang, () => L('langTip'));
+  Tip.set(r.lang, () => L('langTip'), false);
   r.vol.addEventListener('pointerdown', stop);
   r.vol.addEventListener('click', volumePopup);
   r.vol.addEventListener('dblclick', () => {
     toggleMute();
   });
-  Tip.set(r.vol, () => L('volumeTip', S.prefs.muted ? L('muted') : `${String(Math.round(S.prefs.volume * 100))}%`));
-  Tip.set(r.clock, () => dateText() + L('clockTipPost'));
+  Tip.set(r.vol, () => L('volumeTip', isMuted() ? L('muted') : `${String(Math.round(S.prefs.volume * 100))}%`));
+  Tip.set(r.clock, () => dateText() + L('clockTipPost'), false);
   r.clock.addEventListener('dblclick', () => {
     sysApp('about');
   });
@@ -135,7 +135,7 @@ export function buildTaskbar(): TaskbarRefs {
       ],
       p.x,
       p.y,
-      { up: true, bottomSheet: S.w < 400 },
+      { up: true, bottomSheet: isTiny() },
     );
   });
   tb.addEventListener('pointerdown', (e) => {
@@ -170,20 +170,28 @@ export function buildQuickLaunch(): void {
   }
 }
 
+const setText = (el: Element | null, s: string): void => {
+  if (el && el.textContent !== s) el.textContent = s;
+};
+
+/** Brings the tray (and the Start button's caption) up to date; it runs on a timer, so it only writes what changed. */
 export function updateTray(): void {
   const R = domOrNull();
   if (!R) return;
-  const ct = clockText();
-  if (R.clock.textContent !== ct) R.clock.textContent = ct;
-  R.lang.textContent = S.lang === 'en' ? 'EN' : 'RU';
+  setText(R.clock, clockText());
+  setText(R.lang, S.lang === 'en' ? 'EN' : 'RU');
   const st = status();
   if (R.statusIc.dataset.st !== st) {
     R.statusIc.dataset.st = st;
     R.statusIc.innerHTML = statusIcon(st);
   }
-  R.vol.innerHTML = S.prefs.muted ? ICON.mute : ICON.volume;
-  const t = R.startBtn.querySelector('.xp-startbtn__t');
-  if (t) t.textContent = L('start');
+  const muted = String(isMuted());
+  if (R.vol.dataset.muted !== muted) {
+    R.vol.dataset.muted = muted;
+    R.vol.innerHTML = isMuted() ? ICON.mute : ICON.volume;
+  }
+  setText(R.startBtn.querySelector('.xp-startbtn__t'), L('start'));
+  Tip.relabel(R.tray);
 }
 
 /** The tray's Mute: the page's one sound switch (src/shared/sound.ts), the same one as the room's speaker button. */
@@ -195,15 +203,18 @@ function toggleMute(v?: boolean): void {
   }
 }
 
-// the switch flipped (here, or by the room's button): the desktop's sounds, its tray icon and an open volume popup
-onMutedChange((m) => {
-  S.prefs.muted = m;
-  savePrefs();
-  setSoundLevel();
-  updateTray();
-  const box = volPop?.querySelector<HTMLInputElement>('.xp-vol__m');
-  if (box) box.checked = m;
-});
+/**
+ * Follows the mute switch while the desktop is mounted: flipped here or by the room's button, the desktop's sounds,
+ * its tray icon and an open volume pop-up follow. Returns the unsubscribe.
+ */
+export function watchMute(): () => void {
+  return onMutedChange((muted) => {
+    setSoundLevel();
+    updateTray();
+    const box = volPop?.querySelector<HTMLInputElement>('.xp-vol__m');
+    if (box) box.checked = muted;
+  });
+}
 
 let volPop: HTMLDivElement | null = null;
 export const volumeOpen = (): boolean => !!volPop;
@@ -226,7 +237,7 @@ function volumePopup(): void {
   const r = qs(p, '.xp-vol__r', HTMLInputElement);
   const m = qs(p, '.xp-vol__m', HTMLInputElement);
   r.value = String(Math.round(S.prefs.volume * 100));
-  m.checked = S.prefs.muted;
+  m.checked = isMuted();
   r.addEventListener('input', () => {
     S.prefs.volume = Number(r.value) / 100;
     if (isMuted() && Number(r.value) > 0) setMuted(false); // turning it up unmutes, as in XP

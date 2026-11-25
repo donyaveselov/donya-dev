@@ -10,7 +10,6 @@ export const D = (ms: number): number => (reduced() ? 1 : ms);
 export const now = (): number => performance.now();
 export const clamp = (v: number, a: number, b: number): number => (v < a ? a : v > b ? b : v);
 export const noop = (): void => undefined;
-export const wait = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
 
 const ESC: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
 export function esc(s: string | number | null | undefined): string {

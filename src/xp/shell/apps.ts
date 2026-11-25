@@ -1,6 +1,7 @@
 // The app registry and app windows: an app registers once, opens into a window (singleton unless it says otherwise)
 // and gets an XPAppApi for its window, language, sounds and dialogs.
 import type { XPAppApi, XPAppDef, XPAppParams } from '../../shared/types';
+import { CAPTION_H } from './constants';
 import { EASE_OUT, reduced } from './dom';
 import { phuketTime, status } from './clock';
 import { dialog } from './dialog';
@@ -8,10 +9,9 @@ import { showBalloon } from './balloon';
 import { work } from './geometry';
 import { ICON } from './glyphs';
 import { requestedRect, type Rect } from './layout';
-import { sound } from './sound';
+import { sound, soundByName } from './sound';
 import { S } from './state';
 import { L, tr } from './strings';
-import { sysApp } from './system-apps';
 import { ghost, growIn, startFlash, Win } from './window';
 
 export const appTitle = (app: XPAppDef): string => tr(app.title) || app.id;
@@ -22,12 +22,19 @@ export function setRegisterHook(fn: (() => void) | null): void {
   onRegister = fn;
 }
 
+type SystemOpener = (id: string) => Win | null;
+let openSystem: SystemOpener | null = null;
+/** The built-in programs (system-apps.ts, a layer above) take the ids no app registered; desktop.ts connects them. */
+export function setSystemOpener(fn: SystemOpener | null): void {
+  openSystem = fn;
+}
+
 let regT = 0;
 export function registerApp(def: XPAppDef): void {
   S.apps.set(def.id, def);
-  if (S.mounted && onRegister) {
+  if (S.mounted) {
     clearTimeout(regT);
-    regT = window.setTimeout(onRegister, 0);
+    regT = window.setTimeout(() => onRegister?.(), 0);
   }
 }
 
@@ -76,7 +83,7 @@ function makeApi(w: Win, params: XPAppParams | undefined): XPAppApi {
         if (i >= 0) w.langCbs.splice(i, 1);
       };
     },
-    sound,
+    sound: soundByName,
     balloon: (o) => {
       showBalloon(o);
       if (S.active !== w) startFlash(w);
@@ -130,7 +137,7 @@ function trackRecent(id: string): void {
 /** Opens (or focuses) an app; ids the registry does not know go to the built-in programs. */
 export function openApp(id: string, params?: XPAppParams, origin?: Rect | null): Win | null {
   const app = S.apps.get(id);
-  if (!app) return sysApp(id, params);
+  if (!app) return openSystem?.(id) ?? null;
   if (!S.open) return null;
   const ex = S.openApps.get(app.id);
   if (ex && !ex.closed && app.singleton !== false) {
@@ -138,8 +145,8 @@ export function openApp(id: string, params?: XPAppParams, origin?: Rect | null):
       // re-render with the new params
       try {
         ex.cleanup?.();
-      } catch {
-        /* the old render's cleanup failed: render anew anyway */
+      } catch (e) {
+        console.warn(`XP: cleanup of "${app.id}" failed before its re-render; rendering anew anyway`, e);
       }
       ex.body.innerHTML = '';
       ex.langCbs = [];
@@ -170,7 +177,9 @@ export function openApp(id: string, params?: XPAppParams, origin?: Rect | null):
   }, 350);
   // the opening animation: a caption ghost from the launcher, then fade and scale in
   const target: Rect =
-    w.state === 'max' ? { x: 0, y: 0, w: work().w, h: 28 } : { x: w.rect.x, y: w.rect.y, w: w.rect.w, h: 28 };
+    w.state === 'max'
+      ? { x: 0, y: 0, w: work().w, h: CAPTION_H }
+      : { x: w.rect.x, y: w.rect.y, w: w.rect.w, h: CAPTION_H };
   sound('open');
   w.focus();
   if (origin && !reduced()) {

@@ -1,10 +1,9 @@
 // The built-in programs: Run, About, Task Manager and Display Properties (wallpaper, CRT effect, screen saver).
-import type { Bilingual, XPAppParams } from '../../shared/types';
+import type { Bilingual } from '../../shared/types';
 import { openApp } from './apps';
 import { bsod, turnOffDialog } from './session';
 import { clamp, esc, h, qs, storeGet, storeSet } from './dom';
 import { dialog } from './dialog';
-import { isPhone } from './geometry';
 import { ICON, wordmark } from './glyphs';
 import { startSaver } from './screensaver';
 import { sound } from './sound';
@@ -24,7 +23,14 @@ interface SysDef {
   cascade?: boolean;
   minW?: number;
   minH?: number;
-  render(body: HTMLElement, w: Win, params: XPAppParams | undefined): (() => void) | undefined;
+  /** Builds the program in the window. What the visitor entered lives in the returned view, not in the markup. */
+  create(body: HTMLElement, w: Win): SysView;
+}
+
+interface SysView {
+  /** Rebuilds the markup in the desktop's current language, keeping the view's state. */
+  repaint(): void;
+  close?(): void;
 }
 
 /** Run box commands that are not app names. */
@@ -45,17 +51,11 @@ const run: SysDef = {
   icon: ICON.run,
   w: 360,
   h: 176,
-  render(body, w) {
-    const box = h('div', 'xp-sys xp-run');
-    box.innerHTML =
-      `<div class="xp-sys__row xp-run__top"><span class="xp-run__ic">${ICON.run}</span><span>${esc(L('runText'))}</span></div>` +
-      `<div class="xp-sys__row"><label>${esc(L('runOpen'))}</label><input class="xp-field xp-run__in" list="xp-run-list" autocomplete="off" spellcheck="false"></div>` +
-      `<div class="xp-sys__btns"><button class="xp-btn xp-btn--default xp-run__ok">${esc(L('ok'))}</button><button class="xp-btn xp-run__cancel">${esc(L('cancel'))}</button><button class="xp-btn" disabled>${esc(L('browse'))}</button></div>`;
-    const inp = qs(box, '.xp-run__in', HTMLInputElement);
+  create(body, w) {
     const last = storeGet('lastRun');
-    inp.value = typeof last === 'string' ? last : '';
+    let typed = typeof last === 'string' ? last : '';
     const go = (): void => {
-      const v = inp.value.trim();
+      const v = typed.trim();
       if (!v) return;
       storeSet('lastRun', v);
       const lq = v.toLowerCase().replace(/\.exe$/, '');
@@ -83,22 +83,49 @@ const run: SysDef = {
       }
       dialog({ owner: w, title: v, icon: 'error', text: L('runNotFound', v) });
     };
-    qs(box, '.xp-run__ok').addEventListener('click', go);
-    qs(box, '.xp-run__cancel').addEventListener('click', () => {
-      w.close();
-    });
-    inp.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        go();
-      }
-    });
-    body.appendChild(box);
+    const paint = (): HTMLInputElement => {
+      const box = h('div', 'xp-sys xp-run');
+      box.innerHTML =
+        `<div class="xp-sys__row xp-run__top"><span class="xp-run__ic">${ICON.run}</span><span>${esc(L('runText'))}</span></div>` +
+        `<div class="xp-sys__row"><label>${esc(L('runOpen'))}</label><input class="xp-field xp-run__in" list="xp-run-list" autocomplete="off" spellcheck="false"></div>` +
+        '<div class="xp-sys__btns">' +
+        `<button class="xp-btn xp-btn--default xp-run__ok">${esc(L('ok'))}</button>` +
+        `<button class="xp-btn xp-run__cancel">${esc(L('cancel'))}</button>` +
+        `<button class="xp-btn" disabled>${esc(L('browse'))}</button>` +
+        '</div>';
+      const inp = qs(box, '.xp-run__in', HTMLInputElement);
+      inp.value = typed;
+      inp.addEventListener('input', () => {
+        typed = inp.value;
+      });
+      inp.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          go();
+        }
+      });
+      qs(box, '.xp-run__ok').addEventListener('click', go);
+      qs(box, '.xp-run__cancel').addEventListener('click', () => {
+        w.close();
+      });
+      body.replaceChildren(box);
+      return inp;
+    };
+    let inp = paint();
     setTimeout(() => {
       inp.focus();
       inp.select();
     }, 30);
-    return undefined;
+    return {
+      repaint() {
+        const focused = document.activeElement === inp;
+        const { selectionStart, selectionEnd } = inp;
+        inp = paint();
+        if (!focused) return;
+        inp.focus();
+        inp.setSelectionRange(selectionStart, selectionEnd);
+      },
+    };
   },
 };
 
@@ -107,19 +134,26 @@ const about: SysDef = {
   icon: ICON.logo,
   w: 420,
   h: 330,
-  render(body, w) {
+  create(body, w) {
     const dm = (navigator as Navigator & { deviceMemory?: number }).deviceMemory;
     const mem = dm ? `${String(dm * 1024 * 1024)} KB` : '524 288 KB';
-    const box = h('div', 'xp-about');
-    box.innerHTML =
-      `<div class="xp-about__band"><div class="xp-boot__mark">${ICON.logo}</div>${wordmark(true)}</div>` +
-      `<div class="xp-about__txt"><b>${esc(VERSION)}</b><br>${esc(L('aboutText'))}<hr>${esc(L('aboutLicensed'))}<br>&nbsp;&nbsp;${esc(L('aboutVisitor'))}<br>&nbsp;&nbsp;${PC_NAME}<hr>${esc(L('aboutMem', mem))}<br>${esc(L('appsCount', S.apps.size))}</div>` +
-      `<div class="xp-sys__btns xp-about__btns"><button class="xp-btn xp-btn--default">${esc(L('ok'))}</button></div>`;
-    qs(box, '.xp-btn').addEventListener('click', () => {
-      w.close();
-    });
-    body.appendChild(box);
-    return undefined;
+    const repaint = (): void => {
+      const box = h('div', 'xp-about');
+      box.innerHTML =
+        `<div class="xp-about__band"><div class="xp-boot__mark">${ICON.logo}</div>${wordmark(true)}</div>` +
+        '<div class="xp-about__txt">' +
+        `<b>${esc(VERSION)}</b><br>${esc(L('aboutText'))}<hr>` +
+        `${esc(L('aboutLicensed'))}<br>&nbsp;&nbsp;${esc(L('aboutVisitor'))}<br>&nbsp;&nbsp;${PC_NAME}<hr>` +
+        `${esc(L('aboutMem', mem))}<br>${esc(L('appsCount', S.apps.size))}` +
+        '</div>' +
+        `<div class="xp-sys__btns xp-about__btns"><button class="xp-btn xp-btn--default">${esc(L('ok'))}</button></div>`;
+      qs(box, '.xp-btn').addEventListener('click', () => {
+        w.close();
+      });
+      body.replaceChildren(box);
+    };
+    repaint();
+    return { repaint };
   },
 };
 
@@ -138,15 +172,11 @@ const taskmgr: SysDef = {
   cascade: true,
   minW: 300,
   minH: 320,
-  render(body, w) {
-    let tab = w.tab ?? 'apps';
+  create(body, w) {
+    let tab = 'apps';
     let sel: number | null = null;
     const box = h('div', 'xp-sys xp-tm');
-    box.innerHTML =
-      `<div class="xp-tabs"><button class="xp-tab" data-t="apps">${esc(L('tmApps'))}</button><button class="xp-tab" data-t="perf">${esc(L('tmPerf'))}</button></div>` +
-      '<div class="xp-tabpane"></div><div class="xp-statusbar"><span class="xp-tm__p"></span><span class="xp-tm__c"></span><span class="xp-tm__m"></span></div>';
-    const pane = qs(box, '.xp-tabpane');
-    body.appendChild(box);
+    let pane: HTMLElement = box;
     const cpu: number[] = [];
     let coffee = 72;
     const list = (): TaskRow[] => [
@@ -202,13 +232,17 @@ const taskmgr: SysDef = {
     const paintPerf = (): void => {
       pane.innerHTML = `<div class="xp-group"><span class="xp-group__t">${esc(L('tmCpuGraph'))}</span><canvas class="xp-graph" width="300" height="90"></canvas></div><div class="xp-group"><span class="xp-group__t">${esc(L('tmCoffee'))}</span><div class="xp-progress"><i></i></div></div>`;
     };
-    const tick = (): void => {
+    /** One more second of history. */
+    const sample = (): void => {
       const load = Math.round(
         clamp((cpu[cpu.length - 1] ?? 8) + (Math.random() - 0.5) * 18 + (S.wins.length * 1.5 - 4) * 0.2, 2, 96),
       );
       cpu.push(load);
       if (cpu.length > 60) cpu.shift();
       coffee = Math.max(4, coffee - 0.15);
+    };
+    const draw = (): void => {
+      const load = cpu[cpu.length - 1] ?? 0;
       qs(box, '.xp-tm__p').textContent = L('tmProc', 18 + S.wins.length * 2);
       qs(box, '.xp-tm__c').textContent = L('tmCpu', load);
       qs(box, '.xp-tm__m').textContent = L('tmMem', `${String(180 + S.wins.length * 23)}M / 1024M`);
@@ -253,23 +287,47 @@ const taskmgr: SysDef = {
       )
         paintApps();
     };
+    const tick = (): void => {
+      sample();
+      // nobody sees it while the desktop is closed or the window is on the taskbar: keep the history, skip the drawing
+      if (S.open && w.state !== 'min') draw();
+    };
     const setTab = (t: string): void => {
-      tab = w.tab = t;
+      tab = t;
       box.querySelectorAll<HTMLElement>('.xp-tab').forEach((b) => b.classList.toggle('xp--on', b.dataset.t === t));
       if (t === 'apps') paintApps();
       else paintPerf();
-      tick();
     };
-    box.querySelectorAll<HTMLElement>('.xp-tab').forEach((b) => {
-      b.addEventListener('click', () => {
-        sound('click');
-        setTab(b.dataset.t ?? 'apps');
+    const paintFrame = (): void => {
+      box.innerHTML =
+        '<div class="xp-tabs">' +
+        `<button class="xp-tab" data-t="apps">${esc(L('tmApps'))}</button>` +
+        `<button class="xp-tab" data-t="perf">${esc(L('tmPerf'))}</button>` +
+        '</div>' +
+        '<div class="xp-tabpane"></div>' +
+        '<div class="xp-statusbar"><span class="xp-tm__p"></span><span class="xp-tm__c"></span><span class="xp-tm__m"></span></div>';
+      pane = qs(box, '.xp-tabpane');
+      box.querySelectorAll<HTMLElement>('.xp-tab').forEach((b) => {
+        b.addEventListener('click', () => {
+          sound('click');
+          setTab(b.dataset.t ?? 'apps');
+          tick();
+        });
       });
-    });
-    setTab(tab);
+      setTab(tab);
+    };
+    paintFrame();
+    body.appendChild(box);
+    tick();
     const timer = window.setInterval(tick, 1000);
-    return () => {
-      clearInterval(timer);
+    return {
+      repaint() {
+        paintFrame();
+        draw();
+      },
+      close() {
+        clearInterval(timer);
+      },
     };
   },
 };
@@ -281,7 +339,8 @@ const display: SysDef = {
   icon: ICON.display,
   w: 400,
   h: 450,
-  render(body, w) {
+  create(body, w) {
+    // what the visitor has chosen but not applied yet
     const draft: Draft = {
       wall: S.prefs.wall,
       tint: S.prefs.tint,
@@ -289,16 +348,16 @@ const display: SysDef = {
       saver: S.prefs.saver,
       saverMin: S.prefs.saverMin,
     };
-    let tab = w.tab ?? 'desk';
+    let unapplied = false;
+    let tab = 'desk';
     const box = h('div', 'xp-sys xp-disp');
-    box.innerHTML =
-      `<div class="xp-tabs"><button class="xp-tab" data-t="desk">${esc(L('desktopTab'))}</button><button class="xp-tab" data-t="saver">${esc(L('saverTab'))}</button></div><div class="xp-tabpane"></div>` +
-      `<div class="xp-sys__btns"><button class="xp-btn xp-btn--default" data-a="ok">${esc(L('ok'))}</button><button class="xp-btn" data-a="cancel">${esc(L('cancel'))}</button><button class="xp-btn" data-a="apply" disabled>${esc(L('apply'))}</button></div>`;
-    const pane = qs(box, '.xp-tabpane');
-    const applyB = qs(box, '[data-a="apply"]', HTMLButtonElement);
-    body.appendChild(box);
+    let pane: HTMLElement = box;
+    const syncApply = (): void => {
+      qs(box, '[data-a="apply"]', HTMLButtonElement).disabled = !unapplied;
+    };
     const dirty = (): void => {
-      applyB.disabled = false;
+      unapplied = true;
+      syncApply();
     };
     const monitor = (inner: string): string =>
       `<div class="xp-mon"><div class="xp-mon__case"></div><div class="xp-mon__screen">${inner}</div><div class="xp-mon__stand"></div></div>`;
@@ -366,25 +425,43 @@ const display: SysDef = {
       savePrefs();
       paintWall(true);
       applyCrt();
-      applyB.disabled = true;
+      unapplied = false;
+      syncApply();
     };
-    box.querySelectorAll<HTMLElement>('.xp-tab').forEach((b) => {
-      b.addEventListener('click', () => {
-        sound('click');
-        tab = w.tab = b.dataset.t ?? 'desk';
-        paint();
+    const paintFrame = (): void => {
+      box.innerHTML =
+        '<div class="xp-tabs">' +
+        `<button class="xp-tab" data-t="desk">${esc(L('desktopTab'))}</button>` +
+        `<button class="xp-tab" data-t="saver">${esc(L('saverTab'))}</button>` +
+        '</div>' +
+        '<div class="xp-tabpane"></div>' +
+        '<div class="xp-sys__btns">' +
+        `<button class="xp-btn xp-btn--default" data-a="ok">${esc(L('ok'))}</button>` +
+        `<button class="xp-btn" data-a="cancel">${esc(L('cancel'))}</button>` +
+        `<button class="xp-btn" data-a="apply" disabled>${esc(L('apply'))}</button>` +
+        '</div>';
+      pane = qs(box, '.xp-tabpane');
+      box.querySelectorAll<HTMLElement>('.xp-tab').forEach((b) => {
+        b.addEventListener('click', () => {
+          sound('click');
+          tab = b.dataset.t ?? 'desk';
+          paint();
+        });
       });
-    });
-    qs(box, '[data-a="ok"]').addEventListener('click', () => {
-      apply();
-      w.close();
-    });
-    qs(box, '[data-a="cancel"]').addEventListener('click', () => {
-      w.close();
-    });
-    applyB.addEventListener('click', apply);
-    paint();
-    return undefined;
+      qs(box, '[data-a="ok"]').addEventListener('click', () => {
+        apply();
+        w.close();
+      });
+      qs(box, '[data-a="cancel"]').addEventListener('click', () => {
+        w.close();
+      });
+      qs(box, '[data-a="apply"]').addEventListener('click', apply);
+      syncApply();
+      paint();
+    };
+    paintFrame();
+    body.appendChild(box);
+    return { repaint: paintFrame };
   },
 };
 
@@ -396,7 +473,7 @@ export function applyCrt(): void {
 }
 
 /** Opens a built-in program ('run', 'about', 'taskmgr', 'display'; 'bsod' crashes on purpose). */
-export function sysApp(rawId: string, params?: XPAppParams): Win | null {
+export function sysApp(rawId: string): Win | null {
   const id = rawId.replace(/^sys[:-]/, '');
   if (id === 'bsod') {
     bsod();
@@ -424,18 +501,13 @@ export function sysApp(rawId: string, params?: XPAppParams): Win | null {
   });
   S.openApps.set(key, w);
   w.hooks.escClose = true;
-  // the program repaints itself in the new language
-  const paint = (): void => {
-    w.body.innerHTML = '';
-    w.cleanup?.();
-    w.cleanup = def.render(w.body, w, params) ?? null;
-    w.renderTitle();
-  };
-  w.langCbs.push(paint);
-  paint();
+  const view = def.create(w.body, w);
+  w.cleanup = () => view.close?.();
+  w.langCbs.push(() => {
+    view.repaint();
+  });
   sound('open');
   w.focus();
   growIn(w.el);
-  if (isPhone()) w.state = 'normal';
   return w;
 }

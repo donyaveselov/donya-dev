@@ -2,8 +2,8 @@
 import { clamp, css, esc, h, reduced } from './dom';
 import { localRect } from './geometry';
 import { menuPos, nextByLetter, nextEnabled, type Rect } from './layout';
+import { closePopups } from './popups';
 import { sound } from './sound';
-import { closeStart } from './start-menu';
 import { dom, S } from './state';
 import { L } from './strings';
 
@@ -207,7 +207,7 @@ function activate(m: Menu, i: number): void {
       return;
     }
     closeMenus(0);
-    closeStart();
+    closePopups('start');
     it.onClick?.();
   };
   blink();

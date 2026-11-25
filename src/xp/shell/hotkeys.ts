@@ -1,11 +1,12 @@
 // Keyboard and pointer input at the desktop's root: language switching, the Windows key and Ctrl+Esc (Start),
 // Ctrl+Shift+Esc (Task Manager), Alt+F4, Escape, and keys for menus, the Start menu and the desktop.
+import { isBusy } from './busy';
 import { deskKey } from './desktop-icons';
 import { closest, now } from './dom';
 import { changeLang } from './lang';
 import { closeMenus, menuKey, menus } from './menu';
 import { saverRunning } from './screensaver';
-import { turnOffDialog } from './session';
+import { sessionKey, turnOffDialog } from './session';
 import { closeStart, startKey, startOpen, toggleStart } from './start-menu';
 import { dom, S } from './state';
 import { sysApp } from './system-apps';
@@ -13,17 +14,24 @@ import { closeVol, volumeOpen } from './taskbar';
 import { Tip } from './tooltip';
 import { langSwitchKey, shellCommand } from './keys';
 
+/** The Windows key is down and nothing else has been pressed since. */
+let metaAlone = false;
+
+export function resetHotkeys(): void {
+  metaAlone = false;
+}
+
 export function onKey(e: KeyboardEvent): void {
   S.lastInput = now();
-  S.metaAlone = e.key === 'Meta' && !e.repeat;
+  metaAlone = e.key === 'Meta' && !e.repeat;
   const sw = langSwitchKey(e);
   if (sw) {
     if (sw === 'space') e.preventDefault();
     changeLang(S.lang === 'ru' ? 'en' : 'ru');
     return;
   }
-  if (S.busy || saverRunning()) return;
-  if (S.dlgKey?.(e)) {
+  if (isBusy() || saverRunning()) return;
+  if (sessionKey(e)) {
     e.preventDefault();
     return;
   }
@@ -70,8 +78,8 @@ export function onKey(e: KeyboardEvent): void {
 
 /** The Windows key pressed and released alone opens the Start menu. */
 export function onKeyUp(e: KeyboardEvent): void {
-  if (e.key === 'Meta' && S.metaAlone && !S.busy) {
-    S.metaAlone = false;
+  if (e.key === 'Meta' && metaAlone && !isBusy()) {
+    metaAlone = false;
     toggleStart(true);
   }
 }
@@ -79,6 +87,7 @@ export function onKeyUp(e: KeyboardEvent): void {
 /** Any press on the desktop closes the pop-ups it is not inside. */
 export function onRootDown(e: PointerEvent): void {
   S.lastInput = now();
+  metaAlone = false; // Cmd+click is not "the Windows key alone"
   Tip.hide();
   if (!closest(e, '.xp-menu')) closeMenus(0);
   // a press inside the Start menu's own submenu must not close it: the click would never land

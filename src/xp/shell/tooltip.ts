@@ -1,10 +1,13 @@
 // Tooltips: shown after a 600 ms hover, at once when moving from one tipped element to the next, gone after 5 s.
+// A tip is also its element's accessible name, unless the element has a caption of its own.
 import { clamp, h, now } from './dom';
 import { localPt, type Pt } from './geometry';
 import { domOrNull, S } from './state';
 
 type TipText = string | (() => string);
 const tips = new WeakMap<Element, TipText>();
+/** The elements named by their tip (aria-label). */
+const named = new WeakSet<Element>();
 
 let el: HTMLDivElement | null = null;
 let timer = 0;
@@ -15,6 +18,12 @@ let cur: Element | null = null;
 function text(t: Element): string {
   const v = tips.get(t) ?? t.getAttribute('data-xp-tip');
   return typeof v === 'function' ? v() : (v ?? '');
+}
+
+/** Writes the tip into aria-label (a multi-line tip on one line), if it changed. */
+function label(t: Element): void {
+  const s = text(t).replace(/\s*\n\s*/g, ', ');
+  if (s && t.getAttribute('aria-label') !== s) t.setAttribute('aria-label', s);
 }
 
 function show(t: Element, x: number, y: number): void {
@@ -75,9 +84,17 @@ export const Tip = {
     cur = null;
     hide();
   },
-  set(node: Element, v: TipText): void {
+  /** asName: the tip is also the element's accessible name (an icon-only button); false when it has its own text. */
+  set(node: Element, v: TipText, asName = true): void {
     tips.set(node, v);
     node.setAttribute('data-xp-tip', '');
+    if (!asName) return;
+    named.add(node);
+    label(node);
+  },
+  /** Refreshes the accessible names under `root`: after a language switch, or when a tip's text changed. */
+  relabel(root: ParentNode): void {
+    for (const t of root.querySelectorAll('[data-xp-tip]')) if (named.has(t)) label(t);
   },
   get(node: Element): TipText | undefined {
     return tips.get(node);

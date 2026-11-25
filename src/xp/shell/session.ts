@@ -1,60 +1,159 @@
 // Boot and log-on, the shutdown dialog, Turn Off / Restart / Log Off / Stand By, and the blue screen.
-import { status } from './clock';
-import { D, animate, esc, h, now, on, reduced, reflow, sessGet, sessSet, wait } from './dom';
-import { localPt } from './geometry';
-import { ICON, wordmark } from './glyphs';
-import { layoutIcons } from './desktop-icons';
+//
+// Each of them is a timed sequence: an async function that awaits its pauses (seq.ts) on the mounted desktop's
+// lifetime signal, so unmounting ends it at its current pause. While one runs it holds the desktop busy (busy.ts).
 import { showBalloon, clearBalloons } from './balloon';
-import { closeMenus } from './menu';
+import { beginBusy, isBusy } from './busy';
+import { status } from './clock';
+import { D, animate, esc, h, now, on, reduced, reflow, sessGet, sessSet } from './dom';
+import { localPt, type Pt } from './geometry';
+import { ICON, wordmark } from './glyphs';
+import { onLang } from './lang';
+import { closePopups } from './popups';
+import { after, checkAlive, run, skippable, wait } from './seq';
 import { sound, unlockSound } from './sound';
-import { closeStart } from './start-menu';
-import { dom, S } from './state';
-import { L, PC_NAME, tr, USER } from './strings';
+import { dom, lifetime, S } from './state';
+import { L, PC_NAME, type StringKey, tr, USER } from './strings';
 import { closeAll } from './window';
-import { closeDesktop } from './desktop';
 
-function overlay(cls: string, html = ''): HTMLDivElement {
-  const o = h('div', `xp-ov ${cls}`, html);
-  dom().root.appendChild(o);
-  return o;
+/** What the session screens need from the desktop above them; desktop.ts provides it on mount. */
+export interface SessionHost {
+  closeDesktop(o: { instant?: boolean }): void;
+  layoutIcons(stagger: boolean): void;
 }
 
-/** A sequence of waits that one "skip" finishes at once. */
-function seq(): { wait(ms: number): Promise<void>; skip(): void; readonly skipped: boolean } {
-  let sk = false;
-  const pend: (() => void)[] = [];
-  return {
-    wait(ms) {
-      if (sk) return Promise.resolve();
-      return new Promise((r) => {
-        const t = setTimeout(r, ms);
-        pend.push(() => {
-          clearTimeout(t);
-          r();
-        });
-      });
-    },
-    skip() {
-      if (sk) return;
-      sk = true;
-      for (const f of pend.splice(0)) f();
-    },
-    get skipped() {
-      return sk;
-    },
+let host: SessionHost | null = null;
+/** Keyboard handler of the shutdown dialog while it is up. */
+let dialogKey: ((e: KeyboardEvent) => boolean) | null = null;
+/** What is on screen with text in it, and how each repaints in the current language. */
+const translated = new Map<HTMLElement, () => void>();
+
+/** Connects the session to its desktop; the returned function disconnects it and forgets what was on screen. */
+export function bindSession(to: SessionHost): () => void {
+  host = to;
+  const offLang = onLang(() => {
+    for (const [el, repaint] of translated) {
+      if (el.isConnected) repaint();
+      else translated.delete(el);
+    }
+  });
+  return () => {
+    offLang();
+    host = null;
+    dialogKey = null;
+    translated.clear();
   };
 }
 
-function userTile(cls = ''): string {
-  return `<button class="xp-login__user ${cls}" tabindex="-1"><span class="xp-start__pic">${ICON.avatar}</span><span><span class="xp-login__name">${esc(tr(USER))}</span><small>${esc(L('account'))}</small></span></button>`;
+/** A key for the shutdown dialog, when it is up; true when the key was used. */
+export const sessionKey = (e: KeyboardEvent): boolean => dialogKey?.(e) ?? false;
+
+/* ------------------------------------------------------------------ screens */
+
+/** A full-screen overlay whose markup follows the desktop's language for as long as it is up. */
+function overlay(cls: string, html: () => string): HTMLDivElement {
+  const ov = h('div', `xp-ov ${cls}`, html());
+  dom().root.appendChild(ov);
+  translated.set(ov, () => {
+    ov.innerHTML = html();
+  });
+  return ov;
 }
 
-const BANDS_T = '<div class="xp-welcome__band xp-welcome__band--t"></div>';
-const BANDS_B = '<div class="xp-welcome__band xp-welcome__band--b"></div>';
-
-function welcomeHTML(line: string): string {
-  return `${BANDS_T}<div class="xp-welcome__mid"><div class="xp-welcome__l"><div class="xp-welcome__logo">${ICON.logo}</div><div class="xp-welcome__w">${esc(L('welcome'))}</div></div><div class="xp-login__div"></div><div class="xp-welcome__r">${userTile('xp--static')}<div class="xp-welcome__line">${esc(line)}</div></div></div>${BANDS_B}`;
+/** Replaces what a screen shows. */
+function show(ov: HTMLElement, html: () => string): void {
+  ov.innerHTML = html();
+  translated.set(ov, () => {
+    ov.innerHTML = html();
+  });
 }
+
+function drop(ov: HTMLElement): void {
+  translated.delete(ov);
+  ov.remove();
+}
+
+const BAND_TOP = '<div class="xp-welcome__band xp-welcome__band--t"></div>';
+const BAND_BOTTOM = '<div class="xp-welcome__band xp-welcome__band--b"></div>';
+const LOGO = `<div class="xp-welcome__logo">${ICON.logo}</div>`;
+
+/** The blue welcome layout: a left and a right half with a divider, between two bands. */
+function welcomeLayout(left: string, right: string, bottomBand = BAND_BOTTOM): string {
+  return (
+    BAND_TOP +
+    '<div class="xp-welcome__mid">' +
+    left +
+    '<div class="xp-login__div"></div>' +
+    `<div class="xp-welcome__r">${right}</div>` +
+    '</div>' +
+    bottomBand
+  );
+}
+
+function userTile(cls: string, name: string, caption: string): string {
+  return (
+    `<button class="xp-login__user ${cls}" tabindex="-1">` +
+    `<span class="xp-start__pic">${ICON.avatar}</span>` +
+    `<span><span class="xp-login__name">${esc(name)}</span><small>${esc(caption)}</small></span>` +
+    '</button>'
+  );
+}
+
+const ownerTile = (cls = ''): string => userTile(cls, tr(USER), L('account'));
+
+/** "welcome" with the owner's tile and a progress line under it. */
+function welcomeHTML(line: StringKey): string {
+  return welcomeLayout(
+    `<div class="xp-welcome__l">${LOGO}<div class="xp-welcome__w">${esc(L('welcome'))}</div></div>`,
+    `${ownerTile('xp--static')}<div class="xp-welcome__line">${esc(L(line))}</div>`,
+  );
+}
+
+/** The locked computer (the owner is out): a guest log-on. */
+function lockHTML(): string {
+  return welcomeLayout(
+    '<div class="xp-login__l">' +
+      LOGO +
+      wordmark(true) +
+      `<p><b>${esc(L('locked'))}</b><br>${esc(L('lockedWhy'))}</p>` +
+      '</div>',
+    userTile('xp-login__guest', L('guest'), `${tr(USER)} · ${L('statusLine_outside')}`),
+  );
+}
+
+/** The log-on screen after Log Off / Switch User. */
+function loginHTML(): string {
+  return welcomeLayout(
+    `<div class="xp-login__l">${LOGO}${wordmark(true)}<p>${esc(L('toBegin'))}</p></div>`,
+    ownerTile(),
+    '<div class="xp-welcome__band xp-welcome__band--b">' +
+      '<button class="xp-login__off" tabindex="-1">' +
+      `<span class="xp-shutbtn__i xp--red">${ICON.smOff}</span><span>${esc(L('turnOffBtn'))}</span>` +
+      '</button>' +
+      `<span class="xp-login__hint">${esc(L('afterLogOff'))}</span>` +
+      '</div>',
+  );
+}
+
+function savingHTML(text: StringKey): string {
+  return (
+    BAND_TOP +
+    '<div class="xp-welcome__mid xp--center">' +
+    LOGO +
+    `<div class="xp-saving__t">${esc(L(text))}</div>` +
+    '</div>' +
+    BAND_BOTTOM
+  );
+}
+
+const BOOT_HTML =
+  '<div class="xp-crtline"></div>' +
+  '<div class="xp-boot__in">' +
+  `<div class="xp-boot__logo"><div class="xp-boot__mark">${ICON.logo}</div>${wordmark(true)}</div>` +
+  '<div class="xp-boot__bar"><i></i><i></i><i></i></div>' +
+  '</div>' +
+  '<div class="xp-boot__foot"><span class="xp-boot__copy"></span><span class="xp-boot__dev"></span></div>' +
+  '<div class="xp-boot__skip"></div>';
 
 export function preDesktop(v: boolean): void {
   dom().root.classList.toggle('xp--pre', v);
@@ -65,207 +164,263 @@ const markBooted = (v: boolean): void => {
   sessSet('booted', v ? '1' : '0');
 };
 
-/** Power-on: (wake from stand-by while the owner sleeps,) the boot screen, (the lock screen while he is out,) welcome. */
-export async function boot(fast = false): Promise<void> {
-  if (S.busy) return;
-  S.busy = true;
-  preDesktop(true);
-  let sq = seq();
-  const ov = overlay(
-    'xp-boot',
-    `<div class="xp-crtline"></div><div class="xp-boot__in"><div class="xp-boot__logo"><div class="xp-boot__mark">${ICON.logo}</div>${wordmark(true)}</div><div class="xp-boot__bar"><i></i><i></i><i></i></div></div>` +
-      `<div class="xp-boot__foot"><span>${esc(L('copyright'))}</span><span class="xp-boot__dev"></span></div><div class="xp-boot__skip">${esc(L('skip'))}</div>`,
-  );
-  const st = status();
-  const dev = ov.querySelector('.xp-boot__dev');
-  if (dev) dev.textContent = `${PC_NAME} · ${L(`statusLine_${st}`)}`;
-  const skipEl = ov.querySelector('.xp-boot__skip');
-  const root = dom().root;
-
-  if (!fast && st === 'sleep') {
-    // the owner is asleep: the computer is in stand-by, wake it first (the wake gesture also unlocks audio)
-    ov.classList.add('xp--sleep');
-    if (skipEl) skipEl.textContent = S.touch ? L('sleepScreenTouch') : L('sleepScreen');
-    await new Promise<void>((res) => {
-      const t0 = now();
-      let sx: { x: number; y: number } | null = null;
-      const wake = (e: Event): void => {
-        if (now() - t0 < 300) return;
-        if (e instanceof PointerEvent && e.type === 'pointermove') {
-          const q = localPt(e);
-          if (!sx) {
-            sx = q;
-            return;
-          }
-          if (Math.abs(q.x - sx.x) + Math.abs(q.y - sx.y) < 12) return;
-        }
-        for (const f of offs) f();
-        unlockSound();
-        sound('crtOn');
-        ov.classList.remove('xp--sleep');
-        if (skipEl) skipEl.textContent = L('skip');
-        res();
-      };
-      const offs = [on(ov, 'pointermove', wake), on(ov, 'pointerdown', wake), on(root, 'keydown', wake)];
-    });
-  }
-  const offK = on(root, 'keydown', () => {
-    sq.skip();
+/** Resolves on a press on the overlay or a key on the desktop; `handle` runs inside that event. */
+function pressOrKey(ov: HTMLElement, handle?: (e: Event) => void): Promise<void> {
+  return new Promise((resolve) => {
+    const go = (e: Event): void => {
+      for (const off of offs) off();
+      handle?.(e);
+      resolve();
+    };
+    const offs = [on(ov, 'pointerdown', go), on(dom().root, 'keydown', go)];
   });
-  const offP = on(ov, 'pointerdown', () => {
+}
+
+/* ------------------------------------------------------------------ power-on */
+
+/** Power-on: (wake from stand-by while the owner sleeps,) the boot screen, (the lock screen while he is out,) welcome. */
+export function boot(fast = false): Promise<void> {
+  return run(lifetime(), (signal) => bootSteps(fast, signal));
+}
+
+/** Stand-by while the owner sleeps: any key, press or real pointer movement wakes the computer (and unlocks audio). */
+function wakeGesture(ov: HTMLElement): Promise<void> {
+  return new Promise((resolve) => {
+    const t0 = now();
+    let from: Pt | null = null;
+    const wake = (e: Event): void => {
+      if (now() - t0 < 300) return;
+      if (e instanceof PointerEvent && e.type === 'pointermove') {
+        const p = localPt(e);
+        if (!from) {
+          from = p;
+          return;
+        }
+        if (Math.abs(p.x - from.x) + Math.abs(p.y - from.y) < 12) return;
+      }
+      for (const off of offs) off();
+      unlockSound();
+      resolve();
+    };
+    const offs = [on(ov, 'pointermove', wake), on(ov, 'pointerdown', wake), on(dom().root, 'keydown', wake)];
+  });
+}
+
+/** The lock screen's guest tile, clicked or chosen with Enter / Space. */
+function guestLogOn(lock: HTMLElement): Promise<void> {
+  return new Promise((resolve) => {
+    const go = (): void => {
+      for (const off of offs) off();
+      unlockSound();
+      resolve();
+    };
+    const offs = [
+      on(lock, 'click', (e) => {
+        if (e.target instanceof Element && e.target.closest('.xp-login__user')) go();
+      }),
+      on(dom().root, 'keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') go();
+      }),
+    ];
+  });
+}
+
+async function bootSteps(fast: boolean, signal: AbortSignal): Promise<void> {
+  if (isBusy()) return;
+  const release = beginBusy();
+  preDesktop(true);
+  const root = dom().root;
+  const st = status();
+  let asleep = !fast && st === 'sleep';
+
+  const ov = h('div', 'xp-ov xp-boot', BOOT_HTML);
+  // only its texts follow the language: repainting the markup would restart the boot animation
+  const paintTexts = (): void => {
+    const text = (sel: string, s: string): void => {
+      const el = ov.querySelector(sel);
+      if (el) el.textContent = s;
+    };
+    text('.xp-boot__copy', L('copyright'));
+    text('.xp-boot__dev', `${PC_NAME} · ${L(`statusLine_${st}`)}`);
+    text('.xp-boot__skip', !asleep ? L('skip') : S.touch ? L('sleepScreenTouch') : L('sleepScreen'));
+  };
+  paintTexts();
+  translated.set(ov, paintTexts);
+  root.appendChild(ov);
+
+  if (asleep) {
+    // the owner is asleep: the computer is in stand-by, wake it first
+    ov.classList.add('xp--sleep');
+    await wakeGesture(ov);
+    sound('crtOn');
+    ov.classList.remove('xp--sleep');
+    asleep = false;
+    paintTexts();
+  }
+
+  let pause = skippable(signal);
+  const offKey = on(root, 'keydown', () => {
+    pause.skip();
+  });
+  const offPress = on(ov, 'pointerdown', () => {
     unlockSound();
-    sq.skip();
+    pause.skip();
   });
   if (reduced()) {
     ov.classList.add('xp--on');
-    await sq.wait(300);
+    await pause.wait(300);
   } else {
-    await sq.wait(200);
+    await pause.wait(200);
     ov.classList.add('xp--on');
     sound('crtOn');
-    await sq.wait(fast ? 600 : 1100);
+    await pause.wait(fast ? 600 : 1100);
   }
+
   if (!fast && st === 'outside') {
     // the owner is out: a locked screen with a guest log-on
-    const lk = overlay(
-      'xp-welcome xp-login xp-lock',
-      `${BANDS_T}<div class="xp-welcome__mid"><div class="xp-login__l"><div class="xp-welcome__logo">${ICON.logo}</div>${wordmark(true)}<p><b>${esc(L('locked'))}</b><br>${esc(L('lockedWhy'))}</p></div><div class="xp-login__div"></div><div class="xp-welcome__r"><button class="xp-login__user xp-login__guest" tabindex="-1"><span class="xp-start__pic">${ICON.avatar}</span><span><span class="xp-login__name">${esc(L('guest'))}</span><small>${esc(tr(USER))} · ${esc(L('statusLine_outside'))}</small></span></button></div></div>${BANDS_B}`,
-    );
-    ov.remove();
-    offK();
-    offP();
-    await new Promise<void>((res) => {
-      const user = lk.querySelector<HTMLElement>('.xp-login__user');
-      const go = (): void => {
-        offA();
-        offB();
-        unlockSound();
-        sound('click');
-        user?.classList.add('xp--chosen');
-        setTimeout(() => {
-          lk.remove();
-          res();
-        }, D(250));
-      };
-      const offA = user ? on(user, 'click', go) : (): void => undefined;
-      const offB = on(root, 'keydown', (e) => {
-        if (e.key === 'Enter' || e.key === ' ') go();
-      });
-    });
-    sq = seq();
+    const lock = overlay('xp-welcome xp-login xp-lock', lockHTML);
+    drop(ov);
+    offKey();
+    offPress();
+    await guestLogOn(lock);
+    sound('click');
+    lock.querySelector('.xp-login__user')?.classList.add('xp--chosen');
+    await wait(D(250), signal);
+    drop(lock);
+    pause = skippable(signal);
   }
-  let wel: HTMLDivElement | null = null;
-  if (!sq.skipped) {
-    wel = overlay('xp-welcome', welcomeHTML(L('loadingSettings')));
-    ov.remove();
-    const s = sq;
-    on(wel, 'pointerdown', () => {
-      s.skip();
+
+  let welcome: HTMLDivElement | null = null;
+  if (!pause.skipped) {
+    welcome = overlay('xp-welcome', () => welcomeHTML('loadingSettings'));
+    drop(ov);
+    const welcomePause = pause;
+    on(welcome, 'pointerdown', () => {
+      welcomePause.skip();
     });
-    await sq.wait(reduced() ? 300 : 900);
+    await welcomePause.wait(reduced() ? 300 : 900);
   }
-  offK();
-  offP();
-  ov.remove();
-  S.busy = false;
+  offKey();
+  offPress();
+  drop(ov);
+  release();
   markBooted(true);
-  if (wel) {
-    const w = wel;
-    w.classList.add('xp--fadeout');
-    setTimeout(
-      () => {
-        w.remove();
-      },
-      D(220) + 20,
-    );
-  }
+  if (welcome) fadeOut(welcome, signal);
   reveal(true);
+}
+
+/** The welcome screen dissolves into the desktop under it. */
+function fadeOut(ov: HTMLElement, signal: AbortSignal): void {
+  ov.classList.add('xp--fadeout');
+  after(D(220) + 20, signal, () => {
+    drop(ov);
+  });
 }
 
 /** The desktop appears; intro: with the taskbar slide, the icon cascade, the start sound and the first-visit balloon. */
 export function reveal(intro: boolean): void {
   preDesktop(false);
   if (!intro) {
-    layoutIcons(false);
+    host?.layoutIcons(false);
     return;
   }
   const tb = dom().taskbar;
   tb.classList.remove('xp--intro');
   reflow(tb);
   tb.classList.add('xp--intro');
-  layoutIcons(true);
+  host?.layoutIcons(true);
   sound('start');
   if (!sessGet('welcomed')) {
     sessSet('welcomed', '1');
-    setTimeout(() => {
-      if (S.open && !S.busy)
+    after(D(1400), lifetime(), () => {
+      if (S.open && !isBusy())
         showBalloon({ title: L('welcomeBalloonT'), text: S.touch ? L('welcomeBalloonTouch') : L('welcomeBalloon') });
-    }, D(1400));
+    });
   }
 }
 
+/* ------------------------------------------------------------------ the shutdown dialog */
+
 type ShutChoice = 'standby' | 'off' | 'restart' | 'switch' | 'logoff';
+type ShutButton = readonly [action: ShutChoice, color: string, icon: string, label: StringKey];
+
+const TURN_OFF_CHOICES: readonly ShutButton[] = [
+  ['standby', 'amber', ICON.standby, 'standBy'],
+  ['off', 'red', ICON.ginaOff, 'shutDown'],
+  ['restart', 'green', ICON.restart, 'restart'],
+];
+const LOG_OFF_CHOICES: readonly ShutButton[] = [
+  ['switch', 'green', ICON.ginaSwitch, 'switchUser'],
+  ['logoff', 'amber', ICON.ginaLogoff, 'logOff'],
+];
 
 function shutdownDialog(kind: 'off' | 'logoff'): void {
   const R = dom();
-  if (S.busy || R.root.querySelector('.xp-shutdlg')) return;
-  closeStart();
-  closeMenus(0);
+  if (isBusy() || R.root.querySelector('.xp-shutblock')) return;
+  closePopups('start', 'menus');
   R.screen.classList.add('xp--grey');
   const isOff = kind === 'off';
+  const choices = isOff ? TURN_OFF_CHOICES : LOG_OFF_CHOICES;
+  // the block takes every press outside the dialog
+  const block = h('div', 'xp-shutblock');
+  block.addEventListener('pointerdown', (e) => {
+    e.stopPropagation();
+  });
+  R.root.appendChild(block);
   const d = h(
     'div',
     'xp-shutdlg',
-    `<div class="xp-shutdlg__h"><span>${esc(isOff ? L('turnOffTitle') : L('logOffTitle'))}</span><span class="xp-shutdlg__logo">${ICON.logo}</span></div><div class="xp-shutdlg__b"></div><div class="xp-shutdlg__f"><button class="xp-btn">${esc(L('cancel'))}</button></div>`,
+    `<div class="xp-shutdlg__h"><span></span><span class="xp-shutdlg__logo">${ICON.logo}</span></div>` +
+      '<div class="xp-shutdlg__b"></div>' +
+      '<div class="xp-shutdlg__f"><button class="xp-btn"></button></div>',
   );
-  const body = d.querySelector('.xp-shutdlg__b');
-  const choices: [ShutChoice, string, string, string][] = isOff
-    ? [
-        ['standby', 'amber', ICON.standby, L('standBy')],
-        ['off', 'red', ICON.ginaOff, L('shutDown')],
-        ['restart', 'green', ICON.restart, L('restart')],
-      ]
-    : [
-        ['switch', 'green', ICON.ginaSwitch, L('switchUser')],
-        ['logoff', 'amber', ICON.ginaLogoff, L('logOff')],
-      ];
-  const holder = h('div', 'xp-shutblock');
-  R.root.appendChild(holder);
   const done = (): void => {
+    translated.delete(d);
     d.remove();
-    holder.remove();
-    S.dlgKey = null;
+    block.remove();
+    dialogKey = null;
   };
   const cancel = (): void => {
     done();
     R.screen.classList.remove('xp--grey');
     sound('click');
   };
-  for (const [action, color, icon, label] of choices) {
-    const b = h(
-      'button',
-      'xp-shutbtn',
-      `<span class="xp-shutbtn__i xp--${color}">${icon}</span><span>${esc(label)}</span>`,
-    );
+  const body = d.querySelector('.xp-shutdlg__b');
+  for (const [action, color, icon] of choices) {
+    const b = h('button', 'xp-shutbtn', `<span class="xp-shutbtn__i xp--${color}">${icon}</span><span></span>`);
     b.addEventListener('click', () => {
       done();
       sysAction(action);
     });
     body?.appendChild(b);
   }
-  d.querySelector('.xp-btn')?.addEventListener('click', cancel);
-  holder.addEventListener('pointerdown', (e) => {
-    e.stopPropagation();
-  });
-  S.dlgKey = (e) => {
+  const buttons = [...d.querySelectorAll<HTMLElement>('.xp-shutbtn')];
+  const title = d.querySelector('.xp-shutdlg__h span');
+  const cancelBtn = d.querySelector('.xp-btn');
+  cancelBtn?.addEventListener('click', cancel);
+  const paintTexts = (): void => {
+    if (title) title.textContent = isOff ? L('turnOffTitle') : L('logOffTitle');
+    buttons.forEach((b, i) => {
+      const label = b.querySelector('span:last-child');
+      const key = choices[i]?.[3];
+      if (label && key) label.textContent = L(key);
+    });
+    if (cancelBtn) cancelBtn.textContent = L('cancel');
+  };
+  paintTexts();
+  translated.set(d, paintTexts);
+  dialogKey = (e) => {
     if (e.key !== 'Escape') return false;
     cancel();
     return true;
   };
-  setTimeout(() => {
+  // the screen greys first, then the dialog comes up
+  void run(lifetime(), async (signal) => {
+    await wait(D(150), signal);
+    if (!block.isConnected) return; // cancelled meanwhile
     R.root.appendChild(d);
-    d.querySelectorAll<HTMLElement>('.xp-shutbtn')[1]?.focus({ preventScroll: true });
-  }, D(150));
+    buttons[1]?.focus({ preventScroll: true });
+  });
 }
 export const turnOffDialog = (): void => {
   shutdownDialog('off');
@@ -275,25 +430,26 @@ export const logOffDialog = (): void => {
 };
 
 function sysAction(a: ShutChoice): void {
-  if (a === 'standby') {
-    dom().screen.classList.remove('xp--grey');
-    standBy();
-  } else if (a === 'off') void powerOff();
-  else if (a === 'restart') void restart();
-  else void logOff(a === 'logoff');
+  const steps: Record<ShutChoice, (signal: AbortSignal) => Promise<void>> = {
+    standby: standBy,
+    off: powerOff,
+    restart,
+    switch: (signal) => logOff(false, signal),
+    logoff: (signal) => logOff(true, signal),
+  };
+  void run(lifetime(), steps[a]);
 }
 
-async function savingScreen(text: string, ms: number): Promise<HTMLDivElement> {
-  const ov = overlay(
-    'xp-welcome xp-saving',
-    `${BANDS_T}<div class="xp-welcome__mid xp--center"><div class="xp-welcome__logo">${ICON.logo}</div><div class="xp-saving__t">${esc(text)}</div></div>${BANDS_B}`,
-  );
-  await wait(D(ms));
+/* ------------------------------------------------------------------ turning off, restarting, logging off */
+
+async function savingScreen(text: StringKey, ms: number, signal: AbortSignal): Promise<HTMLDivElement> {
+  const ov = overlay('xp-welcome xp-saving', () => savingHTML(text));
+  await wait(D(ms), signal);
   return ov;
 }
 
 /** The CRT switching off: the picture collapses to a line, then to a dot that fades. */
-async function crtOff(target: HTMLElement): Promise<void> {
+async function crtOff(target: HTMLElement, signal: AbortSignal): Promise<void> {
   if (reduced()) return;
   const dot = h('div', 'xp-crtdot');
   await animate(
@@ -314,6 +470,7 @@ async function crtOff(target: HTMLElement): Promise<void> {
     140,
     'ease-in',
   );
+  checkAlive(signal);
   dom().root.appendChild(dot);
   await animate(
     dot,
@@ -327,134 +484,128 @@ async function crtOff(target: HTMLElement): Promise<void> {
   dot.remove();
 }
 
-async function powerOff(): Promise<void> {
-  S.busy = true;
+async function powerOff(signal: AbortSignal): Promise<void> {
+  const release = beginBusy();
   sound('shutdown');
-  const ov = await savingScreen(L('savingSettings'), 900);
+  const ov = await savingScreen('savingSettings', 900, signal);
   const R = dom();
   const black = h('div', 'xp-ov xp-black');
   R.root.insertBefore(black, ov);
-  await crtOff(ov);
+  await crtOff(ov, signal);
+  checkAlive(signal);
   closeAll();
-  ov.remove();
+  drop(ov);
   R.screen.classList.remove('xp--grey');
-  S.busy = false;
+  release();
   markBooted(false);
   const wasOpen = S.open;
-  setTimeout(() => {
+  after(400, signal, () => {
     black.remove();
-  }, 400);
+  });
   try {
     S.opts?.onExit('off'); // the host knows the screen is black now
   } catch (e) {
     console.error(e);
   }
-  if (S.open && wasOpen) closeDesktop({ instant: true });
+  if (S.open && wasOpen) host?.closeDesktop({ instant: true });
 }
 
-async function restart(): Promise<void> {
-  S.busy = true;
+async function restart(signal: AbortSignal): Promise<void> {
+  const release = beginBusy();
   sound('shutdown');
-  const ov = await savingScreen(L('savingSettings'), 900);
+  const ov = await savingScreen('savingSettings', 900, signal);
   closeAll();
   dom().screen.classList.remove('xp--grey');
-  const black = overlay('xp-black');
-  ov.remove();
-  S.busy = false;
+  const black = h('div', 'xp-ov xp-black');
+  dom().root.appendChild(black);
+  drop(ov);
+  release();
   S.booted = false;
-  await wait(D(700));
+  await wait(D(700), signal);
   black.remove();
-  await boot();
+  await bootSteps(false, signal);
 }
 
 /** Log Off (closing the apps) or Switch User (keeping them): the log-on screen. */
-async function logOff(closeApps: boolean): Promise<void> {
-  S.busy = true;
+async function logOff(closeApps: boolean, signal: AbortSignal): Promise<void> {
+  const release = beginBusy();
   sound('shutdown');
-  const ov = await savingScreen(closeApps ? L('loggingOff') : L('savingSettings'), 900);
+  const ov = await savingScreen(closeApps ? 'loggingOff' : 'savingSettings', 900, signal);
   if (closeApps) closeAll();
   dom().screen.classList.remove('xp--grey');
   preDesktop(true);
-  const lg = overlay(
-    'xp-welcome xp-login',
-    `${BANDS_T}<div class="xp-welcome__mid"><div class="xp-login__l"><div class="xp-welcome__logo">${ICON.logo}</div>${wordmark(true)}<p>${esc(L('toBegin'))}</p></div><div class="xp-login__div"></div><div class="xp-welcome__r">${userTile()}</div></div>` +
-      `<div class="xp-welcome__band xp-welcome__band--b"><button class="xp-login__off" tabindex="-1"><span class="xp-shutbtn__i xp--red">${ICON.smOff}</span><span>${esc(L('turnOffBtn'))}</span></button><span class="xp-login__hint">${esc(L('afterLogOff'))}</span></div>`,
-  );
-  ov.remove();
-  S.busy = false;
-  const u = lg.querySelector('.xp-login__user');
-  u?.addEventListener('click', () => {
-    sound('click');
-    u.classList.add('xp--chosen');
-    S.busy = true;
-    setTimeout(() => {
-      lg.innerHTML = welcomeHTML(L('loadingSettings'));
-      setTimeout(() => {
-        S.busy = false;
-        lg.classList.add('xp--fadeout');
-        setTimeout(
-          () => {
-            lg.remove();
-          },
-          D(220) + 20,
-        );
-        reveal(true);
-      }, D(900));
-    }, D(250));
+  const login = overlay('xp-welcome xp-login', loginHTML);
+  drop(ov);
+  release();
+  // the screen repaints on a language switch, so the clicks are caught on the screen, not on its buttons
+  let chosen = false;
+  login.addEventListener('click', (e) => {
+    const t = e.target instanceof Element ? e.target : null;
+    if (chosen || !t) return;
+    if (t.closest('.xp-login__off')) {
+      chosen = true;
+      drop(login);
+      void run(signal, powerOff);
+    } else if (t.closest('.xp-login__user')) {
+      chosen = true;
+      void run(signal, (s) => logOn(login, s));
+    }
   });
-  lg.querySelector('.xp-login__off')?.addEventListener('click', () => {
-    lg.remove();
-    void powerOff();
-  });
-  S.loginEl = lg;
 }
 
-function standBy(): void {
-  const ov = overlay('xp-black xp-standby', `<span>${esc(L('standingBy'))}</span>`);
-  sound('shutdown');
-  setTimeout(() => {
-    const wake = (): void => {
-      off();
-      offK();
-      sound('crtOn');
-      ov.classList.add('xp--fadeout');
-      setTimeout(() => {
-        ov.remove();
-      }, D(500));
-    };
-    const off = on(ov, 'pointerdown', wake);
-    const offK = on(dom().root, 'keydown', wake);
-  }, 600);
+/** The owner's tile was clicked on the log-on screen: "loading your settings", then the desktop. */
+async function logOn(login: HTMLElement, signal: AbortSignal): Promise<void> {
+  sound('click');
+  login.querySelector('.xp-login__user')?.classList.add('xp--chosen');
+  const release = beginBusy();
+  await wait(D(250), signal);
+  show(login, () => welcomeHTML('loadingSettings'));
+  await wait(D(900), signal);
+  release();
+  fadeOut(login, signal);
+  reveal(true);
 }
+
+async function standBy(signal: AbortSignal): Promise<void> {
+  dom().screen.classList.remove('xp--grey');
+  const ov = overlay('xp-black xp-standby', () => `<span>${esc(L('standingBy'))}</span>`);
+  sound('shutdown');
+  await wait(600, signal);
+  await pressOrKey(ov);
+  sound('crtOn');
+  ov.classList.add('xp--fadeout');
+  await wait(D(500), signal);
+  drop(ov);
+}
+
+/* ------------------------------------------------------------------ the blue screen */
 
 export function bsod(): void {
-  const R = dom();
-  if (R.root.querySelector('.xp-bsod')) return;
-  closeStart();
-  closeMenus(0);
+  void run(lifetime(), bsodSteps);
+}
+
+async function bsodSteps(signal: AbortSignal): Promise<void> {
+  if (dom().root.querySelector('.xp-bsod')) return;
+  closePopups('start', 'menus');
   clearBalloons();
   sound('error');
-  const ov = overlay('xp-bsod');
-  ov.textContent = L('bsod');
-  ov.appendChild(h('span', '', `${esc(L('bsodKey'))} <span class="xp-caret">_</span>`));
-  S.busy = true;
-  setTimeout(() => {
-    const go = (e: Event): void => {
-      e.preventDefault();
-      e.stopPropagation();
-      off();
-      offK();
-      closeAll();
-      const b = overlay('xp-black');
-      ov.remove();
-      S.busy = false;
-      S.booted = false;
-      setTimeout(() => {
-        b.remove();
-        void boot(true);
-      }, D(600));
-    };
-    const off = on(ov, 'pointerdown', go);
-    const offK = on(R.root, 'keydown', go);
-  }, 700);
+  const ov = overlay(
+    'xp-bsod',
+    () => `${esc(L('bsod'))}<span>${esc(L('bsodKey'))} <span class="xp-caret">_</span></span>`,
+  );
+  const release = beginBusy();
+  await wait(700, signal);
+  await pressOrKey(ov, (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  });
+  closeAll();
+  const black = h('div', 'xp-ov xp-black');
+  dom().root.appendChild(black);
+  drop(ov);
+  release();
+  S.booted = false;
+  await wait(D(600), signal);
+  black.remove();
+  await bootSteps(true, signal);
 }

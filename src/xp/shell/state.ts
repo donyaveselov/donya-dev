@@ -1,41 +1,13 @@
 // The shell's state, the visitor's saved preferences, and the DOM it builds on mount.
-import { isMuted, muteChosen, setMuted } from '../../shared/sound';
+import { muteChosen, setMuted } from '../../shared/sound';
 import type { Lang, XPAppDef, XPMountOptions } from '../../shared/types';
+import { TASKBAR_H } from './constants';
 import { sessGet, storeGet, storeSet } from './dom';
-import type { Cell } from './layout';
+import { defaultPrefs, legacyMuted, parsePrefs } from './prefs';
 import type { Win } from './window';
 
-export type SaverKind = 'none' | 'logo' | 'stars';
+export type { Prefs, SaverKind } from './prefs';
 export type SizeClass = 'phone' | 'compact' | 'desk';
-
-export interface Prefs {
-  muted: boolean;
-  volume: number;
-  wall: string;
-  tint: boolean;
-  crt: boolean;
-  saver: SaverKind;
-  saverMin: number;
-  icons: Record<string, Cell>;
-  autoArrange: boolean;
-}
-
-function savedPrefs(): object {
-  const v = storeGet('prefs');
-  return typeof v === 'object' && v !== null ? v : {};
-}
-
-const DEFAULT_PREFS: Prefs = {
-  muted: false,
-  volume: 0.8,
-  wall: 'bliss',
-  tint: true,
-  crt: true,
-  saver: 'logo',
-  saverMin: 3,
-  icons: {},
-  autoArrange: false,
-};
 
 export const S = {
   mounted: false,
@@ -50,38 +22,32 @@ export const S = {
   game: null as Win | null,
   /** A desktop-wide modal dialog (one without an owner window). */
   modalBlock: null as Win | null,
-  /** Keyboard handler of the shutdown dialog while it is up. */
-  dlgKey: null as ((e: KeyboardEvent) => boolean) | null,
-  loginEl: null as HTMLElement | null,
   recent: [] as string[],
   trash: [] as string[],
-  booted: sessGet('booted') === '1',
-  /** A boot / shutdown overlay is in progress. */
-  busy: false,
+  /** The boot screen has been shown in this browser tab. */
+  booted: false,
   size: 'desk' as SizeClass,
   touch: false,
   w: 0,
   h: 0,
-  tbH: 30,
+  tbH: TASKBAR_H.desk as number,
   lastW: 0,
   lastH: 0,
   lastInput: 0,
-  metaAlone: false,
-  prefs: { ...DEFAULT_PREFS, ...savedPrefs() },
+  prefs: defaultPrefs(),
 };
+
+/** Reads what the visitor's browser remembers; called on mount, so that importing the shell touches no storage. */
+export function loadSaved(): void {
+  const saved = storeGet('prefs');
+  S.prefs = parsePrefs(saved);
+  S.booted = sessGet('booted') === '1';
+  // mute is the page's one switch (src/shared/sound.ts): a desktop muted before that existed moves it over once
+  if (!muteChosen() && legacyMuted(saved)) setMuted(true);
+}
 
 export function savePrefs(): void {
   storeSet('prefs', S.prefs);
-}
-// mute is the page's one switch (src/shared/sound.ts): a desktop muted before that existed moves it over once
-if (!muteChosen() && S.prefs.muted) setMuted(true);
-S.prefs.muted = isMuted();
-// the default wallpaper changed: move earlier visitors to it once
-if (!storeGet('wall3')) {
-  S.prefs.wall = 'bliss';
-  S.prefs.saver = 'logo';
-  storeSet('wall3', 1);
-  savePrefs();
 }
 
 /** The registered apps in registration order (the desktop's icon order). */
@@ -108,6 +74,8 @@ export interface Refs {
 }
 
 let refs: Refs | null = null;
+let life = new AbortController();
+
 /** The shell's DOM; only called on paths that need a mounted desktop. */
 export function dom(): Refs {
   if (!refs) throw new Error('XPDesktop: not mounted');
@@ -115,6 +83,13 @@ export function dom(): Refs {
 }
 /** The shell's DOM, or null before mount and after unmount. */
 export const domOrNull = (): Refs | null => refs;
+
+/** The mounted desktop's lifetime: aborted on unmount, which cancels the timed sequences bound to it (seq.ts). */
+export const lifetime = (): AbortSignal => life.signal;
+
+/** Mount (with the DOM just built) and unmount (with null). */
 export function setDom(r: Refs | null): void {
   refs = r;
+  if (r) life = new AbortController();
+  else life.abort();
 }

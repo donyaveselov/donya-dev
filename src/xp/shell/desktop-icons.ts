@@ -2,9 +2,10 @@
 // snapping, dropping onto the Recycle Bin, long-press menus on touch, and the desktop's context menu.
 import type { XPAppDef } from '../../shared/types';
 import { appTitle, openApp } from './apps';
-import { D, EASE_IN, EASE_OUT, animate, clamp, css, esc, h, now, reflow } from './dom';
+import { CAPTION_H, DOUBLE_CLICK_MS, LONG_PRESS_MS } from './constants';
+import { D, EASE_IN, EASE_OUT, animate, clamp, css, esc, h, now, on, reflow } from './dom';
 import { dialog } from './dialog';
-import { isPhone, localPt, localRect, type Pt, work } from './geometry';
+import { gesturePt, isPhone, isTiny, localPt, localRect, type Pt, work } from './geometry';
 import { ICON } from './glyphs';
 import {
   type Cell,
@@ -19,8 +20,8 @@ import {
   type Rect,
 } from './layout';
 import { closeMenus, openMenu } from './menu';
+import { closePopups } from './popups';
 import { sound } from './sound';
-import { closeStart } from './start-menu';
 import { appList, dom, domOrNull, S, savePrefs } from './state';
 import { BRAND, L } from './strings';
 import { sysApp } from './system-apps';
@@ -40,9 +41,12 @@ const grid = (): { rows: number; cols: number } => {
   return { rows: gridRows(W, isPhone()), cols: gridCols(W, isPhone()) };
 };
 
+/** Unmount: the icons' elements are gone, and with them the selection. */
 export function forgetIcons(): void {
   els.clear();
   cells.clear();
+  sel = [];
+  focusId = null;
 }
 
 function overRecycle(p: Pt | null | undefined): boolean {
@@ -110,7 +114,7 @@ function iconOrigin(id: string): Rect | null {
   const img = els.get(id)?.querySelector('.xp-icon__img');
   if (!img) return null;
   const r = localRect(img);
-  return { x: r.x - 4, y: r.y, w: r.w + 8, h: Math.min(r.h, 28) };
+  return { x: r.x - 4, y: r.y, w: r.w + 8, h: Math.min(r.h, CAPTION_H) };
 }
 
 /** Opens an app from a launcher, its window flying out of `origin` (the desktop icon by default). */
@@ -138,7 +142,7 @@ function lpRing(p: Pt): () => void {
       { transform: 'scale(.2)', opacity: 0 },
       { transform: 'scale(1)', opacity: 1 },
     ],
-    500,
+    LONG_PRESS_MS,
     'linear',
   );
   return () => {
@@ -156,6 +160,8 @@ function buzz(): void {
 
 interface IconDrag {
   p: Pt;
+  /** Pointer positions of this gesture in the desktop's pixels. */
+  pt: (e: PointerEvent) => Pt;
   id: number;
   moved: boolean;
   touch: boolean;
@@ -172,11 +178,12 @@ function wireIcon(el: HTMLDivElement, id: string): void {
     if (e.button === 2) return;
     e.stopPropagation();
     closeMenus(0);
-    closeStart();
+    closePopups('start');
     setActive(null);
     dom().desk.focus({ preventScroll: true });
     const t = now();
-    const p = localPt(e);
+    const pt = gesturePt();
+    const p = pt(e);
     const touch = e.pointerType !== 'mouse';
     if (e.ctrlKey || e.metaKey) {
       const s = sel.slice();
@@ -187,13 +194,13 @@ function wireIcon(el: HTMLDivElement, id: string): void {
       return;
     }
     selectIcons(sel.includes(id) ? sel : [id], id);
-    if (!touch && t - lastDown < 420) {
+    if (!touch && t - lastDown < DOUBLE_CLICK_MS) {
       lastDown = 0;
       launch(id);
       return;
     }
     lastDown = t;
-    const d: IconDrag = { p, id: e.pointerId, moved: false, touch, start: new Map() };
+    const d: IconDrag = { p, pt, id: e.pointerId, moved: false, touch, start: new Map() };
     for (const sid of sel) {
       const x = els.get(sid);
       if (x) d.start.set(sid, leftTop(x));
@@ -216,12 +223,12 @@ function wireIcon(el: HTMLDivElement, id: string): void {
           buzz();
           iconMenu(id, dd.p.x, dd.p.y);
         }
-      }, 500);
+      }, LONG_PRESS_MS);
     }
   });
   el.addEventListener('pointermove', (e) => {
     if (down?.id !== e.pointerId) return;
-    const q = localPt(e);
+    const q = down.pt(e);
     const dx = q.x - down.p.x;
     const dy = q.y - down.p.y;
     if (!down.moved && Math.abs(dx) + Math.abs(dy) < (down.touch ? 10 : 4)) return;
@@ -254,6 +261,7 @@ function wireIcon(el: HTMLDivElement, id: string): void {
   });
   el.addEventListener('pointercancel', () => {
     clearTimeout(lpT);
+    down?.ring?.();
     if (down?.moved) dropIcons();
     down = null;
   });
@@ -400,7 +408,7 @@ function iconMenu(id: string, x: number, y: number): void {
     ],
     x,
     y,
-    { bottomSheet: S.w < 400 },
+    { bottomSheet: isTiny() },
   );
 }
 
@@ -465,7 +473,7 @@ function deskMenu(x: number, y: number): void {
     ],
     x,
     y,
-    { bottomSheet: S.w < 400 },
+    { bottomSheet: isTiny() },
   );
 }
 
@@ -473,41 +481,44 @@ function deskMenu(x: number, y: number): void {
 export function wireDesk(): void {
   const { desk, icons, wins } = dom();
   let band: HTMLDivElement | null = null;
-  let bs: { x: number; y: number; base: string[] } | null = null;
+  let bs: { x: number; y: number; base: string[]; pt: (e: PointerEvent) => Pt } | null = null;
   let lpT = 0;
   const onDesk = (e: Event): boolean => e.target === desk || e.target === icons || e.target === wins;
   desk.addEventListener('pointerdown', (e) => {
     if (!onDesk(e)) return;
     closeMenus(0);
-    closeStart();
+    closePopups('start');
     setActive(null);
     desk.focus({ preventScroll: true });
     if (e.button === 2) return;
     if (!(e.ctrlKey || e.metaKey)) selectIcons([], null);
-    const p = localPt(e);
+    const pt = gesturePt();
+    const p = pt(e);
     if (e.pointerType !== 'mouse') {
+      // a long press opens the desktop's menu, unless the finger lifts, moves away or the browser takes the touch
       clearTimeout(lpT);
-      const offR = lpRing(p);
+      const offRing = lpRing(p);
+      const end = (): void => {
+        clearTimeout(lpT);
+        offRing();
+        for (const off of offs) off();
+      };
+      const offs = [
+        on(desk, 'pointerup', end),
+        on(desk, 'pointercancel', end),
+        on(desk, 'pointermove', (ev) => {
+          const q = pt(ev);
+          if (Math.abs(q.x - p.x) + Math.abs(q.y - p.y) > 10) end();
+        }),
+      ];
       lpT = window.setTimeout(() => {
-        offR();
+        end();
         buzz();
         deskMenu(p.x, p.y);
-      }, 520);
-      const mvc = (ev: PointerEvent): void => {
-        const q = localPt(ev);
-        if (Math.abs(q.x - p.x) + Math.abs(q.y - p.y) > 10) cancel();
-      };
-      const cancel = (): void => {
-        clearTimeout(lpT);
-        offR();
-        desk.removeEventListener('pointerup', cancel);
-        desk.removeEventListener('pointermove', mvc);
-      };
-      desk.addEventListener('pointerup', cancel);
-      desk.addEventListener('pointermove', mvc);
+      }, LONG_PRESS_MS);
       return;
     }
-    bs = { x: p.x, y: p.y, base: sel.slice() };
+    bs = { x: p.x, y: p.y, base: sel.slice(), pt };
     try {
       desk.setPointerCapture(e.pointerId);
     } catch {
@@ -516,7 +527,7 @@ export function wireDesk(): void {
   });
   desk.addEventListener('pointermove', (e) => {
     if (!bs) return;
-    const p = localPt(e);
+    const p = bs.pt(e);
     if (!band) {
       if (Math.abs(p.x - bs.x) + Math.abs(p.y - bs.y) < 3) return;
       band = h('div', 'xp-band');

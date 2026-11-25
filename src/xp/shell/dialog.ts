@@ -1,10 +1,10 @@
 // Message boxes. A dialog is modal to its owner window (or to the whole desktop when it has none): clicks on what it
 // blocks flash its title bar.
 import type { XPDialogButton, XPDialogHandle, XPDialogOptions } from '../../shared/types';
-import { clamp, css, h } from './dom';
-import { work } from './geometry';
+import { Z } from './constants';
+import { h } from './dom';
 import { ICON, messageIcon } from './glyphs';
-import { sound } from './sound';
+import { sound, soundByName } from './sound';
 import { dom, S } from './state';
 import { BRAND, L, tr } from './strings';
 import { growIn, startFlash, Win } from './window';
@@ -25,7 +25,6 @@ export function dialog(o: DialogOptions = {}): XPDialogHandle {
     owner,
     noTask: true,
     center: true,
-    autoSize: true,
     w: 420,
     h: 160,
   });
@@ -55,35 +54,20 @@ export function dialog(o: DialogOptions = {}): XPDialogHandle {
   }
   body.appendChild(btns);
   w.body.appendChild(body);
-  // re-measure now that content exists
-  css(w.el, { width: 'auto', height: 'auto' });
-  // offsetWidth/Height round fractional sizes, and a fraction of a pixel short is enough for a scrollbar: add a spare
-  // pixel, and only let the body scroll when the dialog really is taller than the screen
-  const W = work();
-  const fits = w.el.offsetHeight + 1 <= W.h - 16;
-  const ww = Math.min(w.el.offsetWidth + 1, W.w - 16);
-  const hh = Math.min(w.el.offsetHeight + 1, W.h - 16);
-  w.body.style.overflow = fits ? 'hidden' : 'auto';
-  const ref = owner?.state === 'normal' ? owner.rect : { x: 0, y: 0, w: W.w, h: W.h };
-  w.rect = {
-    x: Math.round(clamp(ref.x + (ref.w - ww) / 2, 0, W.w - ww)),
-    y: Math.round(clamp(ref.y + (ref.h - hh) / 2, 0, W.h - hh)),
-    w: ww,
-    h: hh,
-  };
-  w.applyRect();
-  // modality: the owner (or the whole desktop) becomes inert, clicks on it flash the dialog
+  w.fitToContent();
+  // modality: the owner (or, without one, the desktop and every window on it) goes inert, and a click on the shield
+  // over it flashes the dialog
   let shield: HTMLDivElement;
   if (owner) {
-    owner.blockedBy = w;
+    owner.setBlockedBy(w);
     shield = h('div', 'xp-modal-shield');
     owner.el.appendChild(shield);
   } else {
     shield = h('div', 'xp-modal');
     dom().wins.appendChild(shield);
-    shield.style.zIndex = '99';
+    shield.style.zIndex = String(Z.modalShield);
     S.modalBlock = w;
-    for (const x of S.wins) if (x !== w) x.blockedBy = w;
+    for (const x of S.wins) if (x !== w) x.setBlockedBy(w);
   }
   shield.addEventListener(
     'pointerdown',
@@ -98,10 +82,10 @@ export function dialog(o: DialogOptions = {}): XPDialogHandle {
   w.unblock = () => {
     shield.remove();
     if (owner) {
-      if (owner.blockedBy === w) owner.blockedBy = null;
+      if (owner.blockedBy === w) owner.setBlockedBy(null);
     } else {
       S.modalBlock = null;
-      for (const x of S.wins) if (x.blockedBy === w) x.blockedBy = null;
+      for (const x of S.wins) if (x.blockedBy === w) x.setBlockedBy(null);
     }
   };
   w.hooks.onEsc = () => {
@@ -110,7 +94,8 @@ export function dialog(o: DialogOptions = {}): XPDialogHandle {
   };
   w.focus();
   if (owner?.state === 'min') startFlash(owner);
-  sound(o.icon === 'error' || o.icon === 'warn' ? 'error' : (o.sound ?? 'notify'));
+  if (o.icon === 'error' || o.icon === 'warn') sound('error');
+  else soundByName(o.sound ?? 'notify');
   growIn(w.el);
   setTimeout(() => {
     primaryBtn?.focus();
