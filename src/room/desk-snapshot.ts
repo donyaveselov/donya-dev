@@ -53,8 +53,37 @@ export type Rect = [number, number, number, number];
 /** Where the painted desktop landed in the canvas, and how to map a snapshot box into it. */
 export interface Painted {
   s: number;
-  R2: (r: Box) => Rect;
+  toGlass: (r: Box) => Rect;
 }
+
+/** The part of the glass canvas the page takes up: its corner, its size, and canvas pixels per page pixel. */
+export interface GlassFit {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  s: number;
+}
+
+/**
+ * The camera stops where the glass (aspect A, drawn on a cw x ch canvas) covers the W x H page, so the page sees only
+ * the centred part of the glass with its own proportions: the full width of a glass that is too tall, the full height
+ * of one that is too wide. The desktop is painted into exactly that part.
+ */
+export function pageOnGlass(W: number, H: number, cw: number, ch: number, A: number): GlassFit {
+  const wider = W / H > A;
+  const w = wider ? cw : (ch * W) / H;
+  const h = wider ? (cw * H) / W : ch;
+  return { x: (cw - w) / 2, y: (ch - h) / 2, w, h, s: w / W };
+}
+
+/** A page box in canvas pixels. */
+export const boxOnGlass = (fit: GlassFit, r: Box): Rect => [
+  fit.x + r.x * fit.s,
+  fit.y + r.y * fit.s,
+  r.w * fit.s,
+  r.h * fit.s,
+];
 
 // cached: a re-measure never paints a frame without the wallpaper
 const images = new Map<string, HTMLImageElement>();
@@ -213,25 +242,14 @@ export function taskButton(
   g.fillText(label ?? '', b[0] + 26 * s, b[1] + b[3] / 2, b[2] - 30 * s);
 }
 
-/** Paints the snapshot into the canvas, covering a glass of aspect A. */
+/** Paints the snapshot into the canvas of a glass of aspect A, where the page will be (pageOnGlass). */
 export function paintDesk(c: HTMLCanvasElement, snap: DeskSnapshot, A: number): Painted {
   const g = ctx2d(c);
   const cw = c.width;
   const ch = c.height;
-  const { W, H } = snap;
-  let rw: number;
-  let rh: number;
-  if (W / H > A) {
-    rw = cw;
-    rh = (cw * H) / W;
-  } else {
-    rh = ch;
-    rw = (ch * W) / H;
-  }
-  const rx = (cw - rw) / 2;
-  const ry = (ch - rh) / 2;
-  const s = rw / W;
-  const R2 = (r: Box): Rect => [rx + r.x * s, ry + r.y * s, r.w * s, r.h * s];
+  const fit = pageOnGlass(snap.W, snap.H, cw, ch, A);
+  const { x: rx, y: ry, w: rw, h: rh, s } = fit;
+  const toGlass = (r: Box): Rect => boxOnGlass(fit, r);
   g.fillStyle = '#3A6EA5';
   g.fillRect(0, 0, cw, ch);
   const wl = snap.wall;
@@ -244,7 +262,7 @@ export function paintDesk(c: HTMLCanvasElement, snap: DeskSnapshot, A: number): 
   g.textAlign = 'center';
   g.textBaseline = 'top';
   for (const ic of snap.icons) {
-    const b = R2(ic.r);
+    const b = toGlass(ic.r);
     if (ready(ic.im)) g.drawImage(ic.im, b[0], b[1], b[2], b[3]);
     if (ic.lines?.length) {
       // line by line, exactly where the desktop wrapped the label
@@ -262,7 +280,7 @@ export function paintDesk(c: HTMLCanvasElement, snap: DeskSnapshot, A: number): 
       }
       g.textBaseline = 'top';
     } else if (ic.lr && ic.label) {
-      const l = R2(ic.lr);
+      const l = toGlass(ic.lr);
       g.font = String(11 * s) + TAHOMA;
       g.fillStyle = 'rgba(0,0,0,0.7)';
       g.fillText(ic.label, l[0] + l[2] / 2 + s, l[1] + s, l[2] + 20 * s);
@@ -270,9 +288,9 @@ export function paintDesk(c: HTMLCanvasElement, snap: DeskSnapshot, A: number): 
       g.fillText(ic.label, l[0] + l[2] / 2, l[1], l[2] + 20 * s);
     }
   }
-  if (snap.tb) band(g, R2(snap.tb), TASKBAR);
+  if (snap.tb) band(g, toGlass(snap.tb), TASKBAR);
   if (snap.tray) {
-    const tr = R2(snap.tray);
+    const tr = toGlass(snap.tray);
     band(g, tr, TRAY);
     g.fillStyle = '#fff';
     g.font = String(11 * s) + TAHOMA;
@@ -280,17 +298,17 @@ export function paintDesk(c: HTMLCanvasElement, snap: DeskSnapshot, A: number): 
     g.textBaseline = 'middle';
     g.fillText(snap.clock, tr[0] + tr[2] - 10 * s, tr[1] + tr[3] / 2);
     if (snap.langR && snap.lang !== undefined) {
-      const lr = R2(snap.langR);
+      const lr = toGlass(snap.langR);
       g.textAlign = 'center';
       g.fillText(snap.lang, lr[0] + lr[2] / 2, lr[1] + lr[3] / 2);
     }
   }
   if (snap.sb && ready(snap.sbImg)) {
-    const sb = R2(snap.sb);
+    const sb = toGlass(snap.sb);
     g.drawImage(snap.sbImg, sb[0], sb[1], sb[2], sb[3]);
   }
   if (snap.startT && snap.startTR) {
-    const sr = R2(snap.startTR);
+    const sr = toGlass(snap.startTR);
     g.font = 'italic bold ' + String(14 * s) + 'px "Trebuchet MS", Tahoma, sans-serif';
     g.textAlign = 'left';
     g.textBaseline = 'middle';
@@ -299,10 +317,10 @@ export function paintDesk(c: HTMLCanvasElement, snap: DeskSnapshot, A: number): 
     g.fillStyle = '#fff';
     g.fillText(snap.startT, sr[0], sr[1] + sr[3] / 2);
   }
-  if (snap.task) taskButton(g, R2(snap.task), snap, s, snap.taskText, true);
+  if (snap.task) taskButton(g, toGlass(snap.task), snap, s, snap.taskText, true);
   for (const bt of snap.bits) {
-    const b = R2(bt.r);
+    const b = toGlass(bt.r);
     if (ready(bt.im)) g.drawImage(bt.im, b[0], b[1], b[2], b[3]);
   }
-  return { s, R2 };
+  return { s, toGlass };
 }

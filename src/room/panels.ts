@@ -1,6 +1,6 @@
 // The room's DOM chrome: the top bar (time chip, resume button, language switch), the resume sheet, and the hash
 // routes that open it or preview a time of day or a status. The projects live on the desktop (src/xp).
-import { DESKTOP_DOM } from '../shared/desktop';
+import { DESKTOP_DOM, DESKTOP_ROOT_ID } from '../shared/desktop';
 import { EXPERIENCE } from '../shared/experience';
 import type { Lang, Status } from '../shared/types';
 import { PREVIEW_HOURS, isStatus } from './clock';
@@ -69,7 +69,7 @@ export class Panels {
     // back to what opened it; a Start menu item has gone by now, so at the PC the desktop takes the keyboard again
     if (back?.isConnected && back.offsetParent) back.focus({ preventScroll: true });
     else if (document.body.classList.contains('at-pc'))
-      document.querySelector<HTMLElement>(`#xp-root ${DESKTOP_DOM.root}`)?.focus({ preventScroll: true });
+      document.querySelector<HTMLElement>(`#${DESKTOP_ROOT_ID} ${DESKTOP_DOM.root}`)?.focus({ preventScroll: true });
   }
 
   /** Keeps Tab inside the open sheet (its back button, links and buttons), as a modal dialog does. */

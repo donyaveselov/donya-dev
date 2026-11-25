@@ -5,11 +5,12 @@ import { Box3, Color, OrthographicCamera, Scene, Vector3, WebGLRenderer, sRGBEnc
 import type { Mesh, Object3D } from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { getDesktop } from '../shared/desktop';
+import { createDesktopRoot, getDesktop } from '../shared/desktop';
 import type { RoomDesktop, RoomMountOptions } from '../shared/desktop';
 import { SAVER_SCREEN } from '../shared/saver';
 import type { Lang, Status } from '../shared/types';
 import { debugWanted } from '../shared/debug';
+import { CAMERA_DISTANCE } from './camera';
 import type { DebugHost } from './debug-panel';
 import type { RoomDebugHandle } from './debug-handle';
 import { loadDesktop } from './desktop-loader';
@@ -276,7 +277,7 @@ function mountOptions(): RoomMountOptions {
     lang: live.lang,
     phuketTime: () => ({ h: live.time.h, m: live.time.m }),
     status,
-    onExit: (how?: string) => {
+    onExit: (how) => {
       room?.handoff.standUp(how);
     },
     onOpenResume: () => {
@@ -310,7 +311,7 @@ function build(gl: WebGLRenderer, gltf: GLTF): Built {
   const h0 = currentHash();
   const from =
     h0 === 'southwest' ? [-1, 0.8, 1] : h0 === 'northeast' ? [1, 0.6, -1] : h0 === 'low' ? [1, 0.35, 1] : [1, 0.8, 1];
-  camera.position.copy(TARGET).addScaledVector(new Vector3(from[0], from[1], from[2]).normalize(), 120);
+  camera.position.copy(TARGET).addScaledVector(new Vector3(from[0], from[1], from[2]).normalize(), CAMERA_DISTANCE);
   const controls = new OrbitControls(camera, gl.domElement);
   controls.target.copy(TARGET);
   controls.enablePan = false;
@@ -575,10 +576,8 @@ function openFlatDesktop(then?: (desk: RoomDesktop) => void): void {
       return;
     }
     if (!flatRoot) {
-      flatRoot = document.createElement('div');
-      flatRoot.id = 'xp-root';
+      flatRoot = createDesktopRoot();
       flatRoot.style.cssText = 'position:fixed;inset:0;z-index:40;overflow:hidden';
-      document.body.appendChild(flatRoot);
       desk.mount(flatRoot, {
         lang: live.lang,
         phuketTime: () => ({ h: live.time.h, m: live.time.m }),

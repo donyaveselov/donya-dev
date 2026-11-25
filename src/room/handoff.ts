@@ -1,31 +1,72 @@
-/* Sitting down at the PC, with no overlay tricks:
-   1. The camera flies to the monitor and stops head-on, zoomed so that the glass COVERS the window (its edges end up
-      just outside the page, like walking up close to a screen). Until then the only thing on the monitor is its own
-      3D texture.
-   2. In that last frame the page shows nothing but the glass, i.e. the monitor's canvas stretched over the glass and
-      cropped by the window. The desktop opens with exactly that picture: the same canvas, in a box with the glass's
-      proportions, covering the window the same way. So the switch from 3D to the real desktop changes no pixel.
-   3. Then the desktop does what a computer would: a game or the terminal minimizes to the taskbar, a screen saver
-      is dismissed (the owner is away), and the desktop underneath is live.
-   The minimize happens ON THE MONITOR, at the very start of the flight: the picture (terminal, game, screen saver)
-   folds into the taskbar of a desktop painted onto the glass from the real one (desk-snapshot.ts). When the camera
-   arrives the painted desktop is swapped for the real one. Leaving plays the same in reverse. */
-import { CanvasTexture, Vector3 } from 'three';
-import type { Material, Mesh, MeshBasicMaterial, Object3D, OrthographicCamera } from 'three';
+/* Sitting down at a monitor and standing up again, with no overlay tricks.
+   Sitting down: the camera flies to the monitor and stops head-on, zoomed so that the glass covers the window. On the
+   way the glass shows a painted copy of the real desktop (desk-snapshot.ts): the status picture (terminal, game) folds
+   into its taskbar, or the screen saver fades out over it. The real desktop is already open underneath, invisible, in
+   exactly that state, so showing it when the camera arrives changes no pixel.
+   Standing up plays the same backwards. */
+import { Vector3 } from 'three';
+import type { CanvasTexture, Material, Mesh, MeshBasicMaterial, Object3D, OrthographicCamera, Texture } from 'three';
 import type { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import { DESKTOP_DOM } from '../shared/desktop';
+import { DESKTOP_DOM, createDesktopRoot } from '../shared/desktop';
 import type { RoomDesktop, RoomMountOptions, RoomOpenOptions } from '../shared/desktop';
+import type { GameKind, Status } from '../shared/types';
+import { CAMERA_DISTANCE } from './camera';
+import { deskSnapshot, paintDesk, taskButton } from './desk-snapshot';
+import type { DeskSnapshot } from './desk-snapshot';
+import { nextPhase } from './handoff-phase';
+import type { Phase } from './handoff-phase';
 import { ramp } from './lighting';
 import { isMesh } from './materials';
 import type { Monitors, Side } from './monitors';
 import { screenFrame } from './monitors';
 import { cloneM, mdata, psx } from './psx';
-import { deskSnapshot, paintDesk, taskButton } from './desk-snapshot';
-import type { DeskSnapshot } from './desk-snapshot';
-import { screenCanvasTexture } from './textures';
+import { ctx2d, screenCanvasTexture } from './textures';
 import { must } from './util';
-import type { Status } from '../shared/types';
-import { ctx2d } from './textures';
+
+/** The flights, in seconds (times the debug panel's slow-motion factor). */
+const FLIGHT_IN_S = 1.35;
+const FLIGHT_OUT_S = 1.1;
+/** With reduced motion the camera jumps: one frame. */
+const FLIGHT_REDUCED_S = 0.01;
+/** Standing up, the desktop first fades into the painted glass behind it. */
+const DESKTOP_FADE_S = 0.35;
+/** How long after the fade should have ended to stop waiting for its transitionend. */
+const FADE_GRACE_MS = 30;
+/** The painted glass's canvas width; its height follows the glass. */
+const GLASS_W = 1024;
+/** The desktop is re-measured for the painted copy while the camera flies (fonts and pictures may still arrive). */
+const SNAPSHOT_EVERY_MS = 250;
+
+/** A stretch of a flight, as shares of its progress (0 = take-off, 1 = arrival). */
+type Stretch = readonly [from: number, to: number];
+const over = ([from, to]: Stretch, k: number): number => ramp(from, to, k);
+
+/** Flying in. */
+const IN = {
+  /** the picture folds into the taskbar mid-flight: the screen is big enough to see it, not yet the whole view */
+  fold: [0.38, 0.72],
+  /** the chair and the owner melt away instead of popping out */
+  melt: [0.1, 0.34],
+  /** the glow around the screens goes: up close it would wash the picture out and break the matching frame */
+  glow: [0.55, 0.95],
+  /** the PS1 look goes: on arrival the frame is drawn directly, pixel for pixel */
+  ps1: [0.45, 0.9],
+} as const satisfies Record<string, Stretch>;
+
+/** Flying out. */
+const OUT = {
+  /** after a shutdown the status picture comes up on a black monitor */
+  wake: [0.05, 0.5],
+  ps1: [0.1, 0.55],
+  /** the chair and the owner come back */
+  figure: [0.45, 0.8],
+} as const satisfies Record<string, Stretch>;
+
+/* XP's own minimize: a few hard steps from the full picture down to the taskbar button. The first steps still show
+   the picture, the rest a title bar (never thinner than the button, or this share of the shrinking frame). */
+const FOLD_STEPS = 9;
+const FOLD_PICTURE_UNTIL = 0.34;
+const FOLD_BAR_SHARE = 0.12;
 
 interface CamPose {
   p: Vector3;
@@ -43,7 +84,7 @@ export interface HandOffHost {
   /** the debug panel's slow-motion factor (1 = normal) */
   slow(): number;
   status(): Status;
-  game(): { kind: string; name: string | null };
+  game(): { kind: GameKind; name: string | null };
   /** the figures and the chair that melt away when the visitor sits down */
   atDesk(): Object3D[];
   /** what monitor i shows for the current status */
@@ -76,10 +117,41 @@ interface Hand {
   dispose(): void;
 }
 
-interface Seat extends CamPose {
-  /** the desktop covers the whole window: nothing to draw */
-  covered: boolean;
-  hand: Hand | null;
+/** A visit to the desktop: where the camera came from, and the glass it flew into. */
+interface Seat {
+  from: CamPose;
+  hand: Hand;
+}
+
+/** The canvas a screen texture draws from (the room's screen pictures all are canvases), or null. */
+function canvasOf(tex: Texture | null): HTMLCanvasElement | null {
+  const image: unknown = tex?.image;
+  return image instanceof HTMLCanvasElement ? image : null;
+}
+
+/**
+ * Fades an element out and calls `done` once: on its transitionend, or a moment after the fade should have ended if
+ * the event never comes (a hidden tab, an element that was already transparent).
+ */
+function fadeOut(el: HTMLElement, seconds: number, done: () => void): void {
+  if (seconds <= 0) {
+    el.style.opacity = '0';
+    setTimeout(done, 0);
+    return;
+  }
+  const onEnd = (e: TransitionEvent): void => {
+    if (e.target === el && e.propertyName === 'opacity') finish();
+  };
+  const finish = (): void => {
+    clearTimeout(timer);
+    el.removeEventListener('transitionend', onEnd);
+    el.style.transition = '';
+    done();
+  };
+  const timer = setTimeout(finish, seconds * 1000 + FADE_GRACE_MS);
+  el.addEventListener('transitionend', onEnd);
+  el.style.transition = `opacity ${String(seconds)}s ease`;
+  el.style.opacity = '0';
 }
 
 /* Fading objects in and out: each mesh gets its own transparent copy of its material for the duration (materials are
@@ -123,8 +195,11 @@ function fadeObjs(objs: readonly Object3D[], a: number): void {
 const easeInOutCubic = (k: number): number => (k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2);
 
 export class HandOff {
-  /** set while at the PC (and during both flights) */
+  private phase: Phase = 'room';
+  /** set while away from the room (phases in, seated, out) */
   private seat: Seat | null = null;
+  /** the desktop covers the whole window: the room need not draw */
+  private isCovered = false;
   private xpRoot: HTMLElement | null = null;
   private mounted = false;
   /** a click on a monitor while the desktop module is still loading: sit down once it is in */
@@ -135,13 +210,18 @@ export class HandOff {
     private readonly desktop: () => RoomDesktop | null,
   ) {}
 
+  /** At the PC or on the way there or back: the camera and the monitors belong to the hand-off. */
   get atPC(): boolean {
-    return !!this.seat;
+    return this.phase !== 'room';
   }
 
   /** The desktop covers the window: the room need not draw. */
   get covered(): boolean {
-    return !!this.seat?.covered;
+    return this.isCovered;
+  }
+
+  private flightSeconds(normal: number): number {
+    return (this.host.reducedMotion ? FLIGHT_REDUCED_S : normal) * this.host.slow();
   }
 
   private tweenCam(to: CamPose, dur: number, done: () => void, tick?: (k: number) => void): void {
@@ -168,6 +248,11 @@ export class HandOff {
     step();
   }
 
+  /** The chair and whoever sits at the desk: they fade out for the visitor and back in afterwards. */
+  private deskCompany(): Object3D[] {
+    return [this.host.root.getObjectByName('Chair'), ...this.host.atDesk()].filter((o): o is Object3D => !!o);
+  }
+
   /**
    * The desktop shell is built ahead of time (invisible, full-size), so the click on a monitor starts the camera at
    * once instead of spending its first frames creating a few hundred elements.
@@ -175,11 +260,7 @@ export class HandOff {
   ensureDesktop(): void {
     const desk = this.desktop();
     if (!desk) return;
-    if (!this.xpRoot) {
-      this.xpRoot = document.createElement('div');
-      this.xpRoot.id = 'xp-root';
-      document.body.appendChild(this.xpRoot);
-    }
+    this.xpRoot ??= createDesktopRoot();
     this.xpRoot.style.cssText =
       'position:fixed;z-index:40;overflow:hidden;left:0;top:0;width:100%;height:100%;opacity:0;transform-origin:0 0;pointer-events:none;will-change:transform,opacity';
     if (!this.mounted) {
@@ -193,9 +274,35 @@ export class HandOff {
     if (this.mounted) this.desktop()?.setLang(lang);
   }
 
-  /** Flies to a monitor and opens the desktop; `arrived` runs once the desktop is live. */
+  /** What the desktop opens with: the monitor's own picture as a full-screen window, or nothing while the owner is away. */
+  private openOptions(right: boolean, picture: HTMLCanvasElement, aspect: number): RoomOpenOptions {
+    const st = this.host.status();
+    if (st === 'sleep' || st === 'outside') return { noBoot: true, instant: true };
+    const game = this.host.game();
+    const playing = st === 'play';
+    return {
+      game: {
+        kind: playing && !right ? game.kind : 'term',
+        name: playing ? (right ? 'YouTube' : (game.name ?? '')) : right ? 'code' : 'opencode',
+        image: picture,
+        live: true,
+        frame: aspect,
+        hold: 0,
+        dismiss: 'minimize',
+        after: st === 'work' && !right ? this.host.readableCode() : null,
+      },
+      noBoot: true,
+      instant: true,
+    };
+  }
+
+  /**
+   * Flies to a monitor and opens the desktop; `arrived` runs once the desktop is live. Does nothing unless the
+   * visitor is in the room.
+   */
   sitDown(which: Side = 'L', arrived?: (desk: RoomDesktop) => void): void {
-    if (this.seat || this.waiting) return;
+    const flying = nextPhase(this.phase, 'sit');
+    if (!flying || this.waiting) return;
     const desk = this.desktop();
     if (!desk) {
       this.waiting = true;
@@ -208,23 +315,18 @@ export class HandOff {
     }
     const { camera, controls, monitors } = this.host;
     const mon = monitors.get(which);
-    if (!mon) return;
+    const pic = canvasOf(mon?.screen.material.map ?? null);
+    if (!mon || !pic) return;
     const mesh = mon.screen;
     monitors.settle(); // measure the glass at its real size, not mid hover-bounce
     const f = screenFrame(mesh, camera);
     const vh = camera.top - camera.bottom;
     const vw = camera.right - camera.left;
-    const seat: Seat = {
-      p: camera.position.clone(),
-      t: controls.target.clone(),
-      z: camera.zoom,
-      covered: false,
-      hand: null,
-    };
-    this.seat = seat;
+    const from: CamPose = { p: camera.position.clone(), t: controls.target.clone(), z: camera.zoom };
+    this.phase = flying;
     const haloBase = monitors.list.map((m) => m.halo.opacity);
     this.host.chrome('pc');
-    const gone = [this.host.root.getObjectByName('Chair'), ...this.host.atDesk()].filter((o): o is Object3D => !!o);
+    const gone = this.deskCompany();
     this.ensureDesktop();
     const xpRoot = must(this.xpRoot);
     xpRoot.style.opacity = '0';
@@ -232,37 +334,16 @@ export class HandOff {
     xpRoot.style.pointerEvents = 'none';
     const st = this.host.status();
     const away = st === 'sleep' || st === 'outside';
-    const right = which === 'R';
     const A = f.w / f.h;
-    const pic = mesh.material.map?.image as HTMLCanvasElement;
-    const game = this.host.game();
     const slow = this.host.slow();
-    const dur = (this.host.reducedMotion ? 0.01 : 1.35) * slow;
     // the real desktop opens at once, already in its final state (window minimized, saver gone), invisible: it is
     // measured for the painted copy on the glass and shown when the camera arrives
     desk.setLang(this.host.lang());
-    if (away) desk.open({ noBoot: true, instant: true });
-    else {
-      const opts: RoomOpenOptions = {
-        game: {
-          kind: st === 'play' && !right ? game.kind : 'term',
-          name: st === 'play' ? (right ? 'YouTube' : (game.name ?? '')) : right ? 'code' : 'opencode',
-          image: pic,
-          live: true,
-          frame: A,
-          hold: 0,
-          dismiss: 'minimize',
-          after: st === 'work' && !right ? this.host.readableCode() : null,
-        },
-        noBoot: true,
-        instant: true,
-      };
-      desk.open(opts);
-    }
+    desk.open(this.openOptions(which === 'R', pic, A));
 
     const hc = document.createElement('canvas');
-    hc.width = 1024;
-    hc.height = Math.round(1024 / A);
+    hc.width = GLASS_W;
+    hc.height = Math.round(GLASS_W / A);
     const ht = screenCanvasTexture(hc);
     const gx = ctx2d(hc);
     let snap: DeskSnapshot | null = null;
@@ -273,18 +354,17 @@ export class HandOff {
     });
     const snapT = setInterval(
       () => {
-        if (!this.seat) {
+        if (this.phase !== 'in') {
           clearInterval(snapT);
           return;
         }
         snap = deskSnapshot(this.xpRoot) ?? snap;
       },
-      250 * Math.max(1, slow / 4),
+      SNAPSHOT_EVERY_MS * Math.max(1, slow / 4),
     );
     const reduced = this.host.reducedMotion;
     const paint = (k: number): void => {
-      // mid-flight: the screen is big enough to see it fold, not yet the whole view
-      const m = reduced ? 1 : ramp(0.38, 0.72, k);
+      const m = reduced ? 1 : over(IN.fold, k);
       if (!snap) {
         gx.drawImage(src, 0, 0, hc.width, hc.height);
         ht.needsUpdate = true;
@@ -292,17 +372,16 @@ export class HandOff {
       }
       const L = paintDesk(hc, snap, A);
       if (snap.task && !away) {
-        const tb = L.R2(snap.task);
+        const tb = L.toGlass(snap.task);
         if (m < 1) {
-          // XP's own minimize: a few hard steps from the full picture down to the taskbar button
-          const q = Math.floor(m * 9) / 9;
+          const q = Math.floor(m * FOLD_STEPS) / FOLD_STEPS;
           const e = q * q * (3 - 2 * q);
           const fx = tb[0] * e;
           const fy = tb[1] * e;
           const fw = hc.width + (tb[2] - hc.width) * e;
           const fh = hc.height + (tb[3] - hc.height) * e;
-          if (q < 0.34) gx.drawImage(src, fx, fy, fw, fh);
-          else taskButton(gx, [fx, fy, fw, Math.max(tb[3], fh * 0.12)], snap, L.s, snap.taskText);
+          if (q < FOLD_PICTURE_UNTIL) gx.drawImage(src, fx, fy, fw, fh);
+          else taskButton(gx, [fx, fy, fw, Math.max(tb[3], fh * FOLD_BAR_SHARE)], snap, L.s, snap.taskText);
         }
       } else if (m < 1) {
         // the saver simply fades out
@@ -315,7 +394,7 @@ export class HandOff {
     paint(0);
     glass.map = ht;
     mdata(glass).hand = true;
-    seat.hand = {
+    const hand: Hand = {
       glass,
       paint,
       fromBlack(a) {
@@ -337,106 +416,97 @@ export class HandOff {
         hc.width = hc.height = 0; // let the canvas's backing store go too
       },
     };
+    this.seat = { from, hand };
     const zoomTo = Math.max(vh / f.h, vw / f.w); // cover, not contain: the glass fills the window, nothing around it
     this.tweenCam(
-      { p: f.c.clone().addScaledVector(f.n, 120), t: f.c.clone(), z: zoomTo },
-      dur,
+      { p: f.c.clone().addScaledVector(f.n, CAMERA_DISTANCE), t: f.c.clone(), z: zoomTo },
+      this.flightSeconds(FLIGHT_IN_S),
       () => {
         clearInterval(snapT);
+        this.phase = 'seated';
         xpRoot.style.opacity = '1'; // the one and only switch, on a matching frame
         xpRoot.style.pointerEvents = '';
         // keyboard (language hotkeys, menus) goes to the desktop right away
         xpRoot.querySelector<HTMLElement>(DESKTOP_DOM.root)?.focus({ preventScroll: true });
         requestAnimationFrame(() => {
-          if (this.seat) this.seat.covered = true;
+          if (this.phase === 'seated') this.isCovered = true;
         });
         arrived?.(desk);
       },
       (k) => {
         paint(k);
-        fadeObjs(gone, 1 - ramp(0.1, 0.34, k)); // the chair and the owner melt away instead of popping out
-        // the glow would wash the picture out up close and break the matching frame
+        fadeObjs(gone, 1 - over(IN.melt, k));
         monitors.list.forEach((m, i) => {
-          m.halo.opacity = (haloBase[i] ?? 0) * (1 - ramp(0.55, 0.95, k));
+          m.halo.opacity = (haloBase[i] ?? 0) * (1 - over(IN.glow, k));
         });
-        psx.fx = 1 - ramp(0.45, 0.9, k); // the PS1 look melts away as the camera arrives: at 0 the frame is drawn directly
+        psx.fx = 1 - over(IN.ps1, k);
       },
     );
   }
 
-  standUp(how?: string): void {
-    const back = this.seat;
-    if (!back) return;
+  /**
+   * Leaves the desktop and flies back to where the camera was ('off': after Turn Off Computer, the monitor is black).
+   * Does nothing unless the visitor is seated: a second call during the flight out is ignored.
+   */
+  standUp(how?: 'off'): void {
+    const leaving = nextPhase(this.phase, 'stand');
+    const seat = this.seat;
+    const xpRoot = this.xpRoot;
+    if (!leaving || !seat || !xpRoot) return;
+    this.phase = leaving;
     const off = how === 'off';
     const { controls, monitors } = this.host;
-    let restored = false;
-    let again: Object3D[] = [];
+    const { hand } = seat;
+    let again: Object3D[] | null = null;
     // puts the right figure back, still fully transparent, then it fades in
-    const restore = (): void => {
-      if (restored) return;
-      restored = true;
-      this.host.relight();
-      again = [this.host.root.getObjectByName('Chair'), ...this.host.atDesk()].filter((o): o is Object3D => !!o);
-      fadeObjs(again, 0);
+    const restore = (): Object3D[] => {
+      if (!again) {
+        this.host.relight();
+        again = this.deskCompany();
+        fadeObjs(again, 0);
+      }
+      return again;
     };
     this.host.chrome('leaving');
-    back.covered = false;
-    const xpRoot = this.xpRoot;
-    if (xpRoot) xpRoot.style.pointerEvents = 'none';
+    this.isCovered = false;
+    xpRoot.style.pointerEvents = 'none';
     // the glass shows the desktop as it is now (measured before it closes), and the status picture unfolds from the
     // taskbar on the way out: the sit-down minimize played backwards, so nothing on the monitor ever switches at once
-    const hand = back.hand;
-    const hi = hand ? monitors.indexOf(hand.glass) : -1;
-    if (hand) {
-      hand.setSource(this.host.screenPicture(hi).image as HTMLCanvasElement);
-      if (off) hand.fromBlack(0);
-      else {
-        hand.reSnap();
-        hand.paint(1);
-      }
+    const side = monitors.indexOf(hand.glass);
+    const picture = canvasOf(this.host.screenPicture(side));
+    if (picture) hand.setSource(picture);
+    if (off) hand.fromBlack(0);
+    else {
+      hand.reSnap();
+      hand.paint(1);
     }
-    const slow = this.host.slow();
     // the screen goes back to what the monitor shows (the camera has not moved yet), then the camera pulls away
-    if (xpRoot) {
-      xpRoot.style.transition = 'opacity ' + String(0.35 * slow) + 's ease';
-      xpRoot.style.opacity = '0';
-    }
-    setTimeout(
-      () => {
-        const desk = this.desktop();
-        if (desk?.isOpen()) desk.close();
-        if (xpRoot) xpRoot.style.transition = '';
-        this.tweenCam(
-          back,
-          (this.host.reducedMotion ? 0.01 : 1.1) * slow,
-          () => {
-            restore();
-            fadeObjs(again, 1);
-            this.seat = null;
-            controls.enabled = true;
-            this.host.chrome('room');
-            psx.fx = 1;
-            if (hand) {
-              // the live status texture, the same picture the last painted frame showed
-              delete mdata(hand.glass).hand;
-              hand.glass.map = this.host.screenPicture(hi);
-              hand.dispose(); // a fresh canvas and texture are made at every sit-down
-            }
-          },
-          (k) => {
-            if (hand) {
-              if (off) hand.fromBlack(ramp(0.05, 0.5, k));
-              else hand.paint(1 - k);
-            }
-            psx.fx = ramp(0.1, 0.55, k);
-            if (k > 0.45) {
-              restore();
-              fadeObjs(again, ramp(0.45, 0.8, k));
-            }
-          },
-        );
-      },
-      this.host.reducedMotion ? 0 : 380 * slow,
-    );
+    const fade = this.host.reducedMotion ? 0 : DESKTOP_FADE_S * this.host.slow();
+    fadeOut(xpRoot, fade, () => {
+      const desk = this.desktop();
+      if (desk?.isOpen()) desk.close();
+      this.tweenCam(
+        seat.from,
+        this.flightSeconds(FLIGHT_OUT_S),
+        () => {
+          fadeObjs(restore(), 1);
+          this.seat = null;
+          this.phase = 'room';
+          controls.enabled = true;
+          this.host.chrome('room');
+          psx.fx = 1;
+          // the live status texture, the same picture the last painted frame showed
+          delete mdata(hand.glass).hand;
+          hand.glass.map = this.host.screenPicture(side);
+          hand.dispose(); // a fresh canvas and texture are made at every sit-down
+        },
+        (k) => {
+          if (off) hand.fromBlack(over(OUT.wake, k));
+          else hand.paint(1 - k);
+          psx.fx = over(OUT.ps1, k);
+          if (k > OUT.figure[0]) fadeObjs(restore(), over(OUT.figure, k));
+        },
+      );
+    });
   }
 }

@@ -39,6 +39,17 @@ export function desktopWallpaper(): string | undefined {
   return loaded?.XP_WALL;
 }
 
+/** The element the desktop is mounted in (the room's CSS and the regression harness find the desktop under it). */
+export const DESKTOP_ROOT_ID = 'xp-root';
+
+/** Adds the desktop's (empty, unstyled) mount element to the page. */
+export function createDesktopRoot(): HTMLElement {
+  const el = document.createElement('div');
+  el.id = DESKTOP_ROOT_ID;
+  document.body.appendChild(el);
+  return el;
+}
+
 /**
  * The desktop DOM the room paints onto the 3D monitor during the hand-off (handoff.ts reads layout, text, fonts and
  * pictures from these). Renaming one in the shell breaks the fly-in without any error.
