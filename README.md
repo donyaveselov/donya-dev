@@ -29,7 +29,8 @@ artifact, publish `dist-artifact/index.html` with those files as supporting file
 
 ### Deploying to donya.dev (REG.RU shared hosting)
 
-`npm run build`, then upload the contents of `dist/` (not the folder itself) to the site's directory on the hosting
+`npm run deploy` builds and uploads `dist/` over FTP with TLS (`scripts/deploy.mjs`; the login is read from `~/.netrc`,
+`--dry-run` shows the plan, `--ls` lists the host). By hand: upload the contents of `dist/` to the site's directory on the hosting
 (ISPmanager: Sites → donya.dev → its folder, usually `www/donya.dev/`). `dist/.htaccess` (from `public/`) sets
 compression, caching (hashed assets and `room.json?v=` for a year, `index.html` revalidated) and the www → apex
 redirect. `.dev` is HTTPS-only in every browser (HSTS preload), so the site opens only once the hosting has an SSL
