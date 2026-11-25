@@ -1,11 +1,11 @@
 // A project's document: the overview, the stack, what I did, and a gallery of its screens (apps/mocks).
 import { fill } from '../../../i18n/i18n';
-import type { Bilingual, Lang, XPAppApi } from '../../../types';
+import type { Bilingual, XPAppApi } from '../../../types';
 import { type Project, PROJECTS } from '../../../content/projects';
-import { bare } from './explorer-items';
+import { bare } from '../browser/browser-url';
 import { G24 } from '../../../components/kit/icons';
 import { copyText, reduced, ui } from '../../../components/kit/kit';
-import { genericMock, MOCKS } from './mocks';
+import { MOCKS } from './mocks';
 import { APP } from '../../../components/kit/strings';
 
 const T = {
@@ -160,7 +160,6 @@ export function renderProject(content: HTMLElement, api: XPAppApi): () => void {
     st.set(1, `${String(Math.round(zoom * 100))}%`);
   }
 
-  const mock = (kind: string, title: string): string => (MOCKS[kind] ?? ((l: Lang) => genericMock(l, title)))(U.lang());
   // the page is rebuilt for another project or language: its bilingual text goes with it
   const doc = U.scope();
   const arrow = (key: 'back' | 'fwd'): HTMLSpanElement => h('span.xpa-g16.x24', { html: G24[key] ?? '' });
@@ -171,7 +170,7 @@ export function renderProject(content: HTMLElement, api: XPAppApi): () => void {
     // each picture is drawn once; the frame and the thumbnails show copies of it
     const pictures = p.shots.map((s) => {
       const tpl = document.createElement('template');
-      tpl.innerHTML = mock(s.kind, t(s.title));
+      tpl.innerHTML = MOCKS[s.kind]?.(U.lang()) ?? '';
       return tpl.content;
     });
     const picture = (i: number): Node => pictures[i]?.cloneNode(true) ?? document.createTextNode('');

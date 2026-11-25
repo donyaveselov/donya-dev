@@ -4,6 +4,10 @@ import { PROJECTS } from '../../../content/projects';
 
 export const HOME = 'about:start';
 
+/** An address without its http(s)://, and its host alone. */
+export const bare = (url: string): string => url.replace(/^https?:\/\//, '');
+export const host = (url: string): string => bare(url).replace(/\/.*$/, '');
+
 /** What the address bar makes of a typed text: about: pages, a URL, a bare domain, or a search on this computer. */
 export function normalize(input: unknown): string {
   const s = (typeof input === 'string' ? input : '').trim();
@@ -15,15 +19,10 @@ export function normalize(input: unknown): string {
   return `about:search?q=${encodeURIComponent(s)}`;
 }
 
-/** The query of an about:search address; text the address bar could not have encoded (a lone %) is taken as it is. */
+/** The query of an about:search address (URLSearchParams keeps a lone % as it is, it never throws). */
 export function searchQuery(u: string): string {
   const at = u.indexOf('?');
-  if (at < 0) return '';
-  try {
-    return new URLSearchParams(u.slice(at + 1)).get('q') ?? '';
-  } catch {
-    return '';
-  }
+  return at < 0 ? '' : (new URLSearchParams(u.slice(at + 1)).get('q') ?? '');
 }
 
 /** My own sites, which open inside the window. */

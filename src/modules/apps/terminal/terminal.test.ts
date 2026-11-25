@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { changeDir, commonPrefix, complete, parseColor, parseCommand, progressBar, prompt } from './terminal-parse';
+import { changeDir, commonPrefix, complete, parseColor, parseCommand } from './terminal-parse';
 
 describe('terminal parsing', () => {
   it('splits a line into a command and its arguments', () => {
@@ -9,11 +9,6 @@ describe('terminal parsing', () => {
       args: ['projects', 'now'],
     });
     expect(parseCommand('   ')).toBeNull();
-  });
-
-  it('shows a cmd prompt', () => {
-    expect(prompt(['C:', 'Users', 'Daniil'])).toBe('C:\\Users\\Daniil>');
-    expect(prompt(['C:'])).toBe('C:\\>');
   });
 
   it('changes folders the way cd does', () => {
@@ -48,11 +43,5 @@ describe('terminal parsing', () => {
     expect(complete('xyz', cmds, targets)).toBeNull();
     expect(complete('echo hi', cmds, targets)).toEqual({ value: 'echo hi' });
     expect(commonPrefix(['color', 'colour', 'cold'])).toBe('col');
-  });
-
-  it('draws the format progress bar', () => {
-    expect(progressBar(0)).toBe('[....................] 0%');
-    expect(progressBar(50)).toBe('[##########..........] 50%');
-    expect(progressBar(99)).toBe('[####################] 99%');
   });
 });

@@ -7,7 +7,7 @@ import { ico, svg } from '../../desktop/icons';
 import { registerApp } from '../../desktop/apps';
 import { ICONS } from '../../../components/kit/icons';
 import { copyText, pad, reduced, ui } from '../../../components/kit/kit';
-import { HOME, isOwnSite, isThisSite, normalize, searchHits, searchQuery } from './browser-url';
+import { bare, HOME, host, isOwnSite, isThisSite, normalize, searchHits, searchQuery } from './browser-url';
 import { siteFrame } from '../projects/site-frame';
 import { d } from '../../../content/text';
 import { APP } from '../../../components/kit/strings';
@@ -85,7 +85,7 @@ const FAVS: readonly { label: string; short: string; url: string }[] = [
     return [{ label: handle ? `${name} — ${handle}` : c.value, short: handle ? name : c.value, url: c.href }];
   }),
   ...PROJECTS.slice(0, 1).map((p) => {
-    const site = p.url.replace(/^https?:\/\//, '');
+    const site = bare(p.url);
     return { label: site, short: site, url: p.url };
   }),
 ];
@@ -347,7 +347,7 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
       view.appendChild(
         siteFrame(page, { src: u, overview: project && (() => api.openApp('project', { id: project.id })) }),
       );
-      api.win.setTitle(`${u.replace(/^https?:\/\//, '')} — ${nav}`);
+      api.win.setTitle(`${bare(u)} — ${nav}`);
     } else if (ext) {
       view.appendChild(errorPage(u));
       api.win.setTitle(`${t(T.pageCannot)} — ${nav}`);
@@ -478,10 +478,9 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
 
   function errorPage(u: string): HTMLDivElement {
     const { h } = page;
-    const host = u.replace(/^https?:\/\//, '').replace(/\/.*$/, '');
     return h('div.xpa-br-err', [
       h('div.xpa-br-err-head', [h('span.xpa-ico', { html: ICONS.info }), h('h1', T.pageCannot)]),
-      h('p', [t(T.thePage), h('b', host), t(T.livesOnline)]),
+      h('p', [t(T.thePage), h('b', host(u)), t(T.livesOnline)]),
       h('hr'),
       h('p', T.tryThis),
       h('ul', [
