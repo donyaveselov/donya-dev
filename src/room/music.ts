@@ -98,8 +98,9 @@ export class Music {
   private async start(): Promise<void> {
     if (this.started) return;
     this.started = true;
+    let c: AudioContext | null = null;
     try {
-      const c = new AudioContext();
+      c = new AudioContext();
       this.ctx = c;
       void c.resume();
       this.prefetch();
@@ -120,7 +121,12 @@ export class Music {
       if (document.hidden) void c.suspend();
     } catch (e) {
       console.warn(e); // music is a nicety: no music, no fuss
+      // the next start (the switch flipped again) makes a fresh context, so this one is closed: a browser allows only
+      // a few open at once
       this.started = false;
+      this.ctx = null;
+      this.gain = null;
+      void c?.close().catch(() => undefined);
     }
   }
 }

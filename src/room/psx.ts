@@ -130,16 +130,30 @@ const KEEP = [
 ] as const;
 const KEEP_LIT = [...KEEP, 'emissive', 'emissiveMap', 'emissiveIntensity'] as const;
 
-export function toPS1(m: Material, unlit: boolean): RoomMaterial {
-  const n = unlit ? new MeshBasicMaterial() : new MeshLambertMaterial();
-  const src = m as unknown as Record<string, unknown>;
-  const dst = n as unknown as Record<string, unknown>;
-  for (const k of unlit ? KEEP : KEEP_LIT) {
-    const v = src[k];
+/** Copies the listed properties the source has; colours are copied into the target's own Color objects. */
+function copyProps<K extends string>(
+  from: Partial<Record<K, unknown>>,
+  to: Record<K, unknown>,
+  keys: readonly K[],
+): void {
+  for (const k of keys) {
+    const v = from[k];
     if (v === undefined) continue;
-    const cur = dst[k];
-    if (cur instanceof Color) cur.copy(v as Color);
-    else dst[k] = v;
+    const own = to[k];
+    if (own instanceof Color && v instanceof Color) own.copy(v);
+    else to[k] = v;
+  }
+}
+
+export function toPS1(m: Material, unlit: boolean): RoomMaterial {
+  let n: RoomMaterial;
+  if (unlit) {
+    n = new MeshBasicMaterial();
+    copyProps(m, n, KEEP);
+  } else {
+    const lit = new MeshLambertMaterial();
+    copyProps(m, lit, KEEP_LIT);
+    n = lit;
   }
   n.userData = { ...(m.userData as MatData) };
   const maps = [n.map, n.alphaMap, n instanceof MeshLambertMaterial ? n.emissiveMap : null, n.aoMap];

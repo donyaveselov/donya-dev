@@ -206,8 +206,11 @@ export class Monitors {
   /** The nearest monitor hit by the ray: its side and distance. */
   hit(ray: Raycaster): { side: Side; distance: number } | null {
     const hit = ray.intersectObjects(this.bodies, true)[0];
-    let o: Object3D | null = hit ? hit.object : null;
-    while (o && !/^Monitor_[LR]$/.test(o.name)) o = o.parent;
-    return hit && o ? { side: o.name.slice(-1) as Side, distance: hit.distance } : null;
+    // the ray hits a part (the stand, the bezel): the monitor is the body it belongs to
+    for (let o = hit?.object ?? null; hit && o; o = o.parent) {
+      const side = SIDES.find((s) => o.name === 'Monitor_' + s);
+      if (side) return { side, distance: hit.distance };
+    }
+    return null;
   }
 }

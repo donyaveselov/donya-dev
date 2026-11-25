@@ -4,7 +4,6 @@ import { Color } from 'three';
 import type { Status } from '../shared/types';
 
 export const lerp = (a: number, b: number, k: number): number => a + (b - a) * k;
-export const clamp01 = (x: number): number => Math.max(0, Math.min(1, x));
 /** Smoothstep from a to b. */
 export function smooth(a: number, b: number, x: number): number {
   const k = Math.min(1, Math.max(0, (x - a) / (b - a)));
