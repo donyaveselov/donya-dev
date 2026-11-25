@@ -5,6 +5,7 @@ import type { Frame } from './frames';
 import { t } from '../i18n';
 import type { Side } from './monitors';
 import type { RoomScene } from './scene';
+import { track } from '../../../services/analytics.service';
 
 /** A press that moved further than this (px, both axes summed) was a drag, not a click. */
 const DRAG_PX = 6;
@@ -62,6 +63,7 @@ export function watchPointer(r: RoomScene, host: PointerHost): Pointer {
     const frame = frameAt(ev);
     if (frame?.kind === 'resume') host.openResume();
     else if (frame) {
+      track('diploma_click');
       const above = frame.top.clone();
       above.y += INFO_ABOVE_M;
       r.tags.showInfo(above, t(host.lang()).diploma);

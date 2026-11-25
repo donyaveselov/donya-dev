@@ -21,6 +21,7 @@ import { screenFrame } from '../scene/monitors';
 import { cloneM, mdata, psx } from '../scene/psx';
 import { ctx2d, screenCanvasTexture } from '../scene/textures';
 import { must } from '../../../utils/dom';
+import { track } from '../../../services/analytics.service';
 
 /** The flights, in seconds. */
 const FLIGHT_IN_S = 1.35;
@@ -331,6 +332,7 @@ export class HandOff {
     if (align === 'left') aim.addScaledVector(f.across, (Math.min(f.w, (f.h * vw) / vh) - f.w) / 2);
     const from: CamPose = { p: camera.position.clone(), t: controls.target.clone(), z: camera.zoom };
     this.phase = 'in';
+    track('pc_enter', { screen: which === 'R' ? 'right' : 'left' });
     const haloBase = monitors.list.map((m) => m.halo.opacity);
     this.host.chrome('pc');
     const gone = this.deskCompany();
@@ -457,6 +459,7 @@ export class HandOff {
     if (this.phase !== 'seated' || !seat || !xpRoot) return;
     this.phase = 'out';
     const off = how === 'off';
+    track('pc_exit', { how: off ? 'shutdown' : 'normal' });
     const { controls, monitors } = this.host;
     const { hand } = seat;
     let again: Object3D[] | null = null;

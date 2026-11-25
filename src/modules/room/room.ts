@@ -40,6 +40,7 @@ import { Tour } from './tour/tour';
 import { byId, must } from '../../utils/dom';
 import { nextTask } from '../../utils/tasks';
 import { fetchWeather, restoreWeather } from '../../services/weather.service';
+import { initAnalytics, track } from '../../services/analytics.service';
 
 /** The Phuket clock is read this often (s); the room is relit when its minute changes. */
 const CLOCK_EVERY_S = 5;
@@ -194,6 +195,7 @@ class RoomApp {
   }
 
   private setLang(next: Lang): void {
+    if (next !== live.lang) track('lang_switch', { to: next });
     saveLang(next);
     this.applyLang();
     this.room?.handoff.setLang(next);
@@ -267,7 +269,7 @@ class RoomApp {
         handoff.sitDown(side);
       },
       openResume: () => {
-        this.panels.openResume();
+        this.panels.openResume('frame');
       },
     });
     const view: TagView = {
@@ -374,7 +376,7 @@ class RoomApp {
       status,
       onExit,
       onOpenResume: () => {
-        this.panels.openResume();
+        this.panels.openResume('desktop');
       },
       // the desktop's language switch moves the whole page too
       onLangChange: (lang) => {
@@ -526,6 +528,7 @@ class RoomApp {
 
 /** Starts the page; nothing is built before this call. */
 export function startRoom(): void {
+  initAnalytics({ lang: live.lang }); // first: visit_start reads the address as it was opened
   tidyAddress(); // /resume/, an unknown path or a #fragment is tidied before anything reads the route
   new RoomApp().start();
 }

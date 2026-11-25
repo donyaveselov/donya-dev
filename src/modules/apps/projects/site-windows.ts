@@ -5,6 +5,7 @@ import { type Project, PROJECTS, siteUrl } from '../../../content/projects';
 import { ui } from '../../../components/kit/kit';
 import { siteFrame } from './site-frame';
 import { APP } from '../../../components/kit/strings';
+import { track } from '../../../services/analytics.service';
 
 const T = {
   newTab: { ru: 'Открыть в новой вкладке', en: 'Open in a new tab' },
@@ -20,6 +21,7 @@ export function siteWindow(p: SiteProject) {
     const U = ui(api);
     const { h } = U;
     const root = U.root(content, 'xpa-site', 320);
+    track('site_window_open', { site: p.id });
     // the site opens in the page's language, as it was when the window opened
     const lang: Lang = document.documentElement.lang === 'en' ? 'en' : 'ru';
     const url = siteUrl(p, lang);

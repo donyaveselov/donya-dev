@@ -4,6 +4,7 @@ import { createDesktopRoot, getDesktop } from '../../../services/desktop-registr
 import type { RoomDesktop, RoomMountOptions } from '../../../services/desktop-registry';
 import type { Lang } from '../../../types';
 import { loadDesktop } from '../../../services/desktop.service';
+import { track } from '../../../services/analytics.service';
 
 export interface FlatDesktopHost {
   lang(): Lang;
@@ -31,6 +32,7 @@ export class FlatDesktop {
       const root = this.root ?? this.mount(desk);
       root.style.display = '';
       this.host.chrome(true);
+      track('pc_enter', { screen: 'flat' });
       desk.setLang(this.host.lang());
       desk.open({ noBoot: true, instant: true });
       then?.(desk);
@@ -42,7 +44,8 @@ export class FlatDesktop {
     root.style.cssText = 'position:fixed;inset:0;z-index:40;overflow:hidden';
     desk.mount(
       root,
-      this.host.mountOptions(() => {
+      this.host.mountOptions((how) => {
+        track('pc_exit', { how: how === 'off' ? 'shutdown' : 'normal' });
         desk.close();
         root.style.display = 'none';
         this.host.chrome(false);

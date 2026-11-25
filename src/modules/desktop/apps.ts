@@ -13,6 +13,7 @@ import { sound, soundByName } from './sound';
 import { S } from './store/state';
 import { L, tr } from './strings';
 import { ghost, growIn, startFlash, Win } from './windows/window';
+import { track } from '../../services/analytics.service';
 
 export const appTitle = (app: XPAppDef): string => tr(app.title) || app.id;
 
@@ -106,14 +107,21 @@ function trackRecent(id: string): void {
   S.recent = [id, ...S.recent.filter((x) => x !== id)].slice(0, 4);
 }
 
-/** Opens (or focuses) an app; ids the registry does not know go to the built-in programs. */
+/** Opens (or focuses) an app; ids the registry does not know go to the built-in programs. Every launcher (icons, the
+ *  Start menu, the Run box, the terminal, other apps, the room) comes through here, so this is where app_open is
+ *  counted: a new window or a re-render with new params, not a mere focus. */
 export function openApp(id: string, params?: XPAppParams, origin?: Rect | null): Win | null {
   const app = S.apps.get(id);
-  if (!app) return openSystem?.(id) ?? null;
+  if (!app) {
+    const sys = openSystem?.(id) ?? null;
+    if (sys) track('app_open', { app: id });
+    return sys;
+  }
   if (!S.open) return null;
   const ex = S.openApps.get(app.id);
   if (ex && !ex.closed && app.singleton !== false) {
     if (params !== undefined) {
+      track('app_open', { app: app.id });
       // re-render with the new params
       try {
         ex.cleanup?.();
@@ -142,6 +150,7 @@ export function openApp(id: string, params?: XPAppParams, origin?: Rect | null):
   });
   if (app.singleton !== false) S.openApps.set(app.id, w);
   trackRecent(app.id);
+  track('app_open', { app: app.id });
   w.el.classList.add('xp--busy');
   runRender(w, app, params);
   setTimeout(() => {

@@ -13,6 +13,7 @@ import type { TagKey } from '../components/tags';
 import { SPEAKING, TALKIE_FRAMES } from './talkie-frames';
 import type { MouthFrame } from './talkie-frames';
 import { must } from '../../../utils/dom';
+import { track } from '../../../services/analytics.service';
 
 export interface TourStep {
   key: TourKey;
@@ -322,6 +323,7 @@ export class Tour {
 
   private show(): void {
     const st = must(this.step());
+    if (!st.ask) track('tour_step', { step: st.key });
     if (st.state) this.setState(st);
     else if (this.saved) this.setState(null);
     for (const k of st.show ?? []) this.shown.add(k);
@@ -336,6 +338,7 @@ export class Tour {
 
   private next(): void {
     if (this.steps && this.i < this.steps.length - 1) {
+      if (this.step()?.ask) track('tour_accept', { replay: false });
       this.i++;
       this.show();
     } else this.end();
@@ -347,6 +350,8 @@ export class Tour {
     const el = must(this.el);
     this.steps = tourSteps(this.sights());
     this.i = again ? 1 : 0;
+    if (again) track('tour_accept', { replay: true });
+    else track('tour_offer');
     el.hidden = false;
     el.classList.remove('talkie--mini');
     this.btn?.setAttribute('tabindex', '-1'); // while the tour talks the mouth does nothing
@@ -355,6 +360,10 @@ export class Tour {
   }
 
   private end(): void {
+    const st = this.step();
+    if (st?.ask) track('tour_decline');
+    else if (st?.end) track('tour_complete');
+    else if (st) track('tour_skip', { step: st.key });
     this.sayId++;
     this.setTyping(false);
     if (this.saved) this.setState(null);

@@ -7,6 +7,7 @@ import { G24 } from '../../../components/kit/icons';
 import { copyText, reduced, ui } from '../../../components/kit/kit';
 import { MOCKS } from './mocks';
 import { APP } from '../../../components/kit/strings';
+import { track } from '../../../services/analytics.service';
 
 const T = {
   visit: { ru: 'Открыть сайт', en: 'Visit site' },
@@ -50,6 +51,7 @@ export function renderProject(content: HTMLElement, api: XPAppApi): () => void {
     if (!p) throw new Error('no such project');
     return p;
   };
+  track('project_open', { id: proj().id });
 
   const linkBtn = h('a.xpa-tb.xpa-tb-link', { target: '_blank', rel: 'noopener noreferrer' }, [
     U.glyph('link'),
@@ -151,6 +153,7 @@ export function renderProject(content: HTMLElement, api: XPAppApi): () => void {
     idx = (idx + d + PROJECTS.length) % PROJECTS.length;
     shot = 0;
     U.sound('click');
+    track('project_open', { id: proj().id });
     render();
     scroller.scrollTop = 0;
   }

@@ -7,6 +7,8 @@ import { isAriaKey, isMarkupKey, t, timeChip } from '../i18n';
 import { currentRoute, go } from '../../../services/router.service';
 import { fitPixelBox } from './tags';
 import { byId } from '../../../utils/dom';
+import { track } from '../../../services/analytics.service';
+import type { EventProps } from '../../../services/analytics.service';
 
 export class Panels {
   private readonly sheet = byId('sheet');
@@ -30,7 +32,7 @@ export class Panels {
       this.fitChips();
     });
     byId('open-resume').addEventListener('click', () => {
-      this.openResume();
+      this.openResume('header');
     });
     this.sheetBack.addEventListener('click', () => {
       this.closeResume();
@@ -52,13 +54,15 @@ export class Panels {
     return !this.sheet.hidden;
   }
 
-  openResume(): void {
+  /** Opens the sheet; `from` is what opened it (for the analytics). */
+  openResume(from: EventProps['resume_open']['from']): void {
     const wasOpen = !this.sheet.hidden;
     this.sheet.hidden = false;
     this.sheet.style.opacity = '1';
     this.sheetBack.hidden = false;
     go('resume');
     if (wasOpen) return;
+    track('resume_open', { from });
     this.sheet.scrollTop = 0;
     const active = document.activeElement;
     this.returnFocus = active instanceof HTMLElement && active !== document.body ? active : null;
@@ -98,7 +102,7 @@ export class Panels {
 
   /** Opens or closes the sheet for the route (/resume). */
   showResume(open: boolean): void {
-    if (open) this.openResume();
+    if (open) this.openResume('route');
     else this.closeResume();
   }
 
