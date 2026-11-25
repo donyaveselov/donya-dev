@@ -7,20 +7,23 @@ const KEY = 'muted';
 /** the room's own switch before there was one shared switch: 'off' meant muted */
 const OLD_KEY = 'music';
 
-function load(): { muted: boolean; saved: boolean } {
+/**
+ * The remembered switch: the shared key, else the room's old one. `saved` is false when the visitor never chose (or
+ * storage is blocked: unmuted, for this visit).
+ */
+export function loadMuted(storage: () => Pick<Storage, 'getItem'>): { muted: boolean; saved: boolean } {
   try {
-    const v = localStorage.getItem(KEY);
+    const store = storage();
+    const v = store.getItem(KEY);
     if (v !== null) return { muted: v === '1', saved: true };
-    if (localStorage.getItem(OLD_KEY) === 'off') return { muted: true, saved: true };
+    if (store.getItem(OLD_KEY) === 'off') return { muted: true, saved: true };
   } catch {
-    // storage blocked: unmuted, for this visit
+    // no storage
   }
   return { muted: false, saved: false };
 }
 
-const initial = load();
-let muted = initial.muted;
-let saved = initial.saved;
+let { muted, saved } = loadMuted(() => localStorage);
 const listeners = new Set<(muted: boolean) => void>();
 
 export function isMuted(): boolean {
