@@ -2,8 +2,7 @@
 // blocks flash its title bar.
 import type { XPDialogButton, XPDialogHandle, XPDialogOptions } from '../../shared/types';
 import { Z } from './constants';
-import { clamp, css, h } from './dom';
-import { work } from './geometry';
+import { h } from './dom';
 import { ICON, messageIcon } from './glyphs';
 import { sound, soundByName } from './sound';
 import { dom, S } from './state';
@@ -26,7 +25,6 @@ export function dialog(o: DialogOptions = {}): XPDialogHandle {
     owner,
     noTask: true,
     center: true,
-    autoSize: true,
     w: 420,
     h: 160,
   });
@@ -56,23 +54,7 @@ export function dialog(o: DialogOptions = {}): XPDialogHandle {
   }
   body.appendChild(btns);
   w.body.appendChild(body);
-  // re-measure now that content exists
-  css(w.el, { width: 'auto', height: 'auto' });
-  // offsetWidth/Height round fractional sizes, and a fraction of a pixel short is enough for a scrollbar: add a spare
-  // pixel, and only let the body scroll when the dialog really is taller than the screen
-  const W = work();
-  const fits = w.el.offsetHeight + 1 <= W.h - 16;
-  const ww = Math.min(w.el.offsetWidth + 1, W.w - 16);
-  const hh = Math.min(w.el.offsetHeight + 1, W.h - 16);
-  w.body.style.overflow = fits ? 'hidden' : 'auto';
-  const ref = owner?.state === 'normal' ? owner.rect : { x: 0, y: 0, w: W.w, h: W.h };
-  w.rect = {
-    x: Math.round(clamp(ref.x + (ref.w - ww) / 2, 0, W.w - ww)),
-    y: Math.round(clamp(ref.y + (ref.h - hh) / 2, 0, W.h - hh)),
-    w: ww,
-    h: hh,
-  };
-  w.applyRect();
+  w.fitToContent();
   // modality: the owner (or the whole desktop) becomes inert, clicks on it flash the dialog
   let shield: HTMLDivElement;
   if (owner) {

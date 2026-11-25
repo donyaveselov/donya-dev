@@ -4,7 +4,6 @@ import { openApp } from './apps';
 import { bsod, turnOffDialog } from './session';
 import { clamp, esc, h, qs, storeGet, storeSet } from './dom';
 import { dialog } from './dialog';
-import { isPhone } from './geometry';
 import { ICON, wordmark } from './glyphs';
 import { startSaver } from './screensaver';
 import { sound } from './sound';
@@ -436,6 +435,5 @@ export function sysApp(rawId: string, params?: XPAppParams): Win | null {
   sound('open');
   w.focus();
   growIn(w.el);
-  if (isPhone()) w.state = 'normal';
   return w;
 }
