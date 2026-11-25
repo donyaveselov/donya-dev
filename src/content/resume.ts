@@ -162,8 +162,8 @@ export const RESUME: Resume = {
       to: [2023, 1],
       items: [
         d(
-          'Разработал CRM: шахматка бронирований с drag-and-drop, ролевой доступ (Vue 3, TypeScript)',
-          'Built a CRM: a drag-and-drop booking grid with role-based access (Vue 3, TypeScript)',
+          'Разрабатывал CRM: компонент записи клиентов, графики работы сотрудников, система тем и настроек, аналитические сводки на ApexCharts (Vue 3, TypeScript)',
+          'Built CRM features: a client booking component, staff work schedules, themes and settings, analytics summaries with ApexCharts (Vue 3, TypeScript)',
         ),
       ],
     },
