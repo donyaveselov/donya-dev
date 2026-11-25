@@ -55,10 +55,11 @@ export function dialog(o: DialogOptions = {}): XPDialogHandle {
   body.appendChild(btns);
   w.body.appendChild(body);
   w.fitToContent();
-  // modality: the owner (or the whole desktop) becomes inert, clicks on it flash the dialog
+  // modality: the owner (or, without one, the desktop and every window on it) goes inert, and a click on the shield
+  // over it flashes the dialog
   let shield: HTMLDivElement;
   if (owner) {
-    owner.blockedBy = w;
+    owner.setBlockedBy(w);
     shield = h('div', 'xp-modal-shield');
     owner.el.appendChild(shield);
   } else {
@@ -66,7 +67,7 @@ export function dialog(o: DialogOptions = {}): XPDialogHandle {
     dom().wins.appendChild(shield);
     shield.style.zIndex = String(Z.modalShield);
     S.modalBlock = w;
-    for (const x of S.wins) if (x !== w) x.blockedBy = w;
+    for (const x of S.wins) if (x !== w) x.setBlockedBy(w);
   }
   shield.addEventListener(
     'pointerdown',
@@ -81,10 +82,10 @@ export function dialog(o: DialogOptions = {}): XPDialogHandle {
   w.unblock = () => {
     shield.remove();
     if (owner) {
-      if (owner.blockedBy === w) owner.blockedBy = null;
+      if (owner.blockedBy === w) owner.setBlockedBy(null);
     } else {
       S.modalBlock = null;
-      for (const x of S.wins) if (x.blockedBy === w) x.blockedBy = null;
+      for (const x of S.wins) if (x.blockedBy === w) x.setBlockedBy(null);
     }
   };
   w.hooks.onEsc = () => {

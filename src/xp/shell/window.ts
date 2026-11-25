@@ -267,6 +267,12 @@ export class Win {
     this.applyRect();
   }
 
+  /** A modal dialog blocks this window (or lets it go): its title bar and content go inert meanwhile. */
+  setBlockedBy(dialog: Win | null): void {
+    this.blockedBy = dialog;
+    for (const part of [this.titleEl, this.body]) if (part) part.inert = !!dialog;
+  }
+
   titleText(): string {
     return this.customTitle ?? tr(this.title);
   }
