@@ -3,8 +3,8 @@
 //
 //   node scripts/regress.mjs <url> <outDir> [--only=name,name] [--headed]
 //
-// <url> is the page itself (e.g. http://127.0.0.1:8123/local.html for the old site, http://127.0.0.1:4173/ for a
-// `vite preview`). Compare two captures with scripts/compare.mjs.
+// <url> is the page itself (e.g. http://127.0.0.1:4173/ for a `vite preview`). Compare two captures with
+// scripts/compare.mjs.
 //
 // Determinism:
 //  - Playwright's fake clock is installed and paused BEFORE the page loads, so Date, performance.now, timers and
