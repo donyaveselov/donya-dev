@@ -7,10 +7,9 @@
 // The page inflates it with the browser's DecompressionStream. gltfpack is a pinned devDependency (its output is part
 // of the model's bytes), so `npm ci` is all it needs.
 //
-//   node scripts/pack-room.mjs [path/to/room.glb] [--allow-unpacked]
+//   node scripts/pack-room.mjs [path/to/room.glb]
 //
-// Input: the argument, else $ROOM_GLB, else ../resume/portfolio/blender/room.glb next to this repo.
-// --allow-unpacked: when gltfpack cannot run, still write the model, gzipped only (about twice the size).
+// Input: the argument, else ../resume/portfolio/blender/room.glb next to this repo.
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
@@ -20,9 +19,7 @@ import { gzipSync, constants } from 'node:zlib';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const DEFAULT_GLB = resolve(ROOT, '..', 'resume', 'portfolio', 'blender', 'room.glb');
-const args = process.argv.slice(2);
-const ALLOW_UNPACKED = args.includes('--allow-unpacked');
-const input = args.find((a) => !a.startsWith('--')) ?? process.env.ROOM_GLB;
+const input = process.argv[2];
 
 /**
  * @param {string} message
@@ -38,7 +35,7 @@ if (!existsSync(glb)) {
   fail(
     input
       ? `no such file: ${glb}`
-      : `no Blender export at ${glb}\nusage: node scripts/pack-room.mjs <path/to/room.glb> [--allow-unpacked]   (or set ROOM_GLB)`,
+      : `no Blender export at ${glb}\nusage: node scripts/pack-room.mjs <path/to/room.glb>`,
   );
 }
 
@@ -46,8 +43,6 @@ const work = join(ROOT, '.work');
 mkdirSync(work, { recursive: true });
 const packed = join(work, 'room-packed.glb');
 
-let data = readFileSync(glb);
-let how = 'quantized+gzip';
 try {
   // through its cli.js with this Node: no shell, no PATH, the same on every OS
   const cli = fileURLToPath(import.meta.resolve('gltfpack/cli.js'));
@@ -55,20 +50,15 @@ try {
     stdio: ['ignore', 'pipe', 'pipe'],
     timeout: 300_000,
   });
-  data = readFileSync(packed);
 } catch (e) {
   const why = e instanceof Error ? (e.message.split('\n')[0] ?? e.message) : String(e);
-  if (!ALLOW_UNPACKED) {
-    fail(
-      `gltfpack did not run (${why}).\nRun npm ci, or pass --allow-unpacked to write a gzip-only model (larger, not quantized).`,
-    );
-  }
-  how = `gzip only (gltfpack unavailable: ${why})`;
+  fail(`gltfpack did not run (${why}).\nRun npm ci.`);
 }
+const data = readFileSync(packed);
 const gz = gzipSync(data, { level: constants.Z_BEST_COMPRESSION });
 const out = join(ROOT, 'public', 'room.json');
 writeFileSync(out, JSON.stringify({ gz: gz.toString('base64') }).replace('{"gz":"', '{"gz": "'));
 const v = createHash('md5').update(readFileSync(out)).digest('hex').slice(0, 10);
 console.log(
-  `model: ${String(statSync(glb).size >> 10)} KB raw -> ${String(gz.length >> 10)} KB ${how}; room.json ${String(statSync(out).size >> 10)} KB, v=${v}`,
+  `model: ${String(statSync(glb).size >> 10)} KB raw -> ${String(gz.length >> 10)} KB quantized+gzip; room.json ${String(statSync(out).size >> 10)} KB, v=${v}`,
 );

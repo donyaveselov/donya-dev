@@ -222,23 +222,7 @@ async function shot(page, name) {
   });
   await sleep(150);
   await page.screenshot({ path: join(OUT, file), animations: 'disabled', caret: 'hide' });
-  // a few layout numbers next to each picture: a moved chip shows up here before anyone squints at a diff
-  const layout = await page.evaluate(() =>
-    Object.fromEntries(
-      ['time', 'open-resume', 'lang-ru', 'lang-en']
-        .map((id) => {
-          const r = document.getElementById(id)?.getBoundingClientRect();
-          return [id, r ? [r.x, r.y, r.width, r.height].map((v) => +v.toFixed(3)) : null];
-        })
-        .concat([
-          [
-            'labels',
-            [...document.querySelectorAll('.tag, .pin')].map((e) => `${e.textContent}@${e.style.left},${e.style.top}`),
-          ],
-        ]),
-    ),
-  );
-  states.push({ name, file, viewport: page.viewportSize(), layout });
+  states.push({ name, file });
   process.stdout.write(`  ${file}\n`);
 }
 
@@ -449,7 +433,7 @@ async function mobileSession(browser) {
 
 const browser = await chromium.launch({
   executablePath: CHROME,
-  args: ['--use-gl=angle', ...(process.env.REGRESS_CHROME_ARGS ? process.env.REGRESS_CHROME_ARGS.split(' ') : [])],
+  args: ['--use-gl=angle'],
   headless: !flags.headed,
 });
 const t0 = Date.now();

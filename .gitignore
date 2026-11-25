@@ -1,10 +1,6 @@
 node_modules/
 dist/
-dist-artifact/
 .work/
 .DS_Store
 *.log
-# renders and exports from lab/ sketches
-lab/**/out/
-lab/**/*.wav
 resume-pdf/
