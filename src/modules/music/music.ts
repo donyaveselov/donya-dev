@@ -1,29 +1,25 @@
 // Background music: one lofi loop ("Lofi Hip Hop Loop" by omfgdude, CC0: public/music/CREDITS.txt), on by default.
 // The speaker button flips the page's one sound switch (src/store/sound.ts), which the desktop's tray Mute flips
-// too; the music follows the switch. Browsers start audio only from a gesture, so it begins on the visitor's first
-// click, tap or key and fades in. The file (1.4 MB) is fetched only then, not with the page, and looped gaplessly
-// with Web Audio: Ogg Vorbis, or MP3 for older Safari, with the encoder's silence cut off both ends. A hidden tab
-// pauses it; the tray's volume slider turns it down.
+// too; the music follows the switch. The tray's volume slider turns it down; a hidden tab pauses it.
+//
+// Browsers start audio only from a gesture, so it begins on the visitor's first click, tap or key and fades in. It is
+// streamed (an <audio> element routed through Web Audio for the fades): it plays as soon as the first kilobytes are
+// in, instead of after the whole file is downloaded and decoded. Ogg Vorbis, or MP3 where Ogg is not played (older
+// Safari). Nothing is fetched before that first gesture.
 import { isMuted, onMutedChange, setMuted } from '../../store/sound';
 
 const LEVEL = 0.5;
 const FADE_IN = 2;
-
-/** Where the sound really starts and ends in a decoded buffer (skips an encoder's leading and trailing silence). */
-export function audibleSpan(data: Float32Array, threshold = 1e-3): [number, number] {
-  let a = 0;
-  while (a < data.length && Math.abs(data[a] ?? 0) < threshold) a++;
-  let b = data.length - 1;
-  while (b > a && Math.abs(data[b] ?? 0) < threshold) b--;
-  return [a, b + 1];
-}
+/** the gestures that let a page start audio: a mouse press, the end of a touch, a key */
+const GESTURES = ['pointerdown', 'pointerup', 'keydown'] as const;
 
 export class Music {
   /** the desktop tray's volume, 0..1 */
   private volume = 1;
   private ctx: AudioContext | null = null;
   private gain: GainNode | null = null;
-  private file: Promise<ArrayBuffer> | null = null;
+  private el: HTMLAudioElement | null = null;
+  /** a gesture started the music (until then every gesture tries) */
   private started = false;
 
   constructor(private readonly button: HTMLButtonElement) {
@@ -34,33 +30,21 @@ export class Music {
       this.changed();
     });
     this.paint();
-    // the first gesture anywhere starts it (the button's own click included: then it is a "turn on")
-    const first = (): void => {
-      window.removeEventListener('pointerdown', first, true);
-      window.removeEventListener('keydown', first, true);
-      if (!isMuted()) void this.start();
+    const tryStart = (): void => {
+      if (!isMuted()) this.start();
     };
-    window.addEventListener('pointerdown', first, true);
-    window.addEventListener('keydown', first, true);
+    for (const g of GESTURES) window.addEventListener(g, tryStart, true);
+    this.stopListening = () => {
+      for (const g of GESTURES) window.removeEventListener(g, tryStart, true);
+    };
     document.addEventListener('visibilitychange', () => {
-      if (!this.ctx) return;
-      if (document.hidden) void this.ctx.suspend();
-      else if (this.audible) void this.ctx.resume();
+      if (!this.el) return;
+      if (document.hidden) this.el.pause();
+      else if (this.audible) void this.el.play().catch(() => undefined);
     });
   }
 
-  /** The file, fetched once (on the first gesture): Ogg Vorbis where the browser plays it, else the MP3. */
-  private prefetch(): void {
-    if (isMuted() || this.file) return;
-    const ogg = new Audio().canPlayType('audio/ogg; codecs="vorbis"') !== '';
-    this.file = fetch(ogg ? 'music/lofi-loop.ogg' : 'music/lofi-loop.mp3').then((r) => {
-      if (!r.ok) throw new Error(`music: HTTP ${String(r.status)}`);
-      return r.arrayBuffer();
-    });
-    this.file.catch(() => {
-      this.file = null; // a later start tries again
-    });
-  }
+  private stopListening: () => void = () => undefined;
 
   /** The desktop tray's volume slider moved. */
   follow(volume: number): void {
@@ -75,9 +59,15 @@ export class Music {
   /** The sound switch flipped (the button here or the desktop's tray). */
   private changed(): void {
     this.paint();
-    if (this.audible && !this.started) void this.start();
-    else this.level(0.2);
-    if (this.audible) void this.ctx?.resume();
+    if (!this.audible) {
+      this.level(0.2);
+      return;
+    }
+    if (this.el) {
+      void this.ctx?.resume();
+      void this.el.play().catch(() => undefined);
+      this.level(0.2);
+    } else this.start(); // the switch's own click is a gesture
   }
 
   private paint(): void {
@@ -85,7 +75,7 @@ export class Music {
     this.button.classList.toggle('music--off', !this.audible);
   }
 
-  /** Moves the volume to where the button and the tray put it. */
+  /** Moves the volume to where the button and the tray put it (and pauses the stream once a mute has faded). */
   private level(time: number): void {
     const c = this.ctx;
     const g = this.gain;
@@ -93,40 +83,44 @@ export class Music {
     const to = this.audible ? LEVEL * this.volume : 0;
     g.gain.cancelScheduledValues(c.currentTime);
     g.gain.setTargetAtTime(to, c.currentTime, time / 3);
+    if (to === 0) {
+      const el = this.el;
+      setTimeout(() => {
+        if (!this.audible) el?.pause();
+      }, time * 1000);
+    }
   }
 
-  private async start(): Promise<void> {
+  /** Called from inside a gesture: sets up the stream once, and plays. */
+  private start(): void {
     if (this.started) return;
-    this.started = true;
-    let c: AudioContext | null = null;
-    try {
-      c = new AudioContext();
-      this.ctx = c;
-      void c.resume();
-      this.prefetch();
-      const file = await (this.file ?? Promise.reject(new Error('music: no file')));
-      const buf = await c.decodeAudioData(file.slice(0));
-      const [a, b] = audibleSpan(buf.getChannelData(0));
-      const src = c.createBufferSource();
-      src.buffer = buf;
-      src.loop = true;
-      src.loopStart = a / buf.sampleRate;
-      src.loopEnd = b / buf.sampleRate;
+    if (!this.el) {
+      const el = new Audio();
+      el.loop = true;
+      el.preload = 'auto';
+      el.src = el.canPlayType('audio/ogg; codecs="vorbis"') ? 'music/lofi-loop.ogg' : 'music/lofi-loop.mp3';
+      const c = new AudioContext();
       const g = c.createGain();
       g.gain.value = 0;
-      src.connect(g).connect(c.destination);
+      c.createMediaElementSource(el).connect(g).connect(c.destination);
+      this.el = el;
+      this.ctx = c;
       this.gain = g;
-      src.start(c.currentTime + 0.05, src.loopStart);
-      this.level(FADE_IN);
-      if (document.hidden) void c.suspend();
-    } catch (e) {
-      console.warn(e); // music is a nicety: no music, no fuss
-      // the next start (the switch flipped again) makes a fresh context, so this one is closed: a browser allows only
-      // a few open at once
-      this.started = false;
-      this.ctx = null;
-      this.gain = null;
-      void c?.close().catch(() => undefined);
     }
+    const el = this.el;
+    void this.ctx?.resume();
+    this.started = true;
+    el.play().then(
+      () => {
+        this.stopListening();
+        this.level(FADE_IN);
+        if (document.hidden) el.pause();
+      },
+      (e: unknown) => {
+        // not a gesture the browser accepts (a touch's start), or the file failed: the next gesture tries again
+        this.started = false;
+        if (!(e instanceof DOMException && e.name === 'NotAllowedError')) console.warn(e);
+      },
+    );
   }
 }
