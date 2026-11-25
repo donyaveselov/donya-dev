@@ -180,9 +180,7 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
   }
 
   term.banner();
-  const cmd = api.params?.cmd;
-  if (typeof cmd === 'string') exec(cmd);
-  else setPrompt();
+  setPrompt();
   U.bind(() => {
     api.win.setTitle(t(T.title));
   });

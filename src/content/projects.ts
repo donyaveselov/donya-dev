@@ -1,5 +1,5 @@
 // The projects on the desktop (the Projects folder, their documents, the terminal and the browser). Adding a project
-// is adding one object here; each shot's kind names a picture in apps/mocks (an unknown kind gets a plain frame).
+// is adding one object here; each shot's kind names a picture in apps/mocks (content.test.ts checks it has one).
 import type { Bilingual, Lang } from '../types';
 
 export interface Shot {

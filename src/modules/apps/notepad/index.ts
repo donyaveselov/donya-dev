@@ -4,7 +4,6 @@ import type { XPAppApi } from '../../../types';
 import { DESKTOP_README } from '../../../content/readme';
 import { registerApp } from '../../desktop/apps';
 import { ICONS } from '../../../components/kit/icons';
-import { lineCol } from './notepad-text';
 import { copyText, pad, phuketNow, ui } from '../../../components/kit/kit';
 import { d } from '../../../content/text';
 import { APP } from '../../../components/kit/strings';
@@ -46,8 +45,8 @@ function renderNotepad(content: HTMLElement, api: XPAppApi): () => void {
     api.win.setTitle(`${modified ? '*' : ''}${name} — ${t(T.notepad)}`);
   };
   const pos = (): void => {
-    const [ln, col] = lineCol(ta.value, ta.selectionStart);
-    st.set(1, `${t(T.ln)}${String(ln)}${t(T.col)}${String(col)}`);
+    const before = ta.value.slice(0, ta.selectionStart).split('\n');
+    st.set(1, `${t(T.ln)}${String(before.length)}${t(T.col)}${String((before.at(-1) ?? '').length + 1)}`);
   };
   const changed = (): void => {
     if (!modified) {

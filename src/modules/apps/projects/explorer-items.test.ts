@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { tr, type Text } from '../../../i18n/i18n';
 import { PROJECTS } from '../../../content/projects';
-import { bare, listItems } from './explorer-items';
+import { bare } from '../browser/browser-url';
+import { listItems } from './explorer-items';
 
 const en = (text: Text): string => tr(text, 'en');
 const ru = (text: Text): string => tr(text, 'ru');
@@ -52,10 +53,5 @@ describe('the My Projects folder', () => {
 
   it('is empty for a folder that does not exist', () => {
     expect(listItems(['nope'], en)).toEqual([]);
-  });
-
-  it('drops the protocol of a link', () => {
-    expect(bare('https://wax.donya.dev')).toBe('wax.donya.dev');
-    expect(bare('http://x.y/z')).toBe('x.y/z');
   });
 });

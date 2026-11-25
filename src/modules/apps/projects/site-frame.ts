@@ -4,6 +4,7 @@
 import { fill } from '../../../i18n/i18n';
 import type { Bilingual } from '../../../types';
 import type { Builders } from '../../../components/kit/kit';
+import { host } from '../browser/browser-url';
 
 const T = {
   opening: { ru: 'Открывается ', en: 'Opening ' },
@@ -28,8 +29,8 @@ export interface SiteFrameOptions {
 export function siteFrame(K: Builders, o: SiteFrameOptions): HTMLElement {
   const { h } = K;
   const probe = o.probe ?? o.src;
-  const host = probe.replace(/^https?:\/\//, '').replace(/\/.*$/, '');
-  const wait = h('div.xpa-site-msg', [T.opening, `${host}…`]);
+  const site = host(probe);
+  const wait = h('div.xpa-site-msg', [T.opening, `${site}…`]);
   let alive = true;
   K.onCleanup(() => {
     alive = false;
@@ -38,14 +39,14 @@ export function siteFrame(K: Builders, o: SiteFrameOptions): HTMLElement {
     () => {
       if (!alive) return;
       wait.replaceWith(
-        h('iframe.xpa-site-frame', { src: o.src, title: host, allow: 'fullscreen', referrerpolicy: 'no-referrer' }),
+        h('iframe.xpa-site-frame', { src: o.src, title: site, allow: 'fullscreen', referrerpolicy: 'no-referrer' }),
       );
     },
     () => {
       if (!alive) return;
       wait.replaceWith(
         h('div.xpa-site-msg', [
-          h('b', fill(T.down, host)),
+          h('b', fill(T.down, site)),
           h('p', T.downWhy),
           o.overview ? K.button(T.openOverview, o.overview, { primary: true }) : null,
         ]),

@@ -210,7 +210,6 @@
 .xp .xpa .xpa-tp-details b { display: block; }
 
 /* generic big info header used by dialogs */
-.xp .xpa .xpa-row { display: flex; align-items: center; gap: 8px; }
 .xp .xpa .xpa-muted { color: var(--xpa-muted); }
 .xp .xpa .xpa-grow { flex: 1; min-width: 0; }
 
@@ -303,21 +302,10 @@
 .xp .xpa-projdoc.xpa-narrow .xpa-pd-page { padding: 14px 14px 18px; }
 .xp .xpa-projdoc.xpa-narrow .xpa-pd-thumb { width: 64px; }
 .xp .xpa-projdoc.xpa-narrow .xpa-tb-l { display: none; }
-/* mock animations */
-.xp .xpa .xpa-mock-scan { animation: xpa-scan 2.4s ease-in-out infinite alternate; }
-@keyframes xpa-scan { from { transform: translateY(0); } to { transform: translateY(58px); } }
-.xp .xpa .xpa-mock-bar { animation: xpa-bar 6s linear infinite; transform-origin: 138px 0; }
-@keyframes xpa-bar { from { transform: scaleX(.35); } to { transform: scaleX(1.6); } }
-.xp .xpa .xpa-mock-drift { animation: xpa-drift 9s ease-in-out infinite alternate; }
-@keyframes xpa-drift { from { transform: translate(0, 0); } to { transform: translate(14px, 6px); } }
 
 /* ================================================================ Resume (DocPad) */
 .xp .xpa-resume .xpa-res-font { width: 110px; height: 21px; padding: 0 2px; }
 .xp .xpa-resume .xpa-res-zoom { width: 66px; height: 21px; padding: 0 2px; margin-left: 3px; }
-.xp .xpa-resume .xpa-fmt-l { width: 14px; text-align: center; font-family: "Times New Roman", serif; font-size: 14px; }
-.xp .xpa-resume .xpa-fmt-b .xpa-fmt-l { font-weight: bold; }
-.xp .xpa-resume .xpa-fmt-i .xpa-fmt-l { font-style: italic; }
-.xp .xpa-resume .xpa-fmt-u .xpa-fmt-l { text-decoration: underline; }
 .xp .xpa-resume .xpa-res-copy { margin-left: 4px; }
 .xp .xpa-resume .xpa-ruler { flex: none; height: 18px; padding: 2px 14px; background: var(--xpa-face); border-bottom: 1px solid var(--xpa-line); }
 .xp .xpa-resume .xpa-ruler-in {
@@ -625,7 +613,7 @@
 .xp .xpa-calc .xpa-calc-top { display: grid; grid-template-columns: 34px 2fr 1fr 1fr; gap: 5px; flex: none; }
 .xp .xpa-calc .xpa-calc-mem { height: 26px; text-align: center; line-height: 24px; font-weight: bold; }
 .xp .xpa-calc .xpa-calc-pad { flex: 1; display: grid; grid-template-columns: repeat(6, 1fr); grid-auto-rows: 28px; align-content: start; gap: 5px; }
-.xp.xp--phone .xpa-calc .xpa-calc-pad, .xp .xpa-calc.xpa-phonecalc .xpa-calc-pad { grid-auto-rows: 44px; }
+.xp.xp--phone .xpa-calc .xpa-calc-pad { grid-auto-rows: 44px; }
 .xp .xpa-calc .xpa-calc-pad > :nth-child(6n+1) { margin-right: 6px; }
 .xp .xpa-calc .xpa-calc-k { min-width: 0; padding: 0; border: 1px solid #003c74; border-radius: 3px; background: linear-gradient(#fff, #ecebe6 60%, #d6d0c5); font-size: 12px; color: #0000c0; cursor: default; }
 .xp .xpa-calc .xpa-calc-k.red { color: #c00000; }

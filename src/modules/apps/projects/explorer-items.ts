@@ -6,6 +6,7 @@ import { findProject, type Project, PROJECTS } from '../../../content/projects';
 import { PROJECTS_README } from '../../../content/readme';
 import { counted } from '../../../content/text';
 import { APP } from '../../../components/kit/strings';
+import { bare } from '../browser/browser-url';
 
 const T = {
   stack: { ru: 'стек', en: 'stack' },
@@ -17,8 +18,6 @@ const T = {
   stackDesc: { ru: 'Технологии проекта', en: 'Technologies used' },
   shortcut: { ru: 'Интернет-ярлык', en: 'Internet Shortcut' },
 } as const satisfies Record<string, Bilingual>;
-
-export const bare = (url: string): string => url.replace(/^https?:\/\//, '');
 
 /** stack.txt of a project, in one language. */
 function stackText(p: Project, lang: Lang): string {

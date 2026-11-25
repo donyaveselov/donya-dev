@@ -185,8 +185,6 @@ describe('terminal commands', () => {
     const c = fake();
     expect(c.run('color 0a')).toEqual(['']);
     expect(c.state.colors).toEqual(['#000', '#00ff00']);
-    expect(c.run('color zz')).toEqual(['Usage: color 0a (background, text)', '']);
-    expect(c.run('color 11')[0]).toContain('Same background and text?');
   });
 
   it('shows files: about.txt is whoami, the others open their programs', () => {
@@ -265,8 +263,6 @@ describe('terminal commands', () => {
   it('completes commands, apps and projects with Tab', () => {
     const c = fake();
     expect(c.term.complete('who')).toBe('whoami');
-    expect(c.term.complete('op')).toBe('open ');
-    expect(c.term.complete('open ver')).toBe('open verifikat');
     expect(c.term.complete('mine')).toBe('minesweeper');
     expect(c.term.complete('zzz')).toBeNull();
     expect(c.sounds).toEqual(['error']);

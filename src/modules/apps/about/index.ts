@@ -148,14 +148,13 @@ const TABS: readonly { id: TabId; label: Bilingual }[] = [
   { id: 'perf', label: T.perf },
   { id: 'remote', label: T.remote },
 ];
-const isTab = (v: unknown): v is TabId => TABS.some((x) => x.id === v);
 
 function render(content: HTMLElement, api: XPAppApi): () => void {
   const U = ui(api);
   const { h, t } = U;
   const root = U.root(content, 'xpa-about', 400);
   const openedAt = Date.now();
-  let cur: TabId = isTab(api.params?.tab) ? api.params.tab : 'general';
+  let cur: TabId = 'general';
   const tabs = h('div.xpa-tabs', { role: 'tablist' });
   const panel = h('div.xpa-tabpanel', { role: 'tabpanel', tabindex: '0' });
   let dirty = false;
