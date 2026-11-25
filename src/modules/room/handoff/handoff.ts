@@ -1,8 +1,9 @@
 /* Sitting down at a monitor and standing up again, with no overlay tricks.
-   Sitting down: the camera flies to the monitor and stops head-on, zoomed so that the glass covers the window. On the
-   way the glass shows a painted copy of the real desktop (desk-snapshot.ts): the status picture (terminal, game) folds
-   into its taskbar, or the screen saver fades out over it. The real desktop is already open underneath, invisible, in
-   exactly that state, so showing it when the camera arrives changes no pixel.
+   Sitting down: the camera flies to the monitor and stops head-on, zoomed so that the glass covers the window (on a
+   phone, its left part covers it). On the way the glass shows a painted copy of the real desktop (desk-snapshot.ts):
+   the status picture (terminal, game) folds into its taskbar, or the screen saver fades out over it. The real desktop
+   is already open underneath, invisible, in exactly that state, so showing it when the camera arrives changes no
+   pixel.
    Standing up plays the same backwards. */
 import { Vector3 } from 'three';
 import type { CanvasTexture, Material, Mesh, MeshBasicMaterial, Object3D, OrthographicCamera, Texture } from 'three';
@@ -12,7 +13,7 @@ import type { RoomDesktop, RoomMountOptions, RoomOpenOptions } from '../../../se
 import type { GameKind, Status } from '../../../types';
 import { CAMERA_DISTANCE } from '../scene/camera';
 import { deskSnapshot, paintDesk, taskButton } from './desk-snapshot';
-import type { DeskSnapshot } from './desk-snapshot';
+import type { DeskSnapshot, GlassAlign } from './desk-snapshot';
 import { nextPhase } from './handoff-phase';
 import type { Phase } from './handoff-phase';
 import { ramp } from '../scene/lighting';
@@ -322,6 +323,13 @@ export class HandOff {
     const f = screenFrame(mesh, camera);
     const vh = camera.top - camera.bottom;
     const vw = camera.right - camera.left;
+    // a portrait window (a phone) sees a strip of the glass as tall as the glass. The strip in its middle would show a
+    // narrow column of the desktop squeezed between the rest of the monitor; the camera flies to the strip at its left
+    // edge instead, where the icons, the Start button and the windows are, and the rest of the glass is painted as more
+    // of the same desktop. Wider windows keep the middle.
+    const align: GlassAlign = vw < vh ? 'left' : 'centre';
+    const aim = f.c.clone();
+    if (align === 'left') aim.addScaledVector(f.across, (Math.min(f.w, (f.h * vw) / vh) - f.w) / 2);
     const from: CamPose = { p: camera.position.clone(), t: controls.target.clone(), z: camera.zoom };
     this.phase = flying;
     const haloBase = monitors.list.map((m) => m.halo.opacity);
@@ -370,7 +378,7 @@ export class HandOff {
         ht.needsUpdate = true;
         return;
       }
-      const L = paintDesk(hc, snap, A);
+      const L = paintDesk(hc, snap, A, align);
       if (snap.task && !away) {
         const tb = L.toGlass(snap.task);
         if (m < 1) {
@@ -419,7 +427,7 @@ export class HandOff {
     this.seat = { from, hand };
     const zoomTo = Math.max(vh / f.h, vw / f.w); // cover, not contain: the glass fills the window, nothing around it
     this.tweenCam(
-      { p: f.c.clone().addScaledVector(f.n, CAMERA_DISTANCE), t: f.c.clone(), z: zoomTo },
+      { p: aim.clone().addScaledVector(f.n, CAMERA_DISTANCE), t: aim, z: zoomTo },
       this.flightSeconds(FLIGHT_IN_S),
       () => {
         clearInterval(snapT);

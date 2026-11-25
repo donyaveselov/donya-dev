@@ -14,6 +14,8 @@ const SIDES: readonly Side[] = ['L', 'R'];
 export interface ScreenFrame {
   c: Vector3;
   n: Vector3;
+  /** along the glass, to the right as seen from the front (level in the world) */
+  across: Vector3;
   w: number;
   h: number;
 }
@@ -39,7 +41,7 @@ export function screenFrame(mesh: Mesh, camera: Camera): ScreenFrame {
     w = Math.max(w, Math.abs(d.dot(across)) * 2);
     h = Math.max(h, Math.abs(d.dot(up)) * 2);
   }
-  return { c, n, w, h };
+  return { c, n, across, w, h };
 }
 
 export interface Monitor {
