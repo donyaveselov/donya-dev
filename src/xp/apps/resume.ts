@@ -2,7 +2,7 @@
 import type { Text } from '../../shared/i18n';
 import type { Bilingual, XPAppApi } from '../../shared/types';
 import { CONTACTS, PERSON } from '../content/profile';
-import { RESUME } from '../content/resume';
+import { jobPeriod, RESUME } from '../content/resume';
 import { registerApp } from '../shell/apps';
 import { G16, ICONS } from './icons';
 import { copyText, reduced, ui } from './kit';
@@ -298,7 +298,7 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
                   h('a', { href: `https://${j.link}`, target: '_blank', rel: 'noopener noreferrer' }, j.link),
                 ])
               : null,
-            h('span.xpa-res-when', t(j.when)),
+            h('span.xpa-res-when', t(jobPeriod(j))),
           ]),
           j.stack ? h('div.xpa-res-stack', j.stack) : null,
           h(

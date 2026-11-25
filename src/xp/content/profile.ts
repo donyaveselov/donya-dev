@@ -7,6 +7,9 @@ export const PERSON = {
   city: { ru: 'Пхукет, Таиланд', en: 'Phuket, Thailand' },
 } as const satisfies Record<string, Bilingual>;
 
+/** The positioning line next to the role: "Vue 3 · Python / Django" (or joined with " + "). */
+export const HEADLINE = ['Vue 3', 'Python / Django'] as const;
+
 /** The desktop's own OS. */
 export const OS = {
   name: 'Windows XD',
