@@ -1,5 +1,5 @@
-// Types shared by the room and the desktop. The legacy modules still talk through these window globals (see
-// xp/CONTRACT.md in the old site); a port removes its global once nothing reads it any more.
+// Types shared by the room and the desktop: the languages and statuses, and the desktop's public API (XPDesktopApi),
+// which the room gets as a module export (see desktop.ts).
 
 export type Lang = 'ru' | 'en';
 export type Status = 'work' | 'play' | 'sleep' | 'outside';
@@ -178,12 +178,7 @@ export interface XPDesktopApi {
 
 declare global {
   interface Window {
+    /** Debug handle for the regression harness; set only in debug mode (see debug.ts). */
     XPDesktop?: XPDesktopApi;
-    /** Windows XP icon bitmaps as data: URLs, by name. */
-    XP_ICO?: Record<string, string>;
-    /** The default (Bliss) wallpaper as a data: URL. */
-    XP_WALL?: string;
-    /** Debug handle the room exposes for screenshots and the regression harness. */
-    __psx?: Record<string, unknown>;
   }
 }

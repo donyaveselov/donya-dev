@@ -1,4 +1,4 @@
-// The room's entry: main.ts imports it last, after the desktop shell it opens inside the monitors.
+// The room's entry (imported by main.ts): starts the page.
 import { startRoom } from './room';
 
 startRoom();

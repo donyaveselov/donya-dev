@@ -9,7 +9,9 @@ import { getDesktop } from '../shared/desktop';
 import type { RoomDesktop, RoomMountOptions } from '../shared/desktop';
 import type { Lang, Status } from '../shared/types';
 import { GAME_NAMES, gameKind } from './clock';
-import { debugWanted, makeDebugPanel } from './debug-panel';
+import { debugWanted } from '../shared/debug';
+import type { DebugHost } from './debug-panel';
+import type { RoomDebugHandle } from './debug-handle';
 import { loadDesktop } from './desktop-loader';
 import { makeFrames } from './frames';
 import type { Frame } from './frames';
@@ -609,8 +611,8 @@ function openFlatDesktop(then?: (desk: RoomDesktop) => void): void {
   });
 }
 
-function mountDebug(): void {
-  makeDebugPanel({
+function debugHost(): DebugHost {
+  return {
     slow,
     ps1: psx.on,
     setSlow: (k) => {
@@ -641,7 +643,26 @@ function mountDebug(): void {
       manualHour = hour;
       preview(live.forced, hour);
     },
-  });
+  };
+}
+
+function debugHandle(gl: WebGLRenderer, r: Built): RoomDebugHandle {
+  return {
+    psx,
+    scene: r.scene,
+    renderer: gl,
+    camera: r.camera,
+    controls: r.controls,
+    sitDown: (which) => {
+      r.handoff.sitDown(which);
+    },
+    standUp: (how) => {
+      r.handoff.standUp(how);
+    },
+    strike: () => {
+      r.weather.strike();
+    },
+  };
 }
 
 export function startRoom(): void {
@@ -660,7 +681,8 @@ export function startRoom(): void {
     route();
     if (currentHash() === 'projects') openProjects(); // a link to #projects followed on the page (the boot handles a load)
   });
-  if (debugWanted()) mountDebug();
+  // the debug panel is a chunk of its own: visitors never download it
+  if (debugWanted()) void import('./debug-panel').then((m) => m.makeDebugPanel(debugHost()));
 
   // the weather goes first, in parallel with the room; the last answer is remembered for a repeat visit
   restoreWeather(live.wx, Date.now());
@@ -683,22 +705,7 @@ export function startRoom(): void {
         byId('meter').style.width = '100%';
         const r = build(gl, gltf);
         room = r;
-        window.__psx = {
-          psx,
-          scene: r.scene,
-          renderer: gl,
-          camera: r.camera,
-          controls: r.controls,
-          sitDown: (which?: Side) => {
-            r.handoff.sitDown(which);
-          },
-          standUp: (how?: string) => {
-            r.handoff.standUp(how);
-          },
-          strike: () => {
-            r.weather.strike();
-          },
-        }; // debug handle for screenshots and the regression harness
+        if (debugWanted()) window.__psx = debugHandle(gl, r);
         layout();
         applyTime();
         byId('loading').style.opacity = '0';

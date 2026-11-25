@@ -1,7 +1,6 @@
-// The debug panel: pick what I am doing, the time of day, the weather, the fly-in speed, the PS1 look. Visitors never
-// see it: it is on the page only with ?debug in the address, or after #debug (remembered for the tab, since the hash
-// routes replace the hash). The regression harness adds ?debug, finds the rows by their Russian labels and the buttons
-// by their text.
+// The debug panel: pick what I am doing, the time of day, the weather, the fly-in speed, the PS1 look. It is loaded
+// only in debug mode (src/shared/debug.ts), so visitors download neither this code nor its styles. Every button
+// carries data-debug="row:choice" (time:sunset, state:dota, ...) for scripts; the visible labels are in Russian.
 import type { GameKind, Status } from '../shared/types';
 import type { WeatherKind } from './weather';
 import './debug-panel.css';
@@ -17,11 +16,15 @@ export interface DebugHost {
   ps1: boolean;
 }
 
+/** One choice of a row: its data-debug id, its label, the value a click passes on. */
+type Option<T> = readonly [id: string, label: string, value: T];
+
 /** One row: a label and buttons, the pressed one marked; a click presses it and passes its value on. */
 function row<T>(
   box: HTMLElement,
+  id: string,
   label: string,
-  options: readonly (readonly [string, T])[],
+  options: readonly Option<T>[],
   initial: T,
   pick: (v: T) => void,
 ): void {
@@ -29,10 +32,11 @@ function row<T>(
   const lab = document.createElement('b');
   lab.textContent = label;
   line.appendChild(lab);
-  for (const [text, value] of options) {
+  for (const [choice, text, value] of options) {
     const b = document.createElement('button');
     b.type = 'button';
     b.textContent = text;
+    b.dataset.debug = `${id}:${choice}`;
     b.setAttribute('aria-pressed', String(value === initial));
     b.addEventListener('click', () => {
       line.querySelectorAll('button').forEach((x) => {
@@ -45,19 +49,6 @@ function row<T>(
   box.appendChild(line);
 }
 
-const DEBUG_KEY = 'donya-debug';
-
-/** Whether the panel is wanted on this page: ?debug, or #debug now or earlier in this tab. */
-export function debugWanted(): boolean {
-  if (/[?&]debug\b/.test(location.search)) return true;
-  try {
-    if (location.hash === '#debug') sessionStorage.setItem(DEBUG_KEY, '1');
-    return sessionStorage.getItem(DEBUG_KEY) === '1';
-  } catch {
-    return location.hash === '#debug'; // storage blocked (a sandboxed frame): the hash alone
-  }
-}
-
 type StateChoice = readonly [Status, GameKind | null] | null;
 
 export function makeDebugPanel(host: DebugHost): HTMLElement {
@@ -65,15 +56,16 @@ export function makeDebugPanel(host: DebugHost): HTMLElement {
   box.className = 'dbg';
   row<StateChoice>(
     box,
+    'state',
     'debug',
     [
-      ['auto', null],
-      ['работаю', ['work', null]],
-      ['Dota', ['play', 'dota']],
-      ['CS', ['play', 'cs']],
-      ['другая игра', ['play', 'other']],
-      ['сплю', ['sleep', null]],
-      ['на улице', ['outside', null]],
+      ['auto', 'auto', null],
+      ['work', 'работаю', ['work', null]],
+      ['dota', 'Dota', ['play', 'dota']],
+      ['cs', 'CS', ['play', 'cs']],
+      ['other', 'другая игра', ['play', 'other']],
+      ['sleep', 'сплю', ['sleep', null]],
+      ['outside', 'на улице', ['outside', null]],
     ],
     null,
     (v) => {
@@ -82,12 +74,13 @@ export function makeDebugPanel(host: DebugHost): HTMLElement {
   );
   row<number | null>(
     box,
+    'time',
     'время',
     [
-      ['auto', null],
-      ['день', 13],
-      ['закат', 18.2],
-      ['ночь', 1.5],
+      ['auto', 'auto', null],
+      ['day', 'день', 13],
+      ['sunset', 'закат', 18.2],
+      ['night', 'ночь', 1.5],
     ],
     null,
     (v) => {
@@ -96,13 +89,14 @@ export function makeDebugPanel(host: DebugHost): HTMLElement {
   );
   row<WeatherKind | null>(
     box,
+    'weather',
     'погода',
     [
-      ['auto', null],
-      ['ясно', 'clear'],
-      ['облачно', 'cloud'],
-      ['дождь', 'rain'],
-      ['гроза', 'storm'],
+      ['auto', 'auto', null],
+      ['clear', 'ясно', 'clear'],
+      ['cloud', 'облачно', 'cloud'],
+      ['rain', 'дождь', 'rain'],
+      ['storm', 'гроза', 'storm'],
     ],
     null,
     (v) => {
@@ -111,10 +105,11 @@ export function makeDebugPanel(host: DebugHost): HTMLElement {
   );
   row(
     box,
+    'flight',
     'полёт',
     [
-      ['×20', 20],
-      ['обычный', 1],
+      ['slow', '×20', 20],
+      ['normal', 'обычный', 1],
     ],
     host.slow,
     (v) => {
@@ -124,9 +119,10 @@ export function makeDebugPanel(host: DebugHost): HTMLElement {
   row(
     box,
     'ps1',
+    'ps1',
     [
-      ['вкл', true],
-      ['выкл', false],
+      ['on', 'вкл', true],
+      ['off', 'выкл', false],
     ],
     host.ps1,
     (v) => {
