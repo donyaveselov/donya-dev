@@ -4,8 +4,9 @@
 //
 // Browsers start audio only from a gesture, so it begins on the visitor's first click, tap or key and fades in. It is
 // streamed (an <audio> element routed through Web Audio for the fades): it plays as soon as the first kilobytes are
-// in, instead of after the whole file is downloaded and decoded. Ogg Vorbis, or MP3 where Ogg is not played (older
-// Safari). Nothing is fetched before that first gesture.
+// in, instead of after the whole file is downloaded and decoded. MP3 for every browser: Chrome does not start an Ogg
+// until it has also fetched the file's end (Ogg keeps no duration up front), which on this host is seconds after the
+// click; a CBR MP3 starts after one request. Nothing is fetched before that first gesture.
 import { isMuted, onMutedChange, setMuted } from '../../store/sound';
 
 const LEVEL = 0.5;
@@ -98,7 +99,7 @@ export class Music {
       const el = new Audio();
       el.loop = true;
       el.preload = 'auto';
-      el.src = el.canPlayType('audio/ogg; codecs="vorbis"') ? 'music/lofi-loop.ogg' : 'music/lofi-loop.mp3';
+      el.src = 'music/lofi-loop.mp3';
       const c = new AudioContext();
       const g = c.createGain();
       g.gain.value = 0;
