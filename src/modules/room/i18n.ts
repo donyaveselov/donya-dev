@@ -22,7 +22,7 @@ export interface TourStrings {
 }
 
 /** The strings the markup asks for by `data-room-t`. */
-export type MarkupKey = 'resume' | 'projects' | 'back' | 'loading' | 'no3d' | 'noDesktop' | 'resumeNote' | 'print';
+export type MarkupKey = 'resume' | 'projects' | 'back' | 'no3d' | 'noDesktop' | 'resumeNote' | 'print';
 
 export interface RoomStrings extends Record<MarkupKey | Status, string> {
   phuket: string;
@@ -51,7 +51,6 @@ const STR: Record<Lang, RoomStrings> = {
     resume: 'Резюме',
     projects: 'Проекты',
     back: 'Назад',
-    loading: 'NOW LOADING',
     work: 'работаю',
     sleep: 'сплю',
     play: 'играю',
@@ -94,7 +93,6 @@ const STR: Record<Lang, RoomStrings> = {
     resume: 'Resume',
     projects: 'Projects',
     back: 'Back',
-    loading: 'NOW LOADING',
     work: 'working',
     sleep: 'sleeping',
     play: 'gaming',
@@ -144,7 +142,6 @@ const MARKUP_KEYS: readonly string[] = [
   'resume',
   'projects',
   'back',
-  'loading',
   'no3d',
   'noDesktop',
   'resumeNote',
