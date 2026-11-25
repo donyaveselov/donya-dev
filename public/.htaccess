@@ -1,4 +1,6 @@
-# donya.dev on REG.RU shared hosting (Apache behind nginx). The site is static: index.html, hashed assets/, room.json.
+# donya.dev on REG.RU shared hosting (Apache 2.4 behind nginx). The site is static: index.html, hashed assets/, room.json.
+# The host's nginx may serve static files itself, without asking Apache: the Cache-Control headers below then do not
+# apply to them, and the panel's own cache settings do (check with curl -I after a deploy).
 AddDefaultCharset utf-8
 DirectoryIndex index.html
 Options -Indexes
@@ -28,10 +30,15 @@ Options -Indexes
   <FilesMatch "\.html$">
     Header set Cache-Control "no-cache"
   </FilesMatch>
-  # the model is fetched as room.json?v=<content hash>, the scripts and styles have hashed names: cached for good
-  <FilesMatch "^room\.json$">
-    Header set Cache-Control "public, max-age=31536000, immutable"
-  </FilesMatch>
+  # the model is fetched as room.json?v=<content hash>: cached for good only when asked for with the version, so a
+  # plain /room.json never sticks in a cache
+  <Files "room.json">
+    Header set Cache-Control "no-cache"
+    <If "%{QUERY_STRING} =~ /(^|&)v=/">
+      Header set Cache-Control "public, max-age=31536000, immutable"
+    </If>
+  </Files>
+  # the scripts and styles have hashed names
   <FilesMatch "\.(js|css)$">
     Header set Cache-Control "public, max-age=31536000, immutable"
   </FilesMatch>
