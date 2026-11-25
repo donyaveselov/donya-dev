@@ -7,7 +7,7 @@ import { beginBusy, isBusy } from './busy';
 import { status } from '../taskbar/clock';
 import { D, animate, esc, h, now, on, reduced, reflow, sessGet, sessSet } from '../dom';
 import { localPt, type Pt } from '../windows/geometry';
-import { ICON, wordmark } from '../glyphs';
+import { ICON, WORDMARK } from '../glyphs';
 import { onLang } from '../lang';
 import { closePopups } from '../taskbar/popups';
 import { after, checkAlive, run, skippable, wait } from './seq';
@@ -114,7 +114,7 @@ function lockHTML(): string {
   return welcomeLayout(
     '<div class="xp-login__l">' +
       LOGO +
-      wordmark(true) +
+      WORDMARK +
       `<p><b>${esc(L('locked'))}</b><br>${esc(L('lockedWhy'))}</p>` +
       '</div>',
     userTile('xp-login__guest', L('guest'), `${tr(USER)} · ${L('statusLine_outside')}`),
@@ -124,7 +124,7 @@ function lockHTML(): string {
 /** The log-on screen after Log Off / Switch User. */
 function loginHTML(): string {
   return welcomeLayout(
-    `<div class="xp-login__l">${LOGO}${wordmark(true)}<p>${esc(L('toBegin'))}</p></div>`,
+    `<div class="xp-login__l">${LOGO}${WORDMARK}<p>${esc(L('toBegin'))}</p></div>`,
     ownerTile(),
     '<div class="xp-welcome__band xp-welcome__band--b">' +
       '<button class="xp-login__off" tabindex="-1">' +
@@ -149,7 +149,7 @@ function savingHTML(text: StringKey): string {
 const BOOT_HTML =
   '<div class="xp-crtline"></div>' +
   '<div class="xp-boot__in">' +
-  `<div class="xp-boot__logo"><div class="xp-boot__mark">${ICON.logo}</div>${wordmark(true)}</div>` +
+  `<div class="xp-boot__logo"><div class="xp-boot__mark">${ICON.logo}</div>${WORDMARK}</div>` +
   '<div class="xp-boot__bar"><i></i><i></i><i></i></div>' +
   '</div>' +
   '<div class="xp-boot__foot"><span class="xp-boot__copy"></span><span class="xp-boot__dev"></span></div>' +
@@ -179,8 +179,8 @@ function pressOrKey(ov: HTMLElement, handle?: (e: Event) => void): Promise<void>
 /* ------------------------------------------------------------------ power-on */
 
 /** Power-on: (wake from stand-by while the owner sleeps,) the boot screen, (the lock screen while he is out,) welcome. */
-export function boot(fast = false): Promise<void> {
-  return run(lifetime(), (signal) => bootSteps(fast, signal));
+export function boot(): Promise<void> {
+  return run(lifetime(), (signal) => bootSteps(false, signal));
 }
 
 /** Stand-by while the owner sleeps: any key, press or real pointer movement wakes the computer (and unlocks audio). */

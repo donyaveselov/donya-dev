@@ -1,13 +1,12 @@
-// The public API (XPDesktopApi): mount the desktop into the host, open and close it, switch its language, register
-// apps. The room imports it from src/modules/desktop/index.ts; window.XPDesktop exists only in debug mode (src/modules/desktop/install.ts).
+// The public API (XPDesktopApi): mount the desktop into the host, open and close it, switch its language, open an
+// app. The room imports it from src/modules/desktop/index.ts; window.XPDesktop exists only in debug mode (src/modules/desktop/install.ts).
 import type { Lang, XPDesktopApi, XPMountOptions, XPOpenOptions } from '../../types';
-import { openApp, registerApp, setRegisterHook, setSystemOpener } from './apps';
+import { openApp, setSystemOpener } from './apps';
 import { clearBalloons, showBalloon } from './taskbar/balloon';
 import { isBusy, resetBusy } from './session/busy';
 import { clockText, status } from './taskbar/clock';
 import { COMPACT_MAX_W, PHONE_MAX_W, TASKBAR_H, TINY_W } from './store/constants';
 import { closest, h, coarsePointer, now, on, reflow, sessSet } from './dom';
-import { dialog } from './windows/dialog';
 import { forgetIcons, layoutIcons, wireDesk } from './desktop-icons';
 import { startGame, syncGame } from './session/game';
 import { onKey, onKeyUp, onRootDown, resetHotkeys } from './hotkeys';
@@ -15,18 +14,18 @@ import { onLang, setLang } from './lang';
 import { closeMenus } from './taskbar/menu';
 import { registerPopup } from './taskbar/popups';
 import { saverRunning, startSaver, stopSaver } from './session/screensaver';
-import { bindSession, bsod, boot, preDesktop } from './session/session';
-import { soundByName, unlockSound } from './sound';
+import { bindSession, boot, preDesktop } from './session/session';
+import { unlockSound } from './sound';
 import { closeStart, openStart, startOpen } from './taskbar/start-menu';
 import { domOrNull, loadSaved, type Refs, S, setDom, type SizeClass } from './store/state';
-import { BRAND, L, VERSION } from './strings';
+import { BRAND, L } from './strings';
 import { applyCrt, sysApp } from './system-apps';
 import { buildQuickLaunch, buildTaskbar, closeVol, updateTray, watchMute } from './taskbar/taskbar';
 import { Tip } from './taskbar/tooltip';
 import { paintWall } from './session/wallpaper';
 import { clampWindows, closeAll, translateWindows } from './windows/window';
 
-/** The tray clock, the owner's status, the wallpaper's time of day and the idle screen saver are checked this often. */
+/** The tray clock, the owner's status, the wallpaper and the idle screen saver are checked this often. */
 const TICK_MS = 5000;
 
 let teardown: (() => void)[] = [];
@@ -82,10 +81,6 @@ function translateShell(l: Lang): void {
  */
 function wireLayers(): (() => void)[] {
   setSystemOpener(sysApp);
-  setRegisterHook(() => {
-    layoutIcons(false);
-    buildQuickLaunch();
-  });
   return [
     registerPopup('start', closeStart),
     registerPopup('menus', () => {
@@ -97,7 +92,6 @@ function wireLayers(): (() => void)[] {
     watchMute(),
     () => {
       setSystemOpener(null);
-      setRegisterHook(null);
     },
   ];
 }
@@ -286,26 +280,10 @@ export function closeDesktop(o: { instant?: boolean } = {}): void {
 }
 
 export const api: XPDesktopApi = {
-  __shell: true,
-  version: VERSION,
   mount,
   open,
   close: closeDesktop,
   isOpen: () => S.open,
   setLang,
-  lang: () => S.lang,
-  registerApp,
-  // extras (not part of the contract, handy for the room page and for debugging)
   openApp: (id, p) => openApp(id, p),
-  dialog: (o) => dialog(o),
-  balloon: (o) => {
-    showBalloon(o);
-  },
-  sound: soundByName,
-  bsod,
-  screensaver: (k) => {
-    startSaver(k ?? 'logo');
-  },
-  stopScreensaver: stopSaver,
-  unmount,
 };

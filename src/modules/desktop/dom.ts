@@ -56,10 +56,6 @@ export function on<K extends keyof HTMLElementEventMap>(
   };
 }
 
-export function rm(el: Element | null | undefined): void {
-  el?.remove();
-}
-
 const UNITLESS = new Set(['opacity', 'zIndex']);
 /** Sets camelCase style properties; numbers become px except for opacity and z-index. */
 export function css<E extends HTMLElement>(el: E, o: Record<string, string | number>): E {

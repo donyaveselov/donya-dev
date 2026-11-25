@@ -10,8 +10,6 @@ export interface Prefs {
   volume: number;
   /** A wallpaper id from wallpaper.ts, or 'none'. */
   wall: string;
-  /** The wallpaper follows the time of day. */
-  tint: boolean;
   crt: boolean;
   saver: SaverKind;
   /** Idle minutes before the screen saver, 1..60. */
@@ -24,7 +22,6 @@ export interface Prefs {
 export const defaultPrefs = (): Prefs => ({
   volume: 0.8,
   wall: 'bliss',
-  tint: true,
   crt: true,
   saver: 'logo',
   saverMin: 3,
@@ -56,7 +53,6 @@ export function parsePrefs(raw: unknown): Prefs {
   return {
     volume: numberIn(raw.volume, 0, 1, d.volume),
     wall: typeof raw.wall === 'string' && raw.wall ? raw.wall : d.wall,
-    tint: bool(raw.tint, d.tint),
     crt: bool(raw.crt, d.crt),
     saver: SAVER_KINDS.find((k) => k === raw.saver) ?? d.saver,
     saverMin: Math.round(numberIn(raw.saverMin, 1, 60, d.saverMin)),

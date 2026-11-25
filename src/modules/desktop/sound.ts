@@ -20,9 +20,7 @@ export type SoundName =
 interface OscOpts {
   glide?: number;
   glideT?: number;
-  detune?: number;
   lp?: number;
-  lpTo?: number;
   pan?: number;
   delay?: boolean;
 }
@@ -122,7 +120,6 @@ function osc(
   o.type = type;
   o.frequency.setValueAtTime(f, t);
   if (opt.glide) o.frequency.exponentialRampToValueAtTime(opt.glide, t + (opt.glideT ?? dec));
-  if (opt.detune) o.detune.value = opt.detune;
   env(g, t, a, peak, dec);
   let node: AudioNode = g;
   o.connect(g);
@@ -130,7 +127,6 @@ function osc(
     const f2 = c.createBiquadFilter();
     f2.type = 'lowpass';
     f2.frequency.setValueAtTime(opt.lp, t);
-    if (opt.lpTo) f2.frequency.exponentialRampToValueAtTime(opt.lpTo, t + a + dec);
     g.connect(f2);
     node = f2;
   }
@@ -295,7 +291,7 @@ export function sound(name: SoundName): void {
 
 const isSound = (n: string): n is SoundName => Object.hasOwn(SOUNDS, n);
 
-/** The apps' and the host's entry (XPAppApi.sound, XPDesktop.sound): names come as strings, unknown ones are silent. */
+/** The apps' entry (XPAppApi.sound): names come as strings, unknown ones are silent. */
 export function soundByName(name: string): void {
   if (isSound(name)) sound(name);
 }
