@@ -12,7 +12,7 @@ export const GAME_NAMES = { dota: 'Dota 2', cs: 'Counter-Strike 2', other: null 
   string | null
 >;
 
-export const DISCORD_ID = String(import.meta.env.VITE_DISCORD_ID ?? '293697431982309377');
+const DISCORD_ID = '293697431982309377';
 const POLL_MS = 30_000;
 
 interface LanyardActivity {
@@ -41,7 +41,6 @@ export function fromLanyard(reply: LanyardReply): Presence {
 /** Polls every 30 s while the tab is visible (and at once when it is shown again); `changed` gets each reading (null
  *  when it fails). */
 export function pollPresence(changed: (p: Presence | null) => void): void {
-  if (!DISCORD_ID) return;
   const url = `https://api.lanyard.rest/v1/users/${DISCORD_ID}`;
   let lastAt = 0;
   const poll = (): void => {

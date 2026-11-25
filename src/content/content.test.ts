@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { MOCKS } from '../modules/apps/projects/mocks';
 import { ICONS } from '../components/kit/icons';
-import { APP_ALIASES, APP_IDS, CONTACTS, OPENABLE } from './profile';
+import { APP_ALIASES, APP_IDS, CONTACTS } from './profile';
 import { findProject, PROJECTS, siteApp, siteUrl } from './projects';
 import { DESKTOP_README, PROJECTS_README } from './readme';
 
@@ -32,12 +32,6 @@ describe('content integrity', () => {
     }
     // every program answers to its own id
     for (const id of APP_IDS) expect(APP_ALIASES[id]).toBe(id);
-  });
-
-  it('lets the terminal open exactly the programs the aliases reach', () => {
-    expect([...OPENABLE].sort()).toEqual([...new Set(Object.values(APP_ALIASES))].sort());
-    for (const id of OPENABLE) expect(Object.values(APP_ALIASES)).toContain(id);
-    expect(new Set(OPENABLE).size).toBe(OPENABLE.length);
   });
 
   it('keeps project ids, site programs and app aliases apart', () => {

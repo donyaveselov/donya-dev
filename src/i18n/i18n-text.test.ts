@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { fill, format, isBilingual, tr, translator } from './i18n';
+import { fill, format, isBilingual, tr } from './i18n';
 
 describe('bilingual text', () => {
   it('tells bilingual text from the rest', () => {
@@ -18,12 +18,5 @@ describe('bilingual text', () => {
     expect(format('CPU %s%', 7)).toBe('CPU 7%');
     expect(format('no arg %s')).toBe('no arg %s');
     expect(fill({ ru: 'Открыть %s', en: 'Open %s' }, 'x')).toEqual({ ru: 'Открыть x', en: 'Open x' });
-  });
-  it('translates by key', () => {
-    let lang: 'ru' | 'en' = 'ru';
-    const t = translator({ hi: { ru: 'Привет, %s', en: 'Hi, %s' } }, () => lang);
-    expect(t('hi', 'Daniil')).toBe('Привет, Daniil');
-    lang = 'en';
-    expect(t('hi', 'Daniil')).toBe('Hi, Daniil');
   });
 });

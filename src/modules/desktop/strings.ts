@@ -1,14 +1,12 @@
 // The shell's user-visible strings, in both languages. `L(key)` picks one for the desktop's current language.
+import { OS } from '../../content/profile';
+import { d } from '../../content/text';
 import { format, tr as trLang, type Text } from '../../i18n/i18n';
 import type { Bilingual } from '../../types';
 import { S } from './store/state';
 
-export const BRAND = 'Windows XD';
-export const VERSION = 'Windows XD 5.1 (build 2026.11, Phuket)';
-export const PC_NAME = 'PHUKET-PC';
+export const { name: BRAND, version: VERSION, pcName: PC_NAME } = OS;
 export const USER: Bilingual = { ru: 'Даниил', en: 'Daniil' };
-
-const d = (ru: string, en: string): Bilingual => ({ ru, en });
 
 export const T = {
   start: d('пуск', 'start'),

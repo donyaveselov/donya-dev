@@ -31,8 +31,6 @@ export interface XPMountOptions {
   /** The tray's volume slider moved (0..1): the host's own audio (the room's music) follows it. Mute is not here: it is
    *  the page's one switch, src/store/sound.ts, shared by the room and the desktop. */
   onVolumeChange?: (volume: number) => void;
-  /** Where the wallpaper JPEGs are (default: wall/ of the site, see src/utils/asset.ts). */
-  wallBase?: string;
 }
 
 export interface XPSaverPos {
