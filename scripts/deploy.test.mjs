@@ -22,13 +22,6 @@ describe('plan', () => {
     expect(plan(local(after), remote(before), manifest(before)).upload).toEqual(['room.json']);
   });
 
-  it('uploads index.html after everything else', () => {
-    const files = { 'index.html': 'page', 'assets/xp-b.js': 'bb', 'wall/1.jpg': 'jpg', '.htaccess': 'h' };
-    const { upload } = plan(local(files), remote({}), null);
-    expect(upload.at(-1)).toBe('index.html');
-    expect([...upload].sort()).toEqual(Object.keys(files).sort());
-  });
-
   it('uploads the route pages after the assets and before index.html', () => {
     const files = {
       'index.html': 'page',
