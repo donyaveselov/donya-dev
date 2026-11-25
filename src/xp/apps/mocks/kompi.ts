@@ -3,7 +3,6 @@
    citizenship picker, the result list, the language switcher, the logo) and the PDF
    cover and country page from the backend's report builder. Copy comes from the
    product's locales, demo data from its sample report. Styles: mocks-kompi.css. */
-/* eslint-disable @typescript-eslint/restrict-plus-operands -- markup concatenated as in the product's own code, from fixed data */
 import type { Lang } from '../../../shared/types';
 
 function L<T>(lang: Lang, ru: T, en: T): T {
@@ -254,15 +253,9 @@ export function kompyPdf(lang: Lang): string {
   ]
     .map(function (t, i) {
       return (
-        '<div class="kmp-tk"><span class="kmp-photo kmp-tk-thumb kmp-ph-' +
-        t[0] +
-        '"></span><span class="kmp-tk-num">' +
-        (i + 1) +
-        '</span><span class="kmp-tk-body"><span class="kmp-tk-name">' +
-        t[1] +
-        '</span><span class="kmp-tk-visa">' +
-        t[2] +
-        '</span></span></div>'
+        `<div class="kmp-tk"><span class="kmp-photo kmp-tk-thumb kmp-ph-${t[0] ?? ''}"></span>` +
+        `<span class="kmp-tk-num">${String(i + 1)}</span><span class="kmp-tk-body">` +
+        `<span class="kmp-tk-name">${t[1] ?? ''}</span><span class="kmp-tk-visa">${t[2] ?? ''}</span></span></div>`
       );
     })
     .join('');
@@ -353,7 +346,7 @@ export function kompyPdf(lang: Lang): string {
         ]
   )
     .map(function (r) {
-      return '<span class="kmp-th">' + r[0] + '</span><span>' + r[1] + '</span><span>' + r[2] + '</span>';
+      return `<span class="kmp-th">${r[0] ?? ''}</span><span>${r[1] ?? ''}</span><span>${r[2] ?? ''}</span>`;
     })
     .join('');
   const country =
