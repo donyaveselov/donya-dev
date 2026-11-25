@@ -21,11 +21,11 @@ describe('room i18n', () => {
     expect(tourLine('en', 'end', { h: 13, m: 0, status: 'work', gameName: null })).toBe(t('en').tour.end);
   });
   it('knows the markup keys', () => {
-    expect(isMarkupKey('hint')).toBe(true);
+    expect(isMarkupKey('loading')).toBe(true);
     expect(isMarkupKey('tour')).toBe(false);
     expect(isMarkupKey(null)).toBe(false);
     expect(isMarkupKey('no3d')).toBe(true);
     expect(isAriaKey('lang')).toBe(true);
-    expect(isAriaKey('hint')).toBe(false);
+    expect(isAriaKey('loading')).toBe(false);
   });
 });

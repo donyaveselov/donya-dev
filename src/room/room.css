@@ -655,7 +655,7 @@ body.at-pc #sheet {
   z-index: 50;
 }
 
-/* no room (no WebGL): the hint line says so and stays */
+/* no room (no WebGL): the line at the bottom says so and stays */
 body.no-3d .note span {
   max-width: min(560px, 100%);
   border-radius: 14px;

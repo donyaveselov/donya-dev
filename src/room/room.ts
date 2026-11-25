@@ -435,8 +435,7 @@ function pointer(r: Built): void {
     const moved = downAt ? Math.abs(ev.clientX - downAt[0]) + Math.abs(ev.clientY - downAt[1]) : 99;
     downAt = null;
     if (moved > 6) {
-      note.style.opacity = '0'; // it was a drag: the hint has done its job
-      return;
+      return; // it was a drag
     }
     const which = monitorAt(ev);
     if (which) {
@@ -533,7 +532,7 @@ function frame(now: number): void {
 
 /* ---------- boot ---------- */
 
-/** A line in the hint's place at the bottom, which stays. */
+/** A line at the bottom of the page (no 3D, no desktop), which stays. */
 function say(key: 'no3d' | 'noDesktop'): void {
   note.firstElementChild?.setAttribute('data-t', key);
   panels.applyLang(live.lang);

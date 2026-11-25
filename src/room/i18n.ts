@@ -22,8 +22,7 @@ export interface TourStrings {
 }
 
 /** The strings the markup asks for by `data-t`. */
-export type MarkupKey =
-  'resume' | 'projects' | 'back' | 'loading' | 'hint' | 'no3d' | 'noDesktop' | 'resumeNote' | 'print';
+export type MarkupKey = 'resume' | 'projects' | 'back' | 'loading' | 'no3d' | 'noDesktop' | 'resumeNote' | 'print';
 
 export interface RoomStrings extends Record<MarkupKey | Status, string> {
   phuket: string;
@@ -57,7 +56,6 @@ const STR: Record<Lang, RoomStrings> = {
     outside: 'на улице',
     phuket: 'Пхукет',
     resumeNote: '',
-    hint: 'Потяните, чтобы повернуть комнату',
     no3d: 'Этот браузер не показал 3D-комнату, поэтому компьютер открывается без неё: кнопка «Проекты».',
     noDesktop: 'Не удалось загрузить рабочий стол. Проверьте соединение и попробуйте ещё раз.',
     print: 'Печать / PDF',
@@ -100,7 +98,6 @@ const STR: Record<Lang, RoomStrings> = {
     outside: 'outside',
     phuket: 'Phuket',
     resumeNote: 'The resume is in Russian for now.',
-    hint: 'Drag to rotate the room',
     no3d: 'This browser could not show the 3D room, so the computer opens without it: the Projects button.',
     noDesktop: 'The desktop could not be loaded. Check the connection and try again.',
     print: 'Print / PDF',
@@ -144,7 +141,6 @@ const MARKUP_KEYS: readonly string[] = [
   'projects',
   'back',
   'loading',
-  'hint',
   'no3d',
   'noDesktop',
   'resumeNote',
