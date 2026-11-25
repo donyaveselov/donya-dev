@@ -187,7 +187,12 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
     st.set(1, `${t(c.label)}: ${c.value}`);
   }
 
+  // the address book and the message are rebuilt on a language switch: their bilingual text and copy buttons go with
+  // the old nodes
+  const view = U.scope();
   function build(): void {
+    view.dispose();
+    const { h, copyButton } = view;
     book.innerHTML = '';
     book.appendChild(h('div.xpa-ct-bhead', [h('span', T.contacts), h('span', '▾')]));
     const list = h('div.xpa-ct-blist', { role: 'listbox', tabindex: '0', 'aria-label': T.book });
@@ -236,7 +241,7 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
           h('div.xpa-ct-cval.xpa-selectable', c.value),
         ]),
         h('div.xpa-ct-cbtns', [
-          U.copyButton(c.value, {
+          copyButton(c.value, {
             onCopied: (ok) => {
               setTo(i);
               st.set(0, ok ? t(T.copied) + c.value : t(T.manualCopy));
