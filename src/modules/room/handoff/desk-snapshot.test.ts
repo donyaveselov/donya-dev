@@ -39,6 +39,15 @@ describe('the page on the glass', () => {
       expect(fit.h).toBeLessThanOrEqual(CH + 1e-9);
     }
   });
+  it('sits at the left edge of a glass that is too wide for it, when asked (a phone flies to the icons)', () => {
+    const centred = pageOnGlass(390, 844, CW, CH, A);
+    const fit = pageOnGlass(390, 844, CW, CH, A, 'left');
+    expect(fit).toEqual({ ...centred, x: 0 });
+  });
+  it('fills a glass of its own proportions or one too tall for it wherever it is asked to sit', () => {
+    expect(pageOnGlass(1280, 720, CW, CH, A, 'left')).toEqual(pageOnGlass(1280, 720, CW, CH, A));
+    expect(pageOnGlass(2000, 800, CW, CH, A, 'left')).toEqual(pageOnGlass(2000, 800, CW, CH, A));
+  });
   it('maps page boxes into the canvas', () => {
     const fit = pageOnGlass(390, 844, CW, CH, A);
     // the whole page is the fitted part; the taskbar sits at its bottom edge

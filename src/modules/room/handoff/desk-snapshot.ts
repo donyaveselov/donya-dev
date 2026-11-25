@@ -66,15 +66,28 @@ export interface GlassFit {
 }
 
 /**
- * The camera stops where the glass (aspect A, drawn on a cw x ch canvas) covers the W x H page, so the page sees only
- * the centred part of the glass with its own proportions: the full width of a glass that is too tall, the full height
- * of one that is too wide. The desktop is painted into exactly that part.
+ * Where the camera looks on a glass that is wider than the page: its middle, or its left edge (a phone: a strip in the
+ * middle of the monitor would show neither its icons nor its Start button, see handoff.ts).
  */
-export function pageOnGlass(W: number, H: number, cw: number, ch: number, A: number): GlassFit {
+export type GlassAlign = 'centre' | 'left';
+
+/**
+ * The camera stops where the glass (aspect A, drawn on a cw x ch canvas) covers the W x H page, so the page sees only
+ * a part of the glass with its own proportions: the full width of a glass that is too tall, the full height of one
+ * that is too wide (in its middle, or at its left edge). The desktop is painted into exactly that part.
+ */
+export function pageOnGlass(
+  W: number,
+  H: number,
+  cw: number,
+  ch: number,
+  A: number,
+  align: GlassAlign = 'centre',
+): GlassFit {
   const wider = W / H > A;
   const w = wider ? cw : (ch * W) / H;
   const h = wider ? (cw * H) / W : ch;
-  return { x: (cw - w) / 2, y: (ch - h) / 2, w, h, s: w / W };
+  return { x: align === 'left' ? 0 : (cw - w) / 2, y: (ch - h) / 2, w, h, s: w / W };
 }
 
 /** A page box in canvas pixels. */
@@ -215,6 +228,8 @@ const TASK: readonly [number, string][] = [
   [1, '#2A68D6'],
 ];
 const TAHOMA = 'px Tahoma, Verdana, sans-serif';
+/** Canvas pixels by which the mirrored wallpaper copies overlap (paintDesk). */
+const MIRROR_OVERLAP = 2;
 
 function band(g: CanvasRenderingContext2D, r: Rect, stops: readonly [number, string][]): void {
   const gr = g.createLinearGradient(0, r[1], 0, r[1] + r[3]);
@@ -242,12 +257,16 @@ export function taskButton(
   g.fillText(label ?? '', b[0] + 26 * s, b[1] + b[3] / 2, b[2] - 30 * s);
 }
 
-/** Paints the snapshot into the canvas of a glass of aspect A, where the page will be (pageOnGlass). */
-export function paintDesk(c: HTMLCanvasElement, snap: DeskSnapshot, A: number): Painted {
+/**
+ * Paints the snapshot into the canvas of a glass of aspect A, where the page will be (pageOnGlass). With the page at
+ * the left edge, the rest of the glass is more of the same desktop: the wallpaper and the taskbar go on to its right
+ * edge, so the monitor looks like one wide screen whose left part the camera flies to.
+ */
+export function paintDesk(c: HTMLCanvasElement, snap: DeskSnapshot, A: number, align: GlassAlign = 'centre'): Painted {
   const g = ctx2d(c);
   const cw = c.width;
   const ch = c.height;
-  const fit = pageOnGlass(snap.W, snap.H, cw, ch, A);
+  const fit = pageOnGlass(snap.W, snap.H, cw, ch, A, align);
   const { x: rx, y: ry, w: rw, h: rh, s } = fit;
   const toGlass = (r: Box): Rect => boxOnGlass(fit, r);
   g.fillStyle = '#3A6EA5';
@@ -257,7 +276,24 @@ export function paintDesk(c: HTMLCanvasElement, snap: DeskSnapshot, A: number): 
     const k = Math.max(rw / wl.naturalWidth, rh / wl.naturalHeight);
     const dw = wl.naturalWidth * k;
     const dh = wl.naturalHeight * k;
-    g.drawImage(wl, rx + (rw - dw) / 2, ry + (rh - dh) / 2, dw, dh);
+    const wx = rx + (rw - dw) / 2;
+    const wy = ry + (rh - dh) / 2;
+    g.drawImage(wl, wx, wy, dw, dh);
+    if (align === 'left') {
+      // the page's crop must match the live desktop's, so the glass right of it gets mirrored copies: the horizon
+      // runs on, and it works for any wallpaper. Each copy overlaps the last a little, hiding the picture's edge column.
+      for (let x = wx + dw - MIRROR_OVERLAP, flip = true; x < cw; x += dw - MIRROR_OVERLAP, flip = !flip) {
+        if (!flip) {
+          g.drawImage(wl, x, wy, dw, dh);
+          continue;
+        }
+        g.save();
+        g.translate(x + dw, 0);
+        g.scale(-1, 1);
+        g.drawImage(wl, 0, wy, dw, dh);
+        g.restore();
+      }
+    }
   }
   g.textAlign = 'center';
   g.textBaseline = 'top';
@@ -288,7 +324,11 @@ export function paintDesk(c: HTMLCanvasElement, snap: DeskSnapshot, A: number): 
       g.fillText(ic.label, l[0] + l[2] / 2, l[1], l[2] + 20 * s);
     }
   }
-  if (snap.tb) band(g, toGlass(snap.tb), TASKBAR);
+  if (snap.tb) {
+    const tb = toGlass(snap.tb);
+    if (align === 'left') tb[2] = cw - tb[0]; // on past the page's right edge, empty
+    band(g, tb, TASKBAR);
+  }
   if (snap.tray) {
     const tr = toGlass(snap.tray);
     band(g, tr, TRAY);
