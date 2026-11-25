@@ -81,7 +81,7 @@ export function buildTaskbar(): TaskbarRefs {
   r.vol.addEventListener('dblclick', () => {
     toggleMute();
   });
-  Tip.set(r.vol, () => L('volumeTip', S.prefs.muted ? L('muted') : `${String(Math.round(S.prefs.volume * 100))}%`));
+  Tip.set(r.vol, () => L('volumeTip', isMuted() ? L('muted') : `${String(Math.round(S.prefs.volume * 100))}%`));
   Tip.set(r.clock, () => dateText() + L('clockTipPost'));
   r.clock.addEventListener('dblclick', () => {
     sysApp('about');
@@ -181,7 +181,7 @@ export function updateTray(): void {
     R.statusIc.dataset.st = st;
     R.statusIc.innerHTML = statusIcon(st);
   }
-  R.vol.innerHTML = S.prefs.muted ? ICON.mute : ICON.volume;
+  R.vol.innerHTML = isMuted() ? ICON.mute : ICON.volume;
   const t = R.startBtn.querySelector('.xp-startbtn__t');
   if (t) t.textContent = L('start');
 }
@@ -195,15 +195,18 @@ function toggleMute(v?: boolean): void {
   }
 }
 
-// the switch flipped (here, or by the room's button): the desktop's sounds, its tray icon and an open volume popup
-onMutedChange((m) => {
-  S.prefs.muted = m;
-  savePrefs();
-  setSoundLevel();
-  updateTray();
-  const box = volPop?.querySelector<HTMLInputElement>('.xp-vol__m');
-  if (box) box.checked = m;
-});
+/**
+ * Follows the mute switch while the desktop is mounted: flipped here or by the room's button, the desktop's sounds,
+ * its tray icon and an open volume pop-up follow. Returns the unsubscribe.
+ */
+export function watchMute(): () => void {
+  return onMutedChange((muted) => {
+    setSoundLevel();
+    updateTray();
+    const box = volPop?.querySelector<HTMLInputElement>('.xp-vol__m');
+    if (box) box.checked = muted;
+  });
+}
 
 let volPop: HTMLDivElement | null = null;
 export const volumeOpen = (): boolean => !!volPop;
@@ -226,7 +229,7 @@ function volumePopup(): void {
   const r = qs(p, '.xp-vol__r', HTMLInputElement);
   const m = qs(p, '.xp-vol__m', HTMLInputElement);
   r.value = String(Math.round(S.prefs.volume * 100));
-  m.checked = S.prefs.muted;
+  m.checked = isMuted();
   r.addEventListener('input', () => {
     S.prefs.volume = Number(r.value) / 100;
     if (isMuted() && Number(r.value) > 0) setMuted(false); // turning it up unmutes, as in XP

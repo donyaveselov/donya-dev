@@ -16,10 +16,10 @@ import { saverRunning, startSaver, stopSaver } from './screensaver';
 import { bsod, boot, preDesktop } from './session';
 import { soundByName, unlockSound } from './sound';
 import { closeStart } from './start-menu';
-import { domOrNull, type Refs, S, setDom, type SizeClass } from './state';
+import { domOrNull, loadSaved, type Refs, S, setDom, type SizeClass } from './state';
 import { BRAND, L, VERSION } from './strings';
 import { applyCrt } from './system-apps';
-import { buildQuickLaunch, buildTaskbar, closeVol, updateTray } from './taskbar';
+import { buildQuickLaunch, buildTaskbar, closeVol, updateTray, watchMute } from './taskbar';
 import { Tip } from './tooltip';
 import { paintWall } from './wallpaper';
 import { clampWindows, closeAll } from './window';
@@ -56,6 +56,7 @@ function computeSize(): void {
 
 function mount(host: HTMLElement, opts: XPMountOptions): XPDesktopApi {
   if (S.mounted) unmount();
+  loadSaved();
   S.opts = opts;
   S.lang = opts.lang === 'en' ? 'en' : 'ru';
   const root = h('div', 'xp xp--hidden');
@@ -130,6 +131,7 @@ function mount(host: HTMLElement, opts: XPMountOptions): XPDesktopApi {
   teardown = [
     on(document, 'pointerdown', unlockSound, true),
     on(document, 'keydown', unlockSound, true),
+    watchMute(),
     () => {
       ro.disconnect();
     },
