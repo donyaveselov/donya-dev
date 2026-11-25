@@ -65,7 +65,7 @@ export const DEVICES: readonly DeviceGroup[] = [
       it('Python'),
       it(
         'Django, DRF',
-        d('REST API, два контура JWT, права и аудит.', 'REST APIs, two JWT contours, permissions and audit.'),
+        d('REST API, два контура JWT, права и аудит.', 'REST APIs, two JWT audiences, permissions and audit.'),
       ),
       it(
         'Celery',

@@ -1,13 +1,22 @@
 // Command Prompt: a cmd-like console with real commands, history, tab completion and a few hidden ones.
 import { fill } from '../../shared/i18n';
 import type { Bilingual, Status, XPAppApi } from '../../shared/types';
-import { APP_ALIASES, CONTACTS, OS, PERSON } from '../content/profile';
+import { APP_ALIASES, CONTACTS, HEADLINE, OS, PERSON } from '../content/profile';
 import { findProject, PROJECTS } from '../content/projects';
 import { byArea, stackLine } from '../content/stack';
 import { registerApp } from '../shell/apps';
 import { ICONS } from './icons';
 import { pad, phuketNow, reduced, ui } from './kit';
-import { changeDir, complete, OPENABLE, parseColor, parseCommand, progressBar, prompt } from './terminal-parse';
+import {
+  changeDir,
+  complete,
+  HOME_DIR,
+  OPENABLE,
+  parseColor,
+  parseCommand,
+  progressBar,
+  prompt,
+} from './terminal-parse';
 import { EXPERIENCE } from '../../shared/experience';
 
 const d = (ru: string, en: string): Bilingual => ({ ru, en });
@@ -15,7 +24,7 @@ const d = (ru: string, en: string): Bilingual => ({ ru, en });
 const T = {
   title: d('Командная строка', 'Command Prompt'),
   commandLine: d('Командная строка', 'Command line'),
-  copyright: d('Даниил Иванов, Пхукет. Все баги защищены.', 'Daniil Ivanov, Phuket. All bugs reserved.'),
+  copyright: d('Даниил Иванов, Пхукет.', 'Daniil Ivanov, Phuket.'),
   typeHelp: d('Введите help, чтобы увидеть список команд.', 'Type help to see the list of commands.'),
   helpFoot: d(
     'Стрелки ↑/↓ — история, Tab — дополнение. Есть и скрытые команды.',
@@ -24,7 +33,7 @@ const T = {
   someNode: d('немного Node', 'some Node'),
   whoami: d(
     `Живу на Пхукете. ${EXPERIENCE.ru} в разработке. Люблю, когда в системе всё продумано до мелочей.`,
-    `Based in Phuket. ${EXPERIENCE.en} in development. Likes systems where every small thing is thought through.`,
+    `Based in Phuket. ${EXPERIENCE.en} in development. I like systems where every small thing is thought through.`,
   ),
   dirOf: d('Содержимое папки', 'Directory of'),
   myProjects: d('Мои проекты', 'My Projects'),
@@ -54,10 +63,6 @@ const T = {
     'daniil не входит в файл sudoers. Об этом инциденте будет доложено.',
     'daniil is not in the sudoers file. This incident will be reported.',
   ),
-  sudo2: d(
-    '…маме. Шутка. Здесь и так всё доступно без пароля.',
-    '...to mom. Kidding. Everything here is available without a password anyway.',
-  ),
   nothingToDelete: d(
     'Здесь нечего удалять. Старые проекты уже в Корзине.',
     'Nothing to delete here. Old projects are already in the Recycle Bin.',
@@ -79,7 +84,7 @@ const T = {
     '(Ping simulated: this computer lives in a monitor and does not go online.)',
   ),
   readmeOpened: d('README.txt открыт в Блокноте.', 'README.txt opened in Notepad.'),
-  passwords: d('Серьёзно? Напишите мне лучше в Telegram.', 'Seriously? Better write me on Telegram.'),
+  passwords: d('Серьёзно? Напишите мне лучше в Telegram.', 'Seriously? Better message me on Telegram.'),
   noFile: d(
     'Не удаётся найти указанный файл. Попробуйте cat about.txt',
     'The system cannot find the file specified. Try cat about.txt',
@@ -87,17 +92,13 @@ const T = {
   binDont: d('Корзина (не открывать)', 'Recycle Bin (do not open)'),
   host: d('Хост: монитор в изометрической комнате', 'Host: a monitor in an isometric room'),
   uptime: d(`Аптайм: ${EXPERIENCE.ru} в разработке`, `Uptime: ${EXPERIENCE.en} in development`),
-  shell: d('Оболочка: Vue 3 / Nuxt + Python / Django', 'Shell: Vue 3 / Nuxt + Python / Django'),
+  shell: d(`Оболочка: ${HEADLINE.join(' + ')}`, `Shell: ${HEADLINE.join(' + ')}`),
   cpu: d('Процессор: 1 × Fullstack-разработчик', 'CPU: 1 × Fullstack developer'),
   timeIs: d('Время: ', 'Time: '),
   formatUsage: d('Использование: format c:', 'Usage: format c:'),
   formatting: d('Форматирование диска C: (Andaman)…', 'Formatting drive C: (Andaman)...'),
-  noRights: d('Недостаточно прав. И совести.', 'Insufficient privileges. And conscience.'),
-  credits1: d(
-    'Использованные технологии: HTML, CSS, JS, упрямство.',
-    'Technologies used: HTML, CSS, JS, stubbornness.',
-  ),
-  credits2: d('Режиссёр, сценарист, все роли — Даниил Иванов.', 'Directed, written and performed by Daniil Ivanov.'),
+  noRights: d('Недостаточно прав.', 'Insufficient privileges.'),
+  credits: d('Режиссёр, сценарист, все роли — Даниил Иванов.', 'Directed, written and performed by Daniil Ivanov.'),
   lang: d(
     'Язык переключается значком RU/EN в трее, справа внизу.',
     'Switch the language with the RU/EN icon in the tray, bottom right.',
@@ -158,7 +159,7 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
   root.appendChild(screen);
   const hist: string[] = [];
   let hi = 0;
-  let cwd = ['C:', 'Andaman', 'Daniil'];
+  let cwd: string[] = [...HOME_DIR];
   let matrixStop: (() => void) | null = null;
 
   const setPrompt = (): void => {
@@ -197,8 +198,8 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
     whoami: {
       d: d('кто здесь живёт', 'who lives here'),
       run: () => {
-        print('daniil-pc\\daniil');
-        print(`${t(PERSON.name)} — ${t(PERSON.role)} (Vue 3 / Nuxt + Python / Django, ${t(T.someNode)})`);
+        print(`${OS.pcName.toLowerCase()}\\daniil`);
+        print(`${t(PERSON.name)} — ${t(PERSON.role)} (${HEADLINE.join(' + ')}, ${t(T.someNode)})`);
         pt(T.whoami);
         return undefined;
       },
@@ -206,7 +207,7 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
     projects: {
       d: d('список проектов', 'list projects'),
       run: () => {
-        print(` ${t(T.dirOf)} C:\\Andaman\\Daniil\\${t(T.myProjects)}`);
+        print(` ${t(T.dirOf)} ${HOME_DIR.join('\\')}\\${t(T.myProjects)}`);
         print('');
         for (const p of PROJECTS) print(`  <DIR>  ${ljust(t(p.name), 16)}${t(p.tagline)}`);
         print('');
@@ -321,7 +322,7 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
           ])
             print(`  ${x}`);
         else if (cwd.length > 3) for (const p of PROJECTS) print(`  <DIR>  ${t(p.name)}`);
-        else print('  <DIR>  Andaman');
+        else print(`  <DIR>  ${HOME_DIR[1]}`);
         return undefined;
       },
     },
@@ -385,7 +386,6 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
         }
         U.sound('error');
         pt(T.sudo1);
-        pt(T.sudo2);
         return undefined;
       },
     },
@@ -400,8 +400,8 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
         const steps = [
           'node_modules (1/∞)',
           'node_modules (2/∞)',
-          'C:\\Andaman\\System32... ',
-          `C:\\Andaman\\Daniil\\${t(T.myProjects)}...`,
+          'C:\\WINDOWS\\System32... ',
+          `${HOME_DIR.join('\\')}\\${t(T.myProjects)}...`,
         ];
         let i = 0;
         pt(T.deleting);
@@ -479,7 +479,6 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
         }
         if (f === 'resume.rtf') return CMDS.cv?.run([], '');
         if (/пароли|passwords/.test(f)) {
-          print('hunter2');
           pt(T.passwords);
           return undefined;
         }
@@ -490,7 +489,7 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
     tree: {
       d: d('дерево проектов', 'project tree'),
       run: () => {
-        print('C:\\Andaman\\Daniil');
+        print(HOME_DIR.join('\\'));
         print(`├── ${t(T.myProjects)}`);
         PROJECTS.forEach((p, i) => {
           const last = i === PROJECTS.length - 1;
@@ -576,8 +575,7 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
     credits: {
       hidden: true,
       run: () => {
-        pt(T.credits1);
-        pt(T.credits2);
+        pt(T.credits);
         return undefined;
       },
     },

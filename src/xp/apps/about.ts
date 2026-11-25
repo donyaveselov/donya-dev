@@ -1,7 +1,7 @@
 // My Computer: a System Properties dialog about the owner (General, Device Manager with the real stack,
 // Performance, Remote).
 import type { Bilingual, Status, XPAppApi } from '../../shared/types';
-import { OS, PERSON } from '../content/profile';
+import { HEADLINE, OS, PERSON } from '../content/profile';
 import { DEVICES, type StackItem } from '../content/stack';
 import { registerApp } from '../shell/apps';
 import { G16, ICONS } from './icons';
@@ -32,7 +32,6 @@ const T = {
   computer: d('Компьютер:', 'Computer:'),
   cpu: d('Процессор: 1 × Fullstack-разработчик', 'Processor: 1 × Fullstack developer'),
   cooling: d('Охлаждение: кофе, 2 чашки в день, разгон до 3', 'Cooling: coffee, 2 cups a day, overclocks to 3'),
-  memory: d('Память: помнит, почему этот костыль здесь', 'Memory: remembers why that workaround is there'),
   localTime: d('Местное время: ', 'Local time: '),
   status: d('Состояние: ', 'Status: '),
   uptime: d('Время работы окна: ', 'Window uptime: '),
@@ -68,8 +67,8 @@ const T = {
   remoteWork: d('Удалённая работа', 'Remote work'),
   allowInvites: d('Разрешить приглашения на проекты и собеседования', 'Allow invitations to projects and interviews'),
   remoteNote: d(
-    'Fullstack (Vue 3 / Nuxt + Python / Django), удалённо или релокация.',
-    'Fullstack (Vue 3 / Nuxt + Python / Django), remote or relocation.',
+    `Fullstack (${HEADLINE.join(' + ')}), удалённо или релокация.`,
+    `Fullstack (${HEADLINE.join(' + ')}), remote or relocation.`,
   ),
   contact: d('Связаться…', 'Contact…'),
   resume: d('Резюме…', 'Resume…'),
@@ -295,7 +294,6 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
           h('div.xpa-about-v', [
             h('div', T.cpu),
             h('div', T.cooling),
-            h('div', T.memory),
             h('div', [t(T.localTime), timeEl]),
             h('div', [t(T.status), h('b', t(status().label))]),
             h('div', [t(T.uptime), upEl]),

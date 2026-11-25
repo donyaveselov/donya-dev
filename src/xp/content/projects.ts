@@ -58,7 +58,7 @@ export const PROJECTS: readonly Project[] = [
     highlights: [
       {
         ru: 'REST API на Django/DRF с двумя контурами JWT-авторизации: сотрудники платформы и производители. Права в виде строк, общие для API и фронта, и журнал действий сотрудников.',
-        en: 'REST API on Django/DRF with two separate JWT contours: platform staff and manufacturers. String permissions shared by the API and the frontend, plus an audit log of staff actions.',
+        en: 'REST API on Django/DRF with two JWT audiences: platform staff and manufacturers. String permissions shared by the API and the frontend, plus an audit log of staff actions.',
       },
       {
         ru: 'Генерация партий кодов на Celery: большие партии уходят в фон, прогресс приходит по WebSocket (Channels) с троттлингом, есть отмена и перезапуск.',
@@ -99,7 +99,7 @@ export const PROJECTS: readonly Project[] = [
       en: 'A promo: hidden cups of skate wax with QR codes',
     },
     type: { ru: 'Свой проект, открытый код', en: 'Own project, open source' },
-    period: { ru: 'акция моего бывшего бренда, переписан в 2026', en: "my former brand's campaign, rewritten in 2026" },
+    period: { ru: '2026', en: '2026' },
     role: { ru: 'Автор: идея, 3D, фронтенд', en: 'Author: idea, 3D, frontend' },
     url: 'https://wax.donya.dev',
     repo: 'https://github.com/donyaveselov/wax',

@@ -1,7 +1,7 @@
 // Navigator: an Internet-Explorer-like window. Home is the portfolio start page; external sites cannot be embedded,
 // so they get a friendly "cannot be displayed" page with a real link out (my own *.donya.dev sites open inside).
 import type { Bilingual, XPAppApi } from '../../shared/types';
-import { CONTACTS, PERSON } from '../content/profile';
+import { CONTACTS, HEADLINE, PERSON } from '../content/profile';
 import { findProject, PROJECTS } from '../content/projects';
 import { ico, svg } from '../icons';
 import { registerApp } from '../shell/apps';
@@ -26,7 +26,7 @@ const T = {
   startPage: d('Стартовая страница', 'Start page'),
   help: d('Справка', 'Help'),
   about: d('О программе', 'About'),
-  aboutText: d('Шифрование: 0 бит. Зато без трекеров.', 'Cipher strength: 0-bit. But no trackers either.'),
+  aboutText: d('Шифрование: 0 бит. Зато без трекеров.', 'Cipher strength: 0-bit. No trackers, though.'),
   back: d('Назад', 'Back'),
   forward: d('Вперёд', 'Forward'),
   stop: d('Остановить', 'Stop'),
@@ -63,10 +63,7 @@ const T = {
   paint: d('Кисть', 'Paint'),
   web: d('В интернете', 'On the web'),
   visitor: d('Вы посетитель №', 'You are visitor #'),
-  bestViewed: d(
-    'Лучше всего смотреть в разрешении 1024×768. Сделано вручную, без фреймворков.',
-    'Best viewed at 1024×768. Handmade, no frameworks.',
-  ),
+  bestViewed: d('Лучше всего смотреть в разрешении 1024×768. Сделано вручную.', 'Best viewed at 1024×768. Handmade.'),
   thePage: d('Страница ', 'The page '),
   livesOnline: d(
     ' живёт в настоящем интернете, а этот компьютер — внутри монитора. Встроить чужой сайт сюда нельзя (и это правильно: сайты сами запрещают так делать).',
@@ -382,7 +379,7 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
         h('div.xpa-br-hero-txt', [
           h('div.xpa-br-hello', T.welcome),
           h('h1', t(PERSON.name)),
-          h('div.xpa-br-role', [t(PERSON.role), ' · Vue 3 / Nuxt · Python / Django']),
+          h('div.xpa-br-role', [t(PERSON.role), ` · ${HEADLINE.join(' · ')}`]),
           h('div.xpa-br-city', ['☀ ', t(PERSON.city), ' · ', h('span.xpa-br-new', 'NEW!'), ' ', t(T.offers)]),
         ]),
         h('div.xpa-br-hero-art', { 'aria-hidden': 'true', html: ICONS.browser }),

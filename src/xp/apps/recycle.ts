@@ -113,7 +113,7 @@ const FILES: readonly [Trashed, ...Trashed[]] = [
 const RESTORE_JOKES: readonly [Bilingual, ...Bilingual[]] = [
   d(
     'Невозможно восстановить «%s».\n\nФайл находится в заслуженном отпуске и просил не беспокоить.',
-    'Cannot restore "%s".\n\nThe file is on a well-deserved retirement and asked not to be disturbed.',
+    'Cannot restore "%s".\n\nThe file is enjoying a well-deserved retirement and asked not to be disturbed.',
   ),
   d(
     'Восстановление «%s» отменено.\n\nЭтот проект писал Даниил из 2022 года. Даниил из 2026 года против.',

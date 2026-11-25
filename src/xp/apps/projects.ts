@@ -101,7 +101,7 @@ const T = {
   down: { ru: 'Сайт %s сейчас недоступен', en: '%s is not reachable right now' },
   downWhy: {
     ru: 'Возможно, его ещё не выложили или нет интернета. В папке «Мои проекты» есть описание и скриншоты.',
-    en: 'It may not be deployed yet, or the internet is off. «My Projects» has the overview and screenshots.',
+    en: 'It may not be deployed yet, or the internet is off. My Projects has the overview and screenshots.',
   },
   openOverview: { ru: 'Открыть описание', en: 'Open the overview' },
 } as const satisfies Record<string, Bilingual>;
