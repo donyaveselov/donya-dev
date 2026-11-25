@@ -1,4 +1,4 @@
-/* Layout: one full-screen isometric room floating in a sky whose colours follow Phuket time. DOM: top bar, a label on the monitor, a projects drawer and the resume sheet. */
+/* Layout: one full-screen isometric room floating in a sky whose colours follow Phuket time. DOM: top bar, a label on the monitor and the resume sheet. */
 :root {
   color-scheme: dark;
   --sky-top: #0d1630; /* set from JS by time of day */
@@ -8,8 +8,6 @@
   --chip: rgba(14, 18, 30, 0.62);
   --chip-line: rgba(255, 255, 255, 0.22);
   --accent: #ffcf6b; /* lamp light */
-  --panel: #12172a;
-  --panel-line: rgba(255, 255, 255, 0.12);
   --tag: rgba(255, 255, 255, 0.1);
   --paper: #fafafa;
   --ink: #111111;
@@ -209,87 +207,6 @@ button {
   transition: width 0.2s;
 }
 
-.drawer {
-  position: fixed;
-  z-index: 25;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  width: min(420px, 100%);
-  background: var(--panel);
-  border-left: 1px solid var(--panel-line);
-  overflow-y: auto;
-  transform: translateX(102%);
-  transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
-  padding-top: calc(env(safe-area-inset-top, 0px) + 18px);
-  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 24px);
-  padding-left: 22px;
-  padding-right: max(22px, env(safe-area-inset-right, 0px));
-}
-.drawer.open {
-  transform: none;
-}
-.drawer header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 18px;
-}
-.drawer h2 {
-  font-family: var(--font-sign);
-  font-size: 19px;
-  margin: 0;
-}
-.x {
-  background: var(--tag);
-  border: 0;
-  border-radius: 50%;
-  width: 34px;
-  height: 34px;
-  font-size: 17px;
-  line-height: 1;
-}
-.proj {
-  border-top: 1px solid var(--panel-line);
-  padding: 16px 0;
-}
-.proj h3 {
-  margin: 0 0 6px;
-  font-size: 16.5px;
-}
-.proj p {
-  margin: 0 0 10px;
-  color: var(--text-dim);
-  line-height: 1.5;
-}
-.tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.tags li {
-  background: var(--tag);
-  border-radius: 6px;
-  padding: 3px 8px;
-  font-size: 12.5px;
-}
-.proj h3 a {
-  color: inherit;
-  text-decoration: underline;
-  text-decoration-color: var(--panel-line);
-  text-underline-offset: 3px;
-}
-.proj h3 a:hover {
-  text-decoration-color: currentColor;
-}
-.proj .proj-meta {
-  margin: 0 0 6px;
-  font-size: 12.5px;
-}
-
 #sheet {
   position: fixed;
   inset: 0;
@@ -478,7 +395,6 @@ button {
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .drawer,
   .pin,
   .loading,
   .meter i {

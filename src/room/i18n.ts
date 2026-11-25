@@ -1,4 +1,4 @@
-// The room's own strings (top bar, drawer, labels, the talkie tour), in both page languages.
+// The room's own strings (top bar, labels, the talkie tour, the resume sheet's chrome), in both page languages.
 import type { Lang, Status } from '../shared/types';
 import type { WeatherKind } from './weather';
 
@@ -22,7 +22,8 @@ export interface TourStrings {
 }
 
 /** The strings the markup asks for by `data-t`. */
-export type MarkupKey = 'resume' | 'projects' | 'back' | 'loading' | 'hint' | 'no3d' | 'resumeNote' | 'print';
+export type MarkupKey =
+  'resume' | 'projects' | 'back' | 'loading' | 'hint' | 'no3d' | 'noDesktop' | 'resumeNote' | 'print';
 
 export interface RoomStrings extends Record<MarkupKey | Status, string> {
   phuket: string;
@@ -38,7 +39,7 @@ export interface RoomStrings extends Record<MarkupKey | Status, string> {
 }
 
 /** The accessible names the markup asks for by `data-t-aria`. */
-export type AriaKey = 'lang' | 'close' | 'sheet' | 'drawer';
+export type AriaKey = 'lang';
 
 export type TourKey = keyof TourStrings;
 
@@ -55,7 +56,8 @@ const STR: Record<Lang, RoomStrings> = {
     phuket: 'Пхукет',
     resumeNote: '',
     hint: 'Потяните, чтобы повернуть комнату',
-    no3d: 'Этот браузер не показал 3D-комнату. Проекты и резюме открываются кнопками.',
+    no3d: 'Этот браузер не показал 3D-комнату, поэтому компьютер открывается без неё: кнопка «Проекты».',
+    noDesktop: 'Не удалось загрузить рабочий стол. Проверьте соединение и попробуйте ещё раз.',
     print: 'Печать / PDF',
     localTime: 'Местное время',
     wxNow: 'Я на Пхукете',
@@ -82,7 +84,7 @@ const STR: Record<Lang, RoomStrings> = {
       place: 'Часы показывают моё местное время, а за окном Пхукет с его настоящей погодой.',
       end: 'Вот и всё! Захотите пройтись ещё раз, я тут, в углу.',
     },
-    aria: { lang: 'Язык', close: 'Закрыть', sheet: 'Резюме', drawer: 'Проекты' },
+    aria: { lang: 'Язык' },
   },
   en: {
     resume: 'Resume',
@@ -96,7 +98,8 @@ const STR: Record<Lang, RoomStrings> = {
     phuket: 'Phuket',
     resumeNote: 'The resume is in Russian for now.',
     hint: 'Drag to rotate the room',
-    no3d: 'This browser could not show the 3D room. Projects and the resume open with the buttons.',
+    no3d: 'This browser could not show the 3D room, so the computer opens without it: the Projects button.',
+    noDesktop: 'The desktop could not be loaded. Check the connection and try again.',
     print: 'Print / PDF',
     localTime: 'Local time',
     wxNow: 'I’m in Phuket',
@@ -123,7 +126,7 @@ const STR: Record<Lang, RoomStrings> = {
       place: 'The clock shows my local time, and outside the window is Phuket with its real weather.',
       end: 'That’s it! If you want the tour again, I’m right here in the corner.',
     },
-    aria: { lang: 'Language', close: 'Close', sheet: 'Resume', drawer: 'Projects' },
+    aria: { lang: 'Language' },
   },
 };
 
@@ -139,6 +142,7 @@ const MARKUP_KEYS: readonly string[] = [
   'loading',
   'hint',
   'no3d',
+  'noDesktop',
   'resumeNote',
   'print',
 ] satisfies MarkupKey[];
@@ -147,7 +151,7 @@ export function isMarkupKey(key: string | null): key is MarkupKey {
   return key !== null && MARKUP_KEYS.includes(key);
 }
 
-const ARIA_KEYS: readonly string[] = ['lang', 'close', 'sheet', 'drawer'] satisfies AriaKey[];
+const ARIA_KEYS: readonly string[] = ['lang'] satisfies AriaKey[];
 
 export function isAriaKey(key: string | null): key is AriaKey {
   return key !== null && ARIA_KEYS.includes(key);

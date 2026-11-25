@@ -25,7 +25,7 @@ describe('room i18n', () => {
     expect(isMarkupKey('tour')).toBe(false);
     expect(isMarkupKey(null)).toBe(false);
     expect(isMarkupKey('no3d')).toBe(true);
-    expect(isAriaKey('close')).toBe(true);
+    expect(isAriaKey('lang')).toBe(true);
     expect(isAriaKey('hint')).toBe(false);
   });
 });

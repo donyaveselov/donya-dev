@@ -28,7 +28,7 @@
   /* without JavaScript there is no room: the resume sheet is the page */
   html, body { height: auto; overflow: auto; }
   #sheet { display: block !important; position: static; opacity: 1 !important; padding-top: 24px; }
-  .bar, .loading, .note, .drawer, .sheet-back, .cv-print { display: none !important; }
+  .bar, .loading, .note, .sheet-back, .cv-print { display: none !important; }
 </style></noscript>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&family=Unbounded:wght@500;700&family=Nunito:wght@400;700;800;900&family=Source+Sans+3:wght@300;400;500;600;700&family=Tiny5&display=swap">
 </head>
@@ -50,10 +50,6 @@
 <p class="note" id="note"><span data-t="hint"></span></p>
 <div class="loading" id="loading"><b data-t="loading"></b><div class="meter"><i id="meter"></i></div></div>
 
-<aside class="drawer" id="drawer" aria-hidden="true" aria-label="Проекты" data-t-aria="drawer">
-  <header><h2 data-t="projects"></h2><button class="x" id="close-drawer" type="button" aria-label="Закрыть" data-t-aria="close">×</button></header>
-  <div id="proj-list"></div>
-</aside>
 
 <div id="sheet" hidden role="dialog" aria-modal="true" aria-labelledby="cv-name" lang="ru">
   <button class="sheet-back" id="sheet-back" type="button" hidden>← <span data-t="back"></span></button>

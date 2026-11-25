@@ -57,7 +57,7 @@ export interface HandOffHost {
   chrome(stage: 'pc' | 'leaving' | 'room'): void;
   /** relights the room for the status (puts the right figure back) */
   relight(): void;
-  /** no desktop script on the page: the old projects drawer */
+  /** the desktop module failed to load (a flaky network): tell the visitor */
   fallback(): void;
   /** loads the desktop module (once); false when it failed */
   loadDesktop(): Promise<boolean>;
@@ -193,14 +193,15 @@ export class HandOff {
     if (this.mounted) this.desktop()?.setLang(lang);
   }
 
-  sitDown(which: Side = 'L'): void {
+  /** Flies to a monitor and opens the desktop; `arrived` runs once the desktop is live. */
+  sitDown(which: Side = 'L', arrived?: (desk: RoomDesktop) => void): void {
     if (this.seat || this.waiting) return;
     const desk = this.desktop();
     if (!desk) {
       this.waiting = true;
       void this.host.loadDesktop().then((ok) => {
         this.waiting = false;
-        if (ok) this.sitDown(which);
+        if (ok) this.sitDown(which, arrived);
         else this.host.fallback();
       });
       return;
@@ -349,6 +350,7 @@ export class HandOff {
         requestAnimationFrame(() => {
           if (this.seat) this.seat.covered = true;
         });
+        arrived?.(desk);
       },
       (k) => {
         paint(k);

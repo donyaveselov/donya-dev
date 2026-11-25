@@ -6,7 +6,7 @@ import type { Mesh, Object3D } from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { getDesktop } from '../shared/desktop';
-import type { RoomMountOptions } from '../shared/desktop';
+import type { RoomDesktop, RoomMountOptions } from '../shared/desktop';
 import type { Lang, Status } from '../shared/types';
 import { GAME_NAMES, gameKind } from './clock';
 import { debugWanted, makeDebugPanel } from './debug-panel';
@@ -165,6 +165,21 @@ function route(): void {
   panels.syncPanels();
   readClock();
   applyTime();
+}
+
+/** #projects (and the Projects button without a room): the desktop with My Projects open. */
+function openProjects(): void {
+  const show = (desk: RoomDesktop): void => {
+    desk.openApp('projects');
+  };
+  if (room) {
+    if (!room.handoff.atPC) room.handoff.sitDown('L', show);
+    else {
+      const desk = getDesktop();
+      if (desk) show(desk);
+    }
+  } else if (document.body.classList.contains('no-3d')) openFlatDesktop(show);
+  // still loading: the boot sees the hash once the room is built (or fails)
 }
 
 const tour = new Tour(
@@ -352,7 +367,7 @@ function build(gl: WebGLRenderer, gltf: GLTF): Built {
       },
       relight: applyTime,
       fallback: () => {
-        panels.openDrawer();
+        say('noDesktop');
       },
       loadDesktop,
     },
@@ -430,9 +445,7 @@ function pointer(r: Built): void {
       const p = fr.top.clone();
       p.y += 0.1;
       r.tags.showInfo(p, t(live.lang).diploma);
-      return;
     }
-    panels.closeDrawer();
   });
   el.addEventListener('pointerleave', () => {
     hovering = false;
@@ -505,17 +518,69 @@ function frame(now: number): void {
 
 /* ---------- boot ---------- */
 
-/** No room (no WebGL, or the model failed): say so, and open the projects and the resume as plain pages. */
+/** A line in the hint's place at the bottom, which stays. */
+function say(key: 'no3d' | 'noDesktop'): void {
+  note.firstElementChild?.setAttribute('data-t', key);
+  panels.applyLang(live.lang);
+  note.style.opacity = '1';
+}
+
+/** No room (no WebGL, or the model failed): the desktop opens straight away, full-screen, without the 3D around it;
+ *  leaving it shows the Projects button, which opens it again. */
 function fail(): void {
   byId('loading').style.opacity = '0';
   document.body.classList.add('no-3d');
-  note.style.opacity = '1';
-  note.firstElementChild?.setAttribute('data-t', 'no3d');
-  panels.applyLang(live.lang);
-  pin.hidden = false;
+  say('no3d');
   pin.style.left = '50%';
   pin.style.top = '50%';
   pin.style.visibility = 'visible';
+  pin.style.opacity = '1';
+  openFlatDesktop(currentHash() === 'projects' ? (d) => d.openApp('projects') : undefined);
+}
+
+let flatRoot: HTMLElement | null = null;
+
+/** The desktop as a plain full-screen page (no room to sit down in). */
+function openFlatDesktop(then?: (desk: RoomDesktop) => void): void {
+  void loadDesktop().then((ok) => {
+    const desk = getDesktop();
+    if (!ok || !desk) {
+      pin.hidden = false;
+      say('noDesktop');
+      return;
+    }
+    if (!flatRoot) {
+      flatRoot = document.createElement('div');
+      flatRoot.id = 'xp-root';
+      flatRoot.style.cssText = 'position:fixed;inset:0;z-index:40;overflow:hidden';
+      document.body.appendChild(flatRoot);
+      desk.mount(flatRoot, {
+        lang: live.lang,
+        phuketTime: () => ({ h: live.time.h, m: live.time.m }),
+        status,
+        onExit: () => {
+          desk.close();
+          if (flatRoot) flatRoot.style.display = 'none';
+          document.body.classList.remove('at-pc');
+          pin.hidden = false;
+          note.style.opacity = '1';
+        },
+        onOpenResume: () => {
+          panels.openResume();
+        },
+        onLangChange: (l: Lang) => {
+          if (l !== live.lang) setLang(l);
+        },
+      });
+    }
+    flatRoot.style.display = '';
+    pin.hidden = true;
+    note.style.opacity = '0';
+    document.body.classList.add('at-pc'); // the top bar steps aside, the resume sheet opens above the desktop
+    desk.setLang(live.lang);
+    desk.open({ noBoot: true, instant: true });
+    then?.(desk);
+  });
 }
 
 function mountDebug(): void {
@@ -563,9 +628,12 @@ export function startRoom(): void {
   });
   pin.addEventListener('click', () => {
     if (room) room.handoff.sitDown('L');
-    else panels.openDrawer(); // no room to sit down in: the projects as a plain list
+    else if (document.body.classList.contains('no-3d')) openFlatDesktop();
   });
-  window.addEventListener('hashchange', route);
+  window.addEventListener('hashchange', () => {
+    route();
+    if (currentHash() === 'projects') openProjects(); // a link to #projects followed on the page (the boot handles a load)
+  });
   if (debugWanted()) mountDebug();
 
   // the weather goes first, in parallel with the room; the last answer is remembered for a repeat visit
@@ -629,10 +697,12 @@ export function startRoom(): void {
               });
           });
         });
-        // #pc opens straight at the computer, #pcdota with a game running
-        if (currentHash().startsWith('pc'))
+        // #pc opens straight at the computer, #pcdota with a game running, #projects with My Projects open
+        const h = currentHash();
+        if (h.startsWith('pc') || h === 'projects')
           setTimeout(() => {
-            r.handoff.sitDown('L');
+            if (h === 'projects') openProjects();
+            else r.handoff.sitDown('L');
           }, 700);
         pointer(r);
       })

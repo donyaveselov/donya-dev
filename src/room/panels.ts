@@ -1,9 +1,8 @@
-// The room's DOM chrome: the top bar (time chip, resume button, language switch), the projects drawer, the resume
-// sheet, and the hash routes that open them or preview a time of day or a status.
+// The room's DOM chrome: the top bar (time chip, resume button, language switch), the resume sheet, and the hash
+// routes that open it or preview a time of day or a status. The projects live on the desktop (src/xp).
 import { DESKTOP_DOM } from '../shared/desktop';
 import { EXPERIENCE } from '../shared/experience';
 import type { Lang, Status } from '../shared/types';
-import { PROJECTS } from '../xp/content/projects';
 import { isStatus } from './clock';
 import { isAriaKey, isMarkupKey, t, timeChip } from './i18n';
 import { byId } from './util';
@@ -14,7 +13,6 @@ function setHash(h: string): void {
 }
 
 export class Panels {
-  private readonly drawer = byId('drawer');
   private readonly sheet = byId('sheet');
   private readonly sheetBack = byId('sheet-back');
   private readonly time = byId('time');
@@ -22,9 +20,6 @@ export class Panels {
   private returnFocus: HTMLElement | null = null;
 
   constructor() {
-    byId('close-drawer').addEventListener('click', () => {
-      this.closeDrawer();
-    });
     byId('open-resume').addEventListener('click', () => {
       this.openResume();
     });
@@ -35,32 +30,15 @@ export class Panels {
       window.print();
     });
     window.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') {
-        this.closeDrawer();
-        this.closeResume();
-      } else if (e.key === 'Tab' && !this.sheet.hidden) this.trapTab(e);
+      if (e.key === 'Escape') this.closeResume();
+      else if (e.key === 'Tab' && !this.sheet.hidden) this.trapTab(e);
     });
-    this.drawer.inert = true; // off screen: out of the tab order too
     byId('cv-years').textContent = EXPERIENCE.ru; // the sheet is in Russian; the markup holds the value for no-JS
   }
 
   /** Whether the resume sheet covers the page (the room need not be drawn under it). */
   get sheetOpen(): boolean {
     return !this.sheet.hidden;
-  }
-
-  openDrawer(): void {
-    this.drawer.classList.add('open');
-    this.drawer.setAttribute('aria-hidden', 'false');
-    this.drawer.inert = false;
-    setHash('projects');
-  }
-
-  closeDrawer(): void {
-    this.drawer.classList.remove('open');
-    this.drawer.setAttribute('aria-hidden', 'true');
-    this.drawer.inert = true;
-    if (location.hash === '#projects') setHash('');
   }
 
   openResume(): void {
@@ -112,8 +90,6 @@ export class Panels {
     const h = hash();
     if (h === 'resume') this.openResume();
     else if (!this.sheet.hidden) this.closeResume();
-    if (h === 'projects') this.openDrawer();
-    else if (this.drawer.classList.contains('open')) this.closeDrawer();
   }
 
   /** The time chip: "Пхукет 13:00 · работаю". */
@@ -124,7 +100,7 @@ export class Panels {
     );
   }
 
-  /** The page in a language: every data-t string, the language switch, the drawer's project list. */
+  /** The page in a language: every data-t string and accessible name, the language switch. */
   applyLang(lang: Lang): void {
     const T = t(lang);
     document.documentElement.lang = lang;
@@ -139,34 +115,6 @@ export class Panels {
     byId('cv-note').hidden = !T.resumeNote;
     byId('lang-ru').setAttribute('aria-pressed', String(lang === 'ru'));
     byId('lang-en').setAttribute('aria-pressed', String(lang === 'en'));
-    const list = byId('proj-list');
-    list.textContent = '';
-    // the same projects as the desktop's Projects folder (src/xp/content), so the two never disagree
-    for (const p of PROJECTS) {
-      const d = document.createElement('div');
-      d.className = 'proj';
-      const h = document.createElement('h3');
-      const a = document.createElement('a');
-      a.href = p.url;
-      a.target = '_blank';
-      a.rel = 'noopener noreferrer';
-      a.textContent = p.name[lang];
-      h.appendChild(a);
-      const meta = document.createElement('p');
-      meta.className = 'proj-meta';
-      meta.textContent = p.type[lang] + ' · ' + p.period[lang];
-      const s = document.createElement('p');
-      s.textContent = p.tagline[lang] + '. ' + p.summary[lang];
-      const ul = document.createElement('ul');
-      ul.className = 'tags';
-      for (const x of p.stack) {
-        const li = document.createElement('li');
-        li.textContent = x;
-        ul.appendChild(li);
-      }
-      d.append(h, meta, s, ul);
-      list.appendChild(d);
-    }
   }
 }
 

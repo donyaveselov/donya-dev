@@ -50,11 +50,11 @@ Keep object names in Blender: the code finds meshes by name (`Screen_L`, `Poster
 ## Layout
 
 ```
-index.html              page head (title, description, Open Graph) and the room's markup (top bar, drawer, resume sheet)
+index.html              page head (title, description, Open Graph) and the room's markup (top bar, resume sheet)
 src/main.ts             entry: the room's CSS, then the room; desktop-loader.ts loads src/xp once the room is up
 src/room/               the room: room.ts boots and wires the modules (see its header)
   handoff.ts            sitting down at the monitor and standing up (the fly-in)
-  tour.ts               the talkie tour;   panels.ts  top bar, drawer, resume sheet, hash routes
+  tour.ts               the talkie tour;   panels.ts  top bar, resume sheet, hash routes
   psx.ts, materials.ts  the PS1 post pass and material hooks;   light-rig.ts, lighting.ts  lights and presets
   weather*.ts           weather codes and the rain / lightning effects;   outdoor.ts  sea, sky, coast
   monitors.ts, live-screens.ts, desk-snapshot.ts, textures.ts   the screens

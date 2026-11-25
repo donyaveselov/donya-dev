@@ -3,11 +3,11 @@
 import type { XPDesktopApi } from './types';
 
 /** What the room uses of the desktop shell. */
-export type RoomDesktop = Pick<XPDesktopApi, 'mount' | 'open' | 'close' | 'isOpen' | 'setLang'>;
+export type RoomDesktop = Pick<XPDesktopApi, 'mount' | 'open' | 'close' | 'isOpen' | 'setLang' | 'openApp'>;
 export type RoomMountOptions = Parameters<RoomDesktop['mount']>[1];
 export type RoomOpenOptions = NonNullable<Parameters<RoomDesktop['open']>[0]>;
 
-/** The shell, when its script is on the page (without it the room falls back to its projects drawer). */
+/** The shell, once its module is loaded (src/room/desktop-loader.ts). */
 export function getDesktop(): RoomDesktop | null {
   return window.XPDesktop ?? null;
 }
