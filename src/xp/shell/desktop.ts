@@ -3,13 +3,14 @@
 import type { Lang, XPDesktopApi, XPMountOptions, XPOpenOptions } from '../../shared/types';
 import { openApp, registerApp, setRegisterHook, setSystemOpener } from './apps';
 import { clearBalloons, showBalloon } from './balloon';
+import { isBusy, resetBusy } from './busy';
 import { clockText, status } from './clock';
 import { COMPACT_MAX_W, PHONE_MAX_W, TASKBAR_H, TINY_W } from './constants';
 import { closest, h, coarsePointer, now, on, reflow, sessSet } from './dom';
 import { dialog } from './dialog';
 import { forgetIcons, layoutIcons, wireDesk } from './desktop-icons';
 import { startGame } from './game';
-import { onKey, onKeyUp, onRootDown } from './hotkeys';
+import { onKey, onKeyUp, onRootDown, resetHotkeys } from './hotkeys';
 import { onLang, setLang } from './lang';
 import { closeMenus } from './menu';
 import { registerPopup } from './popups';
@@ -108,12 +109,12 @@ function startTicking(): () => void {
     const st = status();
     if (S.open) {
       updateTray();
-      if (st !== lastStatus && !S.busy)
+      if (st !== lastStatus && !isBusy())
         showBalloon({ title: L(`statusChanged_${st}`), text: L('clockTipPre') + clockText() });
       paintWall();
       const idleMs = now() - (S.lastInput || now());
       if (
-        !S.busy &&
+        !isBusy() &&
         !saverRunning() &&
         S.prefs.saver !== 'none' &&
         !document.hidden &&
@@ -195,6 +196,7 @@ function mount(host: HTMLElement, opts: XPMountOptions): XPDesktopApi {
   return api;
 }
 
+/** Takes the desktop down and leaves the shell's state as it was before mount (registered apps stay). */
 function unmount(): void {
   closeAll();
   closeMenus(0);
@@ -206,8 +208,12 @@ function unmount(): void {
   for (const f of teardown) f();
   teardown = [];
   domOrNull()?.root.remove();
-  setDom(null);
+  setDom(null); // also ends the desktop's lifetime: boot, shutdown and hand-off sequences stop where they are
   forgetIcons();
+  resetHotkeys();
+  resetBusy();
+  S.modalBlock = null;
+  S.active = null;
   S.mounted = false;
   S.open = false;
 }
@@ -252,7 +258,7 @@ function open(o: XPOpenOptions = {}): void {
     S.booted = true;
     sessSet('booted', '1');
   }
-  if (!S.busy) {
+  if (!isBusy()) {
     preDesktop(false);
     layoutIcons(!wasOpen && !o.instant);
   }

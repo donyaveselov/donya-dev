@@ -2,6 +2,7 @@
 // screen saver), which then minimizes to the taskbar (or, for the saver, simply goes away).
 import type { XPGame } from '../../shared/types';
 import { showBalloon } from './balloon';
+import { beginBusy, isBusy } from './busy';
 import { D, animate, css, esc, h, reduced, sessGet, sessSet } from './dom';
 import { hideIcons, layoutIcons } from './desktop-icons';
 import { gameIcon } from './glyphs';
@@ -119,7 +120,7 @@ export function startGame(g: XPGame, instant = false): void {
     liveOn = false;
   };
   box.addEventListener('click', () => {
-    if (w.state !== 'min' && !S.busy) void w.minimize();
+    if (w.state !== 'min' && !isBusy()) void w.minimize();
   });
   w.hooks.onEsc = () => void w.minimize();
   w.hooks.onRestore = () => {
@@ -150,7 +151,7 @@ export function startGame(g: XPGame, instant = false): void {
   // the host may ask to keep it up longer, e.g. until its camera has arrived; 0 means the default
   // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
   const hold = reduced() ? 400 : g.hold || 900;
-  S.busy = true;
+  const release = beginBusy();
   setTimeout(
     () => {
       if (!reduced())
@@ -168,7 +169,7 @@ export function startGame(g: XPGame, instant = false): void {
   setTimeout(() => {
     R.root.classList.remove('xp--gamehold');
     setTimeout(() => {
-      S.busy = false;
+      release();
       if (w.closed) return;
       if (g.dismiss === 'close') {
         // a screen saver: it simply goes away and the desktop is there

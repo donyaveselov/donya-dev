@@ -22,15 +22,10 @@ export const S = {
   game: null as Win | null,
   /** A desktop-wide modal dialog (one without an owner window). */
   modalBlock: null as Win | null,
-  /** Keyboard handler of the shutdown dialog while it is up. */
-  dlgKey: null as ((e: KeyboardEvent) => boolean) | null,
-  loginEl: null as HTMLElement | null,
   recent: [] as string[],
   trash: [] as string[],
   /** The boot screen has been shown in this browser tab. */
   booted: false,
-  /** A boot / shutdown overlay is in progress. */
-  busy: false,
   size: 'desk' as SizeClass,
   touch: false,
   w: 0,
@@ -39,7 +34,6 @@ export const S = {
   lastW: 0,
   lastH: 0,
   lastInput: 0,
-  metaAlone: false,
   prefs: defaultPrefs(),
 };
 
@@ -80,6 +74,7 @@ export interface Refs {
 }
 
 let refs: Refs | null = null;
+let life = new AbortController();
 
 /** The shell's DOM; only called on paths that need a mounted desktop. */
 export function dom(): Refs {
@@ -89,6 +84,12 @@ export function dom(): Refs {
 /** The shell's DOM, or null before mount and after unmount. */
 export const domOrNull = (): Refs | null => refs;
 
+/** The mounted desktop's lifetime: aborted on unmount, which cancels the timed sequences bound to it (seq.ts). */
+export const lifetime = (): AbortSignal => life.signal;
+
+/** Mount (with the DOM just built) and unmount (with null). */
 export function setDom(r: Refs | null): void {
   refs = r;
+  if (r) life = new AbortController();
+  else life.abort();
 }

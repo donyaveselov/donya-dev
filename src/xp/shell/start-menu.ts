@@ -2,6 +2,7 @@
 // accordion on phones), Log Off / Turn Off, and its keyboard navigation.
 import type { XPAppDef } from '../../shared/types';
 import { appTitle } from './apps';
+import { isBusy } from './busy';
 import { clockText, status } from './clock';
 import { css, esc, h, qs, reduced } from './dom';
 import { isPhone, localRect } from './geometry';
@@ -286,7 +287,7 @@ function allPrograms(b: HTMLElement, kb: boolean): void {
 }
 
 export function openStart(kb = false): void {
-  if (startEl || S.busy) return;
+  if (startEl || isBusy()) return;
   closeMenus(0);
   closePopups('volume');
   const R = dom();
