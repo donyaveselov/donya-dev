@@ -57,6 +57,9 @@ export interface RoomScene {
  * Builds the room from the loaded model. The order matters beyond the obvious dependencies: three draws every uuid
  * from Math.random, which the regression harness seeds, so moving a constructor moves the rain (see weather-fx.ts).
  */
+const SHOE_UPPER = 0x8b8473; // the tee's off-white
+const SHOE_SOLE = 0x15131c;
+
 export function buildScene(gl: WebGLRenderer, gltf: GLTF, stage: HTMLElement, start: CameraStart): RoomScene {
   gl.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
   gl.outputEncoding = sRGBEncoding;
@@ -71,6 +74,10 @@ export function buildScene(gl: WebGLRenderer, gltf: GLTF, stage: HTMLElement, st
 
   const index = new MaterialIndex();
   convertMaterials(root, index);
+  // the figure's sneakers were the chair's red: in front of the seat they read as a cushion that had fallen off, so
+  // they are light canvas shoes on dark soles (the figure's materials are unlit: these are the drawn colours)
+  for (const m of index.get('shoe')) m.color.setHex(SHOE_UPPER);
+  for (const m of index.get('shoe_sole')) m.color.setHex(SHOE_SOLE);
   const screens = new LiveScreens(REDUCED_MOTION, () => live.lang);
   const monitors = new Monitors(root, [screens.tex.editor, screens.tex.terminal]);
   const lights = new LightRig(scene); // no shadow maps: the model's shadows are painted into its vertex colours

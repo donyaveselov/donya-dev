@@ -123,25 +123,29 @@ button.chip:active {
   margin-right: 8px;
   vertical-align: 0;
 }
-.lang {
+/* the language switch: white like the Resume button, the chosen language a black block */
+.chip.lang {
   display: flex;
   padding: 4px;
   gap: 4px;
+  background: #fff;
+  color: #111;
+  box-shadow: var(--px-frame);
 }
 .lang button {
   background: none;
   border: 0;
   padding: 4px 6px;
   font: inherit;
-  color: rgba(255, 255, 255, 0.6);
+  color: #8a8a8a;
   cursor: pointer;
 }
 .lang button:hover {
-  color: #fff;
+  color: #111;
 }
 .lang button[aria-pressed='true'] {
-  background: #fff;
-  color: #111;
+  background: #111;
+  color: #fff;
 }
 /* the music switch: a pixel speaker, with waves while it plays and a cross while it is off */
 .music svg {
