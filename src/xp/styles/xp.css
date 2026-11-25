@@ -32,6 +32,9 @@
 .xp svg { display: block; overflow: visible; }
 .xp button { font: inherit; color: inherit; cursor: default; margin: 0; letter-spacing: inherit; text-transform: none; }
 .xp :focus-visible { outline: none; }
+/* keyboard focus on the shell's own controls: the XP dotted rectangle (a mouse press does not show it) */
+.xp :is(.xp-tbtn, .xp-task, .xp-qlbtn, .xp-trayic, .xp-lang, .xp-startbtn, .xp-fbtn, .xp-login__user, .xp-login__off):focus-visible { outline: 1px dotted #fff; outline-offset: -3px; }
+.xp :is(.xp-tab, .xp-sitem, .xp-list, .xp-check input):focus-visible { outline: 1px dotted #000; outline-offset: -2px; }
 .xp input, .xp textarea, .xp select { font: inherit; color: #000; margin: 0; }
 .xp [hidden] { display: none !important; }
 .xp ::selection { background: #316AC5; color: #fff; }

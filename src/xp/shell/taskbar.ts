@@ -45,7 +45,7 @@ export function buildTaskbar(): TaskbarRefs {
   r.startBtn.addEventListener('click', () => {
     toggleStart();
   });
-  Tip.set(r.startBtn, () => L('startTip'));
+  Tip.set(r.startBtn, () => L('startTip'), false);
   r.lang.addEventListener('pointerdown', (e) => {
     e.stopPropagation();
     closeMenus(0);
@@ -75,14 +75,14 @@ export function buildTaskbar(): TaskbarRefs {
       { up: true },
     );
   });
-  Tip.set(r.lang, () => L('langTip'));
+  Tip.set(r.lang, () => L('langTip'), false);
   r.vol.addEventListener('pointerdown', stop);
   r.vol.addEventListener('click', volumePopup);
   r.vol.addEventListener('dblclick', () => {
     toggleMute();
   });
   Tip.set(r.vol, () => L('volumeTip', isMuted() ? L('muted') : `${String(Math.round(S.prefs.volume * 100))}%`));
-  Tip.set(r.clock, () => dateText() + L('clockTipPost'));
+  Tip.set(r.clock, () => dateText() + L('clockTipPost'), false);
   r.clock.addEventListener('dblclick', () => {
     sysApp('about');
   });
@@ -191,6 +191,7 @@ export function updateTray(): void {
     R.vol.innerHTML = isMuted() ? ICON.mute : ICON.volume;
   }
   setText(R.startBtn.querySelector('.xp-startbtn__t'), L('start'));
+  Tip.relabel(R.tray);
 }
 
 /** The tray's Mute: the page's one sound switch (src/shared/sound.ts), the same one as the room's speaker button. */

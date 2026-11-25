@@ -303,7 +303,7 @@ export class Win {
     b.tabIndex = -1;
     const span = b.querySelector('span');
     if (span) span.textContent = this.titleText();
-    Tip.set(b, () => this.titleText());
+    Tip.set(b, () => this.titleText(), false);
     b.addEventListener('click', () => {
       if (S.modalBlock && this.blockedBy) {
         this.blockedBy.focus();
@@ -707,6 +707,7 @@ export function translateWindows(l: Lang): void {
       }
     }
   }
+  Tip.relabel(dom().wins);
 }
 
 /** After the desktop changes size: phones show app windows maximized, and nothing is left out of reach. */
