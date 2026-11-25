@@ -20,8 +20,8 @@ import {
   type Rect,
 } from './layout';
 import { closeMenus, openMenu } from './menu';
+import { closePopups } from './popups';
 import { sound } from './sound';
-import { closeStart } from './start-menu';
 import { appList, dom, domOrNull, S, savePrefs } from './state';
 import { BRAND, L } from './strings';
 import { sysApp } from './system-apps';
@@ -41,9 +41,12 @@ const grid = (): { rows: number; cols: number } => {
   return { rows: gridRows(W, isPhone()), cols: gridCols(W, isPhone()) };
 };
 
+/** Unmount: the icons' elements are gone, and with them the selection. */
 export function forgetIcons(): void {
   els.clear();
   cells.clear();
+  sel = [];
+  focusId = null;
 }
 
 function overRecycle(p: Pt | null | undefined): boolean {
@@ -175,7 +178,7 @@ function wireIcon(el: HTMLDivElement, id: string): void {
     if (e.button === 2) return;
     e.stopPropagation();
     closeMenus(0);
-    closeStart();
+    closePopups('start');
     setActive(null);
     dom().desk.focus({ preventScroll: true });
     const t = now();
@@ -484,7 +487,7 @@ export function wireDesk(): void {
   desk.addEventListener('pointerdown', (e) => {
     if (!onDesk(e)) return;
     closeMenus(0);
-    closeStart();
+    closePopups('start');
     setActive(null);
     desk.focus({ preventScroll: true });
     if (e.button === 2) return;

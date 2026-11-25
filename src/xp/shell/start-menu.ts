@@ -10,11 +10,11 @@ import { launch } from './desktop-icons';
 import { nextByLetter } from './layout';
 import { closeMenus, type MenuItem, menuHover, menus, openMenu } from './menu';
 import { logOffDialog, turnOffDialog } from './session';
+import { closePopups } from './popups';
 import { sound } from './sound';
 import { appList, dom, S } from './state';
 import { L, tr, USER } from './strings';
 import { sysApp } from './system-apps';
-import { closeVol } from './taskbar';
 
 let startEl: HTMLDivElement | null = null;
 let hotEl: HTMLElement | null = null;
@@ -288,7 +288,7 @@ function allPrograms(b: HTMLElement, kb: boolean): void {
 export function openStart(kb = false): void {
   if (startEl || S.busy) return;
   closeMenus(0);
-  closeVol();
+  closePopups('volume');
   const R = dom();
   const el = (startEl = buildStart());
   R.screen.appendChild(el);

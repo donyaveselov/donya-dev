@@ -3,15 +3,34 @@ import { status } from './clock';
 import { D, animate, esc, h, now, on, reduced, reflow, sessGet, sessSet, wait } from './dom';
 import { localPt } from './geometry';
 import { ICON, wordmark } from './glyphs';
-import { layoutIcons } from './desktop-icons';
 import { showBalloon, clearBalloons } from './balloon';
-import { closeMenus } from './menu';
+import { onLang } from './lang';
+import { closePopups } from './popups';
 import { sound, unlockSound } from './sound';
-import { closeStart } from './start-menu';
 import { dom, S } from './state';
 import { L, PC_NAME, tr, USER } from './strings';
 import { closeAll } from './window';
-import { closeDesktop } from './desktop';
+
+/** What the session screens need from the desktop above them; desktop.ts provides it on mount. */
+export interface SessionHost {
+  closeDesktop(o: { instant?: boolean }): void;
+  layoutIcons(stagger: boolean): void;
+}
+
+let host: SessionHost | null = null;
+
+/** Connects the session to its desktop; the returned function disconnects it. */
+export function bindSession(to: SessionHost): () => void {
+  host = to;
+  const offLang = onLang(() => {
+    const p = S.loginEl?.isConnected ? S.loginEl.querySelector('p') : null;
+    if (p) p.textContent = L('toBegin');
+  });
+  return () => {
+    offLang();
+    host = null;
+  };
+}
 
 function overlay(cls: string, html = ''): HTMLDivElement {
   const o = h('div', `xp-ov ${cls}`, html);
@@ -186,14 +205,14 @@ export async function boot(fast = false): Promise<void> {
 export function reveal(intro: boolean): void {
   preDesktop(false);
   if (!intro) {
-    layoutIcons(false);
+    host?.layoutIcons(false);
     return;
   }
   const tb = dom().taskbar;
   tb.classList.remove('xp--intro');
   reflow(tb);
   tb.classList.add('xp--intro');
-  layoutIcons(true);
+  host?.layoutIcons(true);
   sound('start');
   if (!sessGet('welcomed')) {
     sessSet('welcomed', '1');
@@ -209,8 +228,7 @@ type ShutChoice = 'standby' | 'off' | 'restart' | 'switch' | 'logoff';
 function shutdownDialog(kind: 'off' | 'logoff'): void {
   const R = dom();
   if (S.busy || R.root.querySelector('.xp-shutdlg')) return;
-  closeStart();
-  closeMenus(0);
+  closePopups('start', 'menus');
   R.screen.classList.add('xp--grey');
   const isOff = kind === 'off';
   const d = h(
@@ -349,7 +367,7 @@ async function powerOff(): Promise<void> {
   } catch (e) {
     console.error(e);
   }
-  if (S.open && wasOpen) closeDesktop({ instant: true });
+  if (S.open && wasOpen) host?.closeDesktop({ instant: true });
 }
 
 async function restart(): Promise<void> {
@@ -430,8 +448,7 @@ function standBy(): void {
 export function bsod(): void {
   const R = dom();
   if (R.root.querySelector('.xp-bsod')) return;
-  closeStart();
-  closeMenus(0);
+  closePopups('start', 'menus');
   clearBalloons();
   sound('error');
   const ov = overlay('xp-bsod');

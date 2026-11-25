@@ -6,6 +6,7 @@ import { CAPTION_H, DOUBLE_CLICK_MS, Z } from './constants';
 import { animate, clamp, closest, css, EASE_IN, EASE_OUT, EASE_STD, esc, h, now, reduced } from './dom';
 import { isPhone, localPt, localRect, type Pt, trackPointer, work } from './geometry';
 import { ICON } from './glyphs';
+import { closePopups } from './popups';
 import {
   arrangeRect,
   type ArrangeMode,
@@ -21,7 +22,6 @@ import {
 } from './layout';
 import { closeMenus, openMenu } from './menu';
 import { sound } from './sound';
-import { closeStart } from './start-menu';
 import { dom, domOrNull, S } from './state';
 import { L, tr } from './strings';
 import { Tip } from './tooltip';
@@ -402,7 +402,7 @@ export class Win {
     this.zo = ++zCounter;
     zSort();
     if (S.active !== this) setActive(this);
-    closeStart();
+    closePopups('start');
     const ae = document.activeElement;
     if (!silent && !(ae && this.el.contains(ae))) this.el.focus({ preventScroll: true });
     return this;
@@ -696,6 +696,20 @@ function stopFlash(w: Win): void {
 }
 
 /* ------------------------------------------------------------------ all windows */
+
+/** A language switch: every title, then whatever each window's content subscribed (XPAppApi.onLang). */
+export function translateWindows(l: Lang): void {
+  for (const w of S.wins.slice()) {
+    w.renderTitle();
+    for (const cb of w.langCbs.slice()) {
+      try {
+        cb(l);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  }
+}
 
 /** After the desktop changes size: phones show app windows maximized, and nothing is left out of reach. */
 export function clampWindows(): void {

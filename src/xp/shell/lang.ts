@@ -1,40 +1,29 @@
-// The desktop's language: switching repaints every window, the taskbar, the icons and an open Start menu.
+// The desktop's language. Whatever shows text subscribes with onLang and repaints itself; desktop.ts subscribes the
+// shell's own chrome on mount.
 import type { Lang } from '../../shared/types';
-import { layoutIcons } from './desktop-icons';
-import { closeMenus } from './menu';
-import { closeStart, openStart, startOpen } from './start-menu';
-import { domOrNull, S } from './state';
-import { L } from './strings';
-import { buildQuickLaunch, updateTray } from './taskbar';
+import { S } from './state';
+
+const listeners = new Set<(l: Lang) => void>();
+
+/** Calls `fn` after every language change of a mounted desktop; returns the unsubscribe. */
+export function onLang(fn: (l: Lang) => void): () => void {
+  listeners.add(fn);
+  return () => {
+    listeners.delete(fn);
+  };
+}
 
 export function setLang(next: Lang): void {
   const l: Lang = next === 'en' ? 'en' : 'ru';
   if (l === S.lang) return;
   S.lang = l;
-  const R = domOrNull();
-  if (!S.mounted || !R) return;
-  updateTray();
-  layoutIcons();
-  buildQuickLaunch();
-  for (const w of S.wins) {
-    w.renderTitle();
-    for (const cb of w.langCbs.slice()) {
-      try {
-        cb(l);
-      } catch (e) {
-        console.error(e);
-      }
+  if (!S.mounted) return;
+  for (const fn of [...listeners]) {
+    try {
+      fn(l);
+    } catch (e) {
+      console.error(e);
     }
-  }
-  if (startOpen()) {
-    closeStart();
-    openStart();
-  }
-  closeMenus(0);
-  R.desk.setAttribute('aria-label', L('desktop'));
-  if (S.loginEl?.isConnected) {
-    const p = S.loginEl.querySelector('p');
-    if (p) p.textContent = L('toBegin');
   }
 }
 

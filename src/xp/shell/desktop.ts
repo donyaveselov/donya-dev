@@ -1,7 +1,7 @@
 // The public API (XPDesktopApi): mount the desktop into the host, open and close it, switch its language, register
 // apps. Also published as window.XPDesktop for the room and the regression harness.
-import type { XPDesktopApi, XPMountOptions, XPOpenOptions } from '../../shared/types';
-import { openApp, registerApp, setRegisterHook } from './apps';
+import type { Lang, XPDesktopApi, XPMountOptions, XPOpenOptions } from '../../shared/types';
+import { openApp, registerApp, setRegisterHook, setSystemOpener } from './apps';
 import { clearBalloons, showBalloon } from './balloon';
 import { clockText, status } from './clock';
 import { COMPACT_MAX_W, PHONE_MAX_W, TASKBAR_H, TINY_W } from './constants';
@@ -10,19 +10,23 @@ import { dialog } from './dialog';
 import { forgetIcons, layoutIcons, wireDesk } from './desktop-icons';
 import { startGame } from './game';
 import { onKey, onKeyUp, onRootDown } from './hotkeys';
-import { setLang } from './lang';
+import { onLang, setLang } from './lang';
 import { closeMenus } from './menu';
+import { registerPopup } from './popups';
 import { saverRunning, startSaver, stopSaver } from './screensaver';
-import { bsod, boot, preDesktop } from './session';
+import { bindSession, bsod, boot, preDesktop } from './session';
 import { soundByName, unlockSound } from './sound';
-import { closeStart } from './start-menu';
+import { closeStart, openStart, startOpen } from './start-menu';
 import { domOrNull, loadSaved, type Refs, S, setDom, type SizeClass } from './state';
 import { BRAND, L, VERSION } from './strings';
-import { applyCrt } from './system-apps';
+import { applyCrt, sysApp } from './system-apps';
 import { buildQuickLaunch, buildTaskbar, closeVol, updateTray, watchMute } from './taskbar';
 import { Tip } from './tooltip';
 import { paintWall } from './wallpaper';
-import { clampWindows, closeAll } from './window';
+import { clampWindows, closeAll, translateWindows } from './window';
+
+/** The tray clock, the owner's status, the wallpaper's time of day and the idle screen saver are checked this often. */
+const TICK_MS = 5000;
 
 let teardown: (() => void)[] = [];
 
@@ -52,6 +56,77 @@ function computeSize(): void {
     layoutIcons();
     clampWindows();
   }
+}
+
+/** The shell's own chrome in a new language; the windows' content repaints through its own subscriptions. */
+function translateShell(l: Lang): void {
+  const R = domOrNull();
+  if (!R) return;
+  updateTray();
+  layoutIcons();
+  buildQuickLaunch();
+  translateWindows(l);
+  if (startOpen()) {
+    closeStart();
+    openStart();
+  }
+  closeMenus(0);
+  R.desk.setAttribute('aria-label', L('desktop'));
+}
+
+/**
+ * The modules below this one do not import each other in circles: a lower layer (the window manager, the session
+ * screens, the app registry) reaches a higher one (menus, the Start menu, the built-in programs) through what is
+ * registered here. Returns the undo.
+ */
+function wireLayers(): (() => void)[] {
+  setSystemOpener(sysApp);
+  setRegisterHook(() => {
+    layoutIcons(false);
+    buildQuickLaunch();
+  });
+  return [
+    registerPopup('start', closeStart),
+    registerPopup('menus', () => {
+      closeMenus(0);
+    }),
+    registerPopup('volume', closeVol),
+    bindSession({ closeDesktop, layoutIcons }),
+    onLang(translateShell),
+    watchMute(),
+    () => {
+      setSystemOpener(null);
+      setRegisterHook(null);
+    },
+  ];
+}
+
+/** While the desktop is open: the tray, a balloon when the owner's status changes, the wallpaper, the idle saver. */
+function startTicking(): () => void {
+  let lastStatus = status();
+  const t = window.setInterval(() => {
+    const st = status();
+    if (S.open) {
+      updateTray();
+      if (st !== lastStatus && !S.busy)
+        showBalloon({ title: L(`statusChanged_${st}`), text: L('clockTipPre') + clockText() });
+      paintWall();
+      const idleMs = now() - (S.lastInput || now());
+      if (
+        !S.busy &&
+        !saverRunning() &&
+        S.prefs.saver !== 'none' &&
+        !document.hidden &&
+        idleMs > S.prefs.saverMin * 60000
+      )
+        startSaver();
+    }
+    // a closed desktop only keeps track (open() repaints the tray and the wallpaper itself)
+    lastStatus = st;
+  }, TICK_MS);
+  return () => {
+    clearInterval(t);
+  };
 }
 
 function mount(host: HTMLElement, opts: XPMountOptions): XPDesktopApi {
@@ -103,48 +178,16 @@ function mount(host: HTMLElement, opts: XPMountOptions): XPDesktopApi {
   });
   const ro = new ResizeObserver(computeSize);
   ro.observe(root);
-  let lastStatus = status();
-  // both ticks idle while the desktop is closed (open() repaints the tray and the wallpaper itself)
-  const clock = window.setInterval(() => {
-    if (!S.open) {
-      lastStatus = status();
-      return;
-    }
-    updateTray();
-    const st = status();
-    if (st !== lastStatus && !S.busy)
-      showBalloon({ title: L(`statusChanged_${st}`), text: L('clockTipPre') + clockText() });
-    lastStatus = st;
-  }, 5000);
-  const slow = window.setInterval(() => {
-    if (!S.open) return;
-    paintWall();
-    if (
-      !S.busy &&
-      !saverRunning() &&
-      S.prefs.saver !== 'none' &&
-      !document.hidden &&
-      now() - (S.lastInput || now()) > S.prefs.saverMin * 60000
-    )
-      startSaver();
-  }, 5000);
   teardown = [
     on(document, 'pointerdown', unlockSound, true),
     on(document, 'keydown', unlockSound, true),
-    watchMute(),
     () => {
       ro.disconnect();
     },
-    () => {
-      clearInterval(clock);
-      clearInterval(slow);
-    },
+    startTicking(),
+    ...wireLayers(),
   ];
   S.mounted = true;
-  setRegisterHook(() => {
-    layoutIcons(false);
-    buildQuickLaunch();
-  });
   computeSize();
   paintWall(true);
   updateTray();
@@ -156,14 +199,15 @@ function unmount(): void {
   closeAll();
   closeMenus(0);
   closeStart();
+  closeVol();
   stopSaver();
   clearBalloons();
+  Tip.hide();
   for (const f of teardown) f();
   teardown = [];
   domOrNull()?.root.remove();
   setDom(null);
   forgetIcons();
-  setRegisterHook(null);
   S.mounted = false;
   S.open = false;
 }

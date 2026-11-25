@@ -12,7 +12,6 @@ import { requestedRect, type Rect } from './layout';
 import { sound, soundByName } from './sound';
 import { S } from './state';
 import { L, tr } from './strings';
-import { sysApp } from './system-apps';
 import { ghost, growIn, startFlash, Win } from './window';
 
 export const appTitle = (app: XPAppDef): string => tr(app.title) || app.id;
@@ -23,12 +22,19 @@ export function setRegisterHook(fn: (() => void) | null): void {
   onRegister = fn;
 }
 
+type SystemOpener = (id: string) => Win | null;
+let openSystem: SystemOpener | null = null;
+/** The built-in programs (system-apps.ts, a layer above) take the ids no app registered; desktop.ts connects them. */
+export function setSystemOpener(fn: SystemOpener | null): void {
+  openSystem = fn;
+}
+
 let regT = 0;
 export function registerApp(def: XPAppDef): void {
   S.apps.set(def.id, def);
-  if (S.mounted && onRegister) {
+  if (S.mounted) {
     clearTimeout(regT);
-    regT = window.setTimeout(onRegister, 0);
+    regT = window.setTimeout(() => onRegister?.(), 0);
   }
 }
 
@@ -131,7 +137,7 @@ function trackRecent(id: string): void {
 /** Opens (or focuses) an app; ids the registry does not know go to the built-in programs. */
 export function openApp(id: string, params?: XPAppParams, origin?: Rect | null): Win | null {
   const app = S.apps.get(id);
-  if (!app) return sysApp(id, params);
+  if (!app) return openSystem?.(id) ?? null;
   if (!S.open) return null;
   const ex = S.openApps.get(app.id);
   if (ex && !ex.closed && app.singleton !== false) {
