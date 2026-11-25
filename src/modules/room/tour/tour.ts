@@ -117,8 +117,6 @@ export class Tour {
   private mouth: HTMLImageElement | null = null;
   private btn: HTMLButtonElement | null = null;
   private readonly shown = new Set<TagKey>();
-  /** the button that is white: the one Enter presses */
-  private picked = 0;
   private all = false;
   private steps: TourStep[] | null = null;
   private i = -1;
@@ -232,27 +230,21 @@ export class Tour {
   }
 
   /**
-   * The bubble from the keyboard while the tour talks: Left and Right pick a button, Enter or Space finishes the line
-   * being typed or presses the picked button (the main one by default), Escape is "No" / "Skip". Keys typed into a
-   * field, or while the room is hidden behind the desktop or the resume sheet, are left alone.
+   * The bubble from the keyboard while the tour talks: Enter is "Next" (or "Yes"), even while a line is still typing;
+   * Escape is "No" / "Skip". Keys typed into a field, or with the desktop or the resume sheet in front, are left alone.
    */
   private onKey(e: KeyboardEvent): void {
     const el = this.el;
     // the bubble is up (a fixed element has no offsetParent, so that cannot tell) and the room is in front
     if (!this.steps || !el || el.hidden || document.body.classList.contains('at-pc')) return;
-    if (e.altKey || e.ctrlKey || e.metaKey) return;
+    if (e.altKey || e.ctrlKey || e.metaKey || e.repeat) return;
     const target = e.target instanceof HTMLElement ? e.target : null;
     if (target?.closest('input, textarea, select, [contenteditable="true"], #sheet, #xp-root')) return;
-    const buttons = this.buttons();
-    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+    if (e.key === 'Enter') {
       e.preventDefault();
-      if (!buttons.length) return;
-      const step = e.key === 'ArrowRight' ? 1 : buttons.length - 1;
-      this.pick((this.picked + step) % buttons.length, true);
-    } else if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault(); // the picked button, not whichever one happens to have the focus
-      if (this.typing) this.finishLine();
-      else buttons[this.picked]?.click();
+      this.buttons()
+        .find((b) => !b.classList.contains('tbtn--ghost'))
+        ?.click();
     } else if (e.key === 'Escape') {
       e.preventDefault();
       this.end();
@@ -263,45 +255,24 @@ export class Tour {
     return [...must(this.btns).querySelectorAll<HTMLButtonElement>('.tbtn')];
   }
 
-  /** Picks a button: it turns white, the others black; `focus` moves the keyboard focus there too. */
-  private pick(i: number, focus = false): void {
-    this.picked = i;
-    this.buttons().forEach((b, k) => {
-      b.classList.toggle('tbtn--on', k === i);
-      if (k === i && focus) b.focus();
-    });
-  }
-
   private renderButtons(): void {
     const b = must(this.btns);
-    const hadFocus = b.contains(document.activeElement);
     b.textContent = '';
     const st = this.step();
     if (!st) return;
     const T = t(this.host.lang()).tour;
-    const specs = stepButtons(st);
-    specs.forEach((spec, i) => {
+    for (const spec of stepButtons(st)) {
       const x = document.createElement('button');
       x.type = 'button';
-      x.className = 'tbtn' + (spec.ghost ? ' tbtn--ghost' : ''); // ghost: the secondary one (No, Skip)
+      // the main button (Yes, Next: what Enter presses) is white, the secondary one (No, Skip) black
+      x.className = 'tbtn' + (spec.ghost ? ' tbtn--ghost' : ' tbtn--on');
       x.textContent = T[spec.label];
       x.addEventListener('click', () => {
         if (spec.action === 'end') this.end();
         else this.next();
       });
-      x.addEventListener('pointerenter', () => {
-        this.pick(i);
-      });
       b.appendChild(x);
-    });
-    // the main button (Yes, Next) is picked until the arrows or the mouse pick another; the keyboard stays on the bubble
-    this.pick(
-      Math.max(
-        0,
-        specs.findIndex((s) => !s.ghost),
-      ),
-      hadFocus,
-    );
+    }
   }
 
   private lookAt(p: Vector3 | null | undefined): void {

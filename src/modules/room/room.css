@@ -556,7 +556,7 @@ body.at-pc .talkie {
     4px 0 #fff;
   transition: transform 80ms ease-out;
 }
-/* the picked button (the main one until the arrows or the mouse pick another) is white; the rest are black */
+/* the main button (Yes, Next: what Enter presses) is white, the secondary one black */
 .tbtn--on {
   background: #fff;
   color: #111;
@@ -572,12 +572,9 @@ body.at-pc .talkie {
 .tbtn:active {
   transform: translateY(1px);
 }
-.tbtn:focus-visible {
-  outline: none; /* the picked button is the white one */
-}
+.tbtn:focus-visible,
 .talkie__btn:focus-visible {
-  outline: 3px solid #e2583e;
-  outline-offset: 6px;
+  outline: none; /* no ring around the bubble's buttons or the corner mouth */
 }
 .talkie--mini .talkie__say {
   display: none;
