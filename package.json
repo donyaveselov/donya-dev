@@ -3,7 +3,9 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "donya.dev: the isometric three.js room with the Windows XD desktop inside its monitor",
+  "description": "donya.dev: an isometric three.js room with a Windows-XP-style desktop (\"Windows XD\") inside its monitor",
+  "author": "Daniil Ivanov",
+  "homepage": "https://donya.dev",
   "engines": {
     "node": ">=24"
   },
@@ -18,10 +20,11 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "vitest run",
+    "check": "npm run typecheck && npm run lint && npm run format:check && npm run test",
     "pack:room": "node scripts/pack-room.mjs",
     "regress": "node scripts/regress.mjs",
     "compare": "node scripts/compare.mjs",
-    "deploy": "npm run build && node scripts/deploy.mjs"
+    "deploy": "npm run check && npm run build && node scripts/deploy.mjs"
   },
   "dependencies": {
     "three": "0.128.0"
