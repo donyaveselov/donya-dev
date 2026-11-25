@@ -110,8 +110,7 @@ function img(src: string | null | undefined): HTMLImageElement | null {
   }
   return im;
 }
-const hrefOf = (el: Element | null): string | null =>
-  el?.getAttribute('href') ?? el?.getAttribute('xlink:href') ?? null;
+const hrefOf = (el: Element | null): string | null => el?.getAttribute('href') ?? null;
 const ready = (im: HTMLImageElement | null | undefined): im is HTMLImageElement => !!im?.complete && !!im.naturalWidth;
 
 /** An icon label as the browser wrapped it: each line's text and box, read character by character from the layout. */

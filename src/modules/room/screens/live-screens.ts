@@ -126,7 +126,7 @@ function paintCode(c: HTMLCanvasElement, s: CodeSession, t: number, k: number, l
   g.setTransform(1, 0, 0, 1, 0, 0);
 }
 
-type ScreenTexKey = 'saver' | 'code' | 'editor' | 'terminal' | 'other' | 'dota' | 'cs' | 'youtube';
+type ScreenTexKey = 'saver' | 'code' | 'editor' | 'other' | 'dota' | 'cs' | 'youtube';
 
 export class LiveScreens {
   readonly tex: Record<ScreenTexKey, CanvasTexture>;
@@ -151,7 +151,6 @@ export class LiveScreens {
       saver: live(this.saverC),
       code: live(this.codeC),
       editor: screenTexture('editor'),
-      terminal: screenTexture('terminal'),
       other: screenTexture('game'),
       dota: screenTexture('dota'),
       cs: screenTexture('cs'),

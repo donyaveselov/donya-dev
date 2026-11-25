@@ -15,8 +15,6 @@ export interface Route {
   resume: boolean;
   /** sit down at the PC once the room is up: at the bare desktop, or with My Projects open */
   sit: 'desktop' | 'projects' | null;
-  /** keep the loading screen up: the room is never loaded (to look at the loader) */
-  holdLoader: boolean;
 }
 
 /** The plain room (donya.dev/, or an unknown address). */
@@ -26,7 +24,6 @@ export const DEFAULT_ROUTE: Route = {
   game: null,
   resume: false,
   sit: null,
-  holdLoader: false,
 };
 
 export const ROUTES = {
@@ -46,9 +43,6 @@ export const ROUTES = {
   pc: { sit: 'desktop' },
   pcdota: { sit: 'desktop', forced: 'play', game: 'dota' },
   projects: { sit: 'projects' },
-  loader: { holdLoader: true },
-  // the plain room in debug mode (src/utils/debug.ts reads the address itself)
-  debug: {},
 } as const satisfies Record<string, Partial<Route>>;
 
 export type RouteName = keyof typeof ROUTES;

@@ -29,7 +29,7 @@ import { ProjectsPin } from './components/pin';
 import { watchPointer } from './scene/pointer';
 import type { Pointer } from './scene/pointer';
 import { GAME_NAMES, pollPresence } from '../../services/presence.service';
-import { psx, render, setBackdrop } from './scene/psx';
+import { render, setBackdrop } from './scene/psx';
 import { currentRoute, onRouteChange, tidyAddress } from '../../services/router.service';
 import type { Route } from './routes';
 import { animateScene, buildScene, fitScene, lightScene, tourSights } from './scene/scene';
@@ -85,8 +85,8 @@ class RoomApp {
   private room: Room | null = null;
   /** the stage's size in CSS px, measured by layout() */
   private readonly size = { w: 0, h: 0 };
-  /** the debug panel's choices: the fly-in's slow-motion factor, and an hour that a status choice keeps */
-  private readonly debug = { slow: 1, hour: null as number | null };
+  /** the debug panel's hour, which a status choice keeps */
+  private debugHour: number | null = null;
   /** the talkie has said hello */
   private greeted = false;
   private lastFrame = performance.now();
@@ -139,14 +139,8 @@ class RoomApp {
       else if (document.body.classList.contains('no-3d')) this.flat.open();
     });
     window.addEventListener('resize', this.layout);
-    // Back or Forward (the resume sheet opened or closed), or an old #route typed into the address bar; the boot
-    // handles the address the page was loaded with
+    // Back or Forward (the resume sheet opened or closed); the boot handles the address the page was loaded with
     onRouteChange((route) => {
-      // the loader route on an open page: load it again, so that it stays on the loading screen
-      if (route.holdLoader) {
-        location.reload();
-        return;
-      }
       this.applyRoute(route);
       if (route.sit === 'projects') this.openProjects();
     });
@@ -157,8 +151,6 @@ class RoomApp {
     this.applyLang();
     readClock();
     this.applyTime();
-    // /loader keeps the loading screen up for good (nothing is loaded): a way to look at the loader
-    if (currentRoute().holdLoader) return;
     const gl = createRenderer();
     if (gl)
       loadRoom()
@@ -331,7 +323,6 @@ class RoomApp {
         root: scene.root,
         monitors: scene.monitors,
         reducedMotion: REDUCED_MOTION,
-        slow: () => this.debug.slow,
         status,
         game: () => live.game,
         atDesk: () => scene.figure.atDesk(),
@@ -497,14 +488,6 @@ class RoomApp {
 
   private debugHost(): DebugHost {
     return {
-      slow: this.debug.slow,
-      ps1: psx.on,
-      setSlow: (k) => {
-        this.debug.slow = k;
-      },
-      setPs1: (on) => {
-        psx.on = on;
-      },
       setWeather: (kind) => {
         live.wx.forced = kind;
         this.applyTime();
@@ -514,10 +497,10 @@ class RoomApp {
         const now = live.presence;
         if (!state && now?.playing) this.showGame({ kind: now.kind, name: now.game });
         // the state and the hour are independent: the light follows the hour (asleep is night anyway)
-        this.preview(state, this.debug.hour);
+        this.preview(state, this.debugHour);
       },
       setHour: (hour) => {
-        this.debug.hour = hour;
+        this.debugHour = hour;
         this.preview(live.forced, hour);
       },
     };
@@ -525,11 +508,6 @@ class RoomApp {
 
   private debugHandle(room: Room): RoomDebugHandle {
     return {
-      psx,
-      scene: room.scene,
-      renderer: room.renderer,
-      camera: room.camera,
-      controls: room.controls,
       sitDown: (which) => {
         room.handoff.sitDown(which);
       },
@@ -545,6 +523,6 @@ class RoomApp {
 
 /** Starts the page; nothing is built before this call. */
 export function startRoom(): void {
-  tidyAddress(); // an old link (/#resume) becomes its path before anything reads the route
+  tidyAddress(); // /resume/, an unknown path or a #fragment is tidied before anything reads the route
   new RoomApp().start();
 }

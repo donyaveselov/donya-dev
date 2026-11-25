@@ -1,6 +1,7 @@
 // The room's own strings (top bar, labels, the talkie tour, the resume sheet's chrome), in both page languages.
 import type { Lang, Status } from '../../types';
 import type { WeatherKind } from '../../services/weather.service';
+import { pad } from '../../content/text';
 
 export interface TourStrings {
   hello: string;
@@ -22,7 +23,8 @@ export interface TourStrings {
 }
 
 /** The strings the markup asks for by `data-room-t`. */
-export type MarkupKey = 'resume' | 'projects' | 'back' | 'no3d' | 'noDesktop' | 'print';
+const MARKUP_KEYS = ['resume', 'projects', 'back', 'no3d', 'noDesktop', 'print'] as const;
+export type MarkupKey = (typeof MARKUP_KEYS)[number];
 
 export interface RoomStrings extends Record<MarkupKey | Status, string> {
   phuket: string;
@@ -42,7 +44,8 @@ export interface RoomStrings extends Record<MarkupKey | Status, string> {
 }
 
 /** The accessible names the markup asks for by `data-room-aria`. */
-export type AriaKey = 'lang' | 'music';
+const ARIA_KEYS = ['lang', 'music'] as const;
+export type AriaKey = (typeof ARIA_KEYS)[number];
 
 export type TourKey = keyof TourStrings;
 
@@ -136,26 +139,13 @@ export function t(lang: Lang): RoomStrings {
   return STR[lang];
 }
 
-const MARKUP_KEYS: readonly string[] = [
-  'resume',
-  'projects',
-  'back',
-  'no3d',
-  'noDesktop',
-  'print',
-] satisfies MarkupKey[];
-
 export function isMarkupKey(key: string | null): key is MarkupKey {
-  return key !== null && MARKUP_KEYS.includes(key);
+  return key !== null && (MARKUP_KEYS as readonly string[]).includes(key);
 }
-
-const ARIA_KEYS: readonly string[] = ['lang', 'music'] satisfies AriaKey[];
 
 export function isAriaKey(key: string | null): key is AriaKey {
-  return key !== null && ARIA_KEYS.includes(key);
+  return key !== null && (ARIA_KEYS as readonly string[]).includes(key);
 }
-
-export const pad2 = (n: number): string => (n < 10 ? '0' : '') + String(n);
 
 /** "working", or "gaming in Dota 2" while a named game runs. */
 export function statusText(lang: Lang, status: Status, gameName: string | null): string {
@@ -165,7 +155,7 @@ export function statusText(lang: Lang, status: Status, gameName: string | null):
 
 /** The time chip: "Пхукет 13:00 · работаю". */
 export function timeChip(lang: Lang, h: number, m: number, status: Status, gameName: string | null): string {
-  return STR[lang].phuket + ' ' + pad2(h) + ':' + pad2(m) + ' · ' + statusText(lang, status, gameName);
+  return STR[lang].phuket + ' ' + pad(h) + ':' + pad(m) + ' · ' + statusText(lang, status, gameName);
 }
 
 /** A tour line; the greeting fills in the Phuket time and what the owner is doing. */
@@ -177,6 +167,6 @@ export function tourLine(
   const line = STR[lang].tour[key];
   if (key !== 'hello') return line;
   return line
-    .replace('{time}', pad2(now.h) + ':' + pad2(now.m))
+    .replace('{time}', pad(now.h) + ':' + pad(now.m))
     .replace('{what}', statusText(lang, now.status, now.gameName));
 }

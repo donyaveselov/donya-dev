@@ -4,7 +4,7 @@
    materials are lit per vertex (Lambert = Gouraud in r128). Vertices are not snapped to the pixel grid: two touching
    surfaces snapped independently made laid-on details flicker against their base.
    psx.fx (1 = full PS1, 0 = clean) is faded by the monitor transition; at 0 the target is bypassed and the frame is
-   drawn directly, so the hand-off to the DOM desktop stays pixel-exact. /nops1 or the debug row switches it off. */
+   drawn directly, so the hand-off to the DOM desktop stays pixel-exact. */
 import {
   BufferGeometry,
   Color,
@@ -48,8 +48,6 @@ export const mdata = (m: Material): MatData => m.userData as MatData;
 export type RoomMaterial = MeshLambertMaterial | MeshBasicMaterial;
 
 export const psx = {
-  /** the PS1 pipeline on (/nops1 or the debug row turns it off) */
-  on: true,
   /** 1 = the full PS1 look, 0 = clean; the hand-off fades it */
   fx: 1,
   /** device pixels per PS1 pixel at zoom 1 (set by the layout) */
@@ -206,7 +204,7 @@ export function render(renderer: WebGLRenderer, scene: Scene, camera: Orthograph
   const cv = renderer.domElement;
   const W = cv.width;
   const H = cv.height;
-  if (!psx.on || psx.fx <= 0 || !post) {
+  if (psx.fx <= 0 || !post) {
     renderer.setRenderTarget(null);
     renderer.render(scene, camera);
     return;

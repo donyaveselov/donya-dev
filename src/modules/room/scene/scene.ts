@@ -78,7 +78,7 @@ export function buildScene(gl: WebGLRenderer, gltf: GLTF, stage: HTMLElement): R
   for (const m of index.get('shoe')) m.color.setHex(SHOE_UPPER);
   for (const m of index.get('shoe_sole')) m.color.setHex(SHOE_SOLE);
   const screens = new LiveScreens(REDUCED_MOTION, () => live.lang);
-  const monitors = new Monitors(root, [screens.tex.editor, screens.tex.terminal]);
+  const monitors = new Monitors(root, [screens.tex.code, screens.tex.editor]);
   const lights = new LightRig(scene); // no shadow maps: the model's shadows are painted into its vertex colours
   const duvetMade = root.getObjectByName('Bed_duvet_made');
   const duvetSleep = root.getObjectByName('Bed_duvet_sleep');
@@ -162,7 +162,6 @@ export function lightScene(r: RoomScene): void {
   lightCoast(r.outdoor, sky, oc, skyTop, skyLow);
   r.weather.invalidate(); // re-apply the flash level over the new colours next frame
   r.figure.show(st);
-  r.clock?.tick(live.time, Date.now());
   r.tags.refresh(live.lang);
 }
 

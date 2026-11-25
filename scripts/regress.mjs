@@ -245,7 +245,7 @@ async function shot(page, name) {
 // -------------------------------------------------------------------------------------------------- page actions
 
 const click = (page, sel) => page.$eval(sel, (el) => el.click());
-/** Clicks a debug panel button: row by its label (debug, время, погода, полёт, ps1), button by its text. */
+/** Clicks a debug panel button: row by its label (debug, время, погода), button by its text. */
 const dbg = (page, row, btn) =>
   page.evaluate(
     ([row, btn]) => {

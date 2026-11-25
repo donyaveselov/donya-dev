@@ -2,4 +2,6 @@
 // once it is up (src/services/desktop.service.ts) and mounted when the visitor sits down at a monitor.
 import './modules/room/room.css';
 
-import './modules/room';
+import { startRoom } from './modules/room/room';
+
+startRoom();

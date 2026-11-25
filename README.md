@@ -65,7 +65,7 @@ The harness, re-packing the model, deploying and the traps worth knowing are in
 index.html             page head and the room's markup (top bar, resume sheet)
 src/
   main.ts              entry: the room first; the desktop is loaded once the room is up
-  modules/             one folder per feature, each with an index.ts
+  modules/             one folder per feature
     room/              the 3D room: scene/ (lights, weather, PS1 post pass), screens/, tour/, handoff/ (the
                        fly-in to the desktop), components/ (top bar, resume sheet, labels), store/, routes.ts
     desktop/           the Windows XD shell: windows/, taskbar/ (Start menu, tray), session/ (boot, sleep, shut
