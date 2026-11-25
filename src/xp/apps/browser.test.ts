@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { HOME, isOwnSite, isThisSite, normalize, searchHits } from './browser-url';
+import { HOME, isOwnSite, isThisSite, normalize, searchHits, searchQuery } from './browser-url';
 
 describe('navigator address bar', () => {
   it('normalizes what is typed', () => {
@@ -10,6 +10,15 @@ describe('navigator address bar', () => {
     expect(normalize('https://example.com/x')).toBe('https://example.com/x');
     expect(normalize('wax.donya.dev/a')).toBe('https://wax.donya.dev/a');
     expect(normalize('vue jobs')).toBe('about:search?q=vue%20jobs');
+  });
+  it('reads the query of a search address, even a malformed one', () => {
+    expect(searchQuery(normalize('vue jobs'))).toBe('vue jobs');
+    expect(searchQuery(normalize('c++ & 100%'))).toBe('c++ & 100%');
+    expect(searchQuery('about:search?q=%')).toBe('%');
+    expect(searchQuery('about:search?q=%E0%A4%A')).not.toBe('');
+    expect(searchQuery('about:search?q=')).toBe('');
+    expect(searchQuery('about:search')).toBe('');
+    expect(searchQuery('about:search?x=1')).toBe('');
   });
   it('opens only my own sites inside', () => {
     expect(isOwnSite('https://donya.dev')).toBe(true);

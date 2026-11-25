@@ -7,7 +7,8 @@ import { ico, svg } from '../icons';
 import { registerApp } from '../shell/apps';
 import { ICONS } from './icons';
 import { copyText, pad, reduced, ui } from './kit';
-import { HOME, isOwnSite, isThisSite, normalize, searchHits } from './browser-url';
+import { HOME, isOwnSite, isThisSite, normalize, searchHits, searchQuery } from './browser-url';
+import { siteFrame } from './site-frame';
 import { d } from '../content/text';
 import { APP } from './strings';
 
@@ -73,11 +74,20 @@ const T = {
   ),
 } as const;
 
-const FAVS = [
-  { label: 'GitHub — donyaveselov', url: 'https://github.com/donyaveselov' },
-  { label: 'Telegram — work_veselov', url: 'https://t.me/work_veselov' },
-  { label: 'donya.dev', url: 'https://donya.dev' },
-  { label: 'verifikat.ru', url: 'https://verifikat.ru' },
+/** Favorites: my pages on the web (content/profile.ts), then the commercial project's site. */
+const FAVS: readonly { label: string; short: string; url: string }[] = [
+  ...(['github', 'telegram', 'site'] as const).flatMap((id) => {
+    const c = CONTACTS.find((x) => x.id === id);
+    if (!c?.href) return [];
+    // "GitHub — donyaveselov" for a profile, the bare address for a site
+    const name = typeof c.label === 'string' ? c.label : c.value;
+    const handle = c.value.split('/')[1];
+    return [{ label: handle ? `${name} — ${handle}` : c.value, short: handle ? name : c.value, url: c.href }];
+  }),
+  ...PROJECTS.slice(0, 1).map((p) => {
+    const site = p.url.replace(/^https?:\/\//, '');
+    return { label: site, short: site, url: p.url };
+  }),
 ];
 
 function visitorNo(): string {
@@ -97,8 +107,13 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
   const root = U.root(content, 'xpa-browser', 560);
   let hist: string[] = [];
   let hi = -1;
-  let loadT = 0;
+  /** The address in the bar. */
   let url = HOME;
+  /** The page in the view (it stays while the next one loads, or after Stop). */
+  let shown: string | null = null;
+  let cancelLoad: (() => void) | null = null;
+  // a page is rebuilt on every navigation and language switch: its bilingual text and its site probe go with it
+  const page = U.scope();
 
   // the Internet Explorer 6 throbber is the Windows flag
   const throbber = h('div.xpa-br-throb', {
@@ -210,7 +225,8 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
       showLabel: true,
       big: true,
       onClick: () => {
-        go('https://github.com/donyaveselov');
+        const first = FAVS[0];
+        if (first) go(first.url);
       },
     }),
   ]);
@@ -242,7 +258,7 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
             },
           },
         },
-        [h('span.xpa-g16', { html: ICONS.url }), h('span', f.label.split(' ')[0] ?? '')],
+        [h('span.xpa-g16', { html: ICONS.url }), h('span', f.short)],
       ),
     ),
   ]);
@@ -276,7 +292,9 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
     load(u);
   }
   function stop(): void {
-    clearTimeout(loadT);
+    if (!cancelLoad) return;
+    cancelLoad();
+    cancelLoad = null;
     root.classList.remove('loading');
     st.set(0, T.stopped);
   }
@@ -290,7 +308,7 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
     addrIn.value = u;
     bBack.disabled = hi <= 0;
     bFwd.disabled = hi >= hist.length - 1;
-    clearTimeout(loadT);
+    cancelLoad?.();
     const ext = /^https?:/i.test(u);
     const bad = ext && !isOwnSite(u);
     st.set(0, `${t(T.opening)}${u}...`);
@@ -300,16 +318,20 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
     const dur = reduced() ? 0 : ext ? 900 : 350;
     progFill.style.transition = `width ${String(dur)}ms ease-out`;
     progFill.style.width = '100%';
-    loadT = window.setTimeout(() => {
+    cancelLoad = U.later(dur, () => {
+      cancelLoad = null;
       root.classList.remove('loading');
       draw(u);
       st.set(0, bad ? T.cannotDisplay : T.done);
       resetProgress();
       if (bad) U.sound('error');
-    }, dur);
+    });
   }
 
   function draw(u: string): void {
+    page.dispose();
+    const { h } = page;
+    shown = u;
     view.innerHTML = '';
     view.scrollTop = 0;
     const ext = /^https?:/i.test(u);
@@ -321,13 +343,16 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
       view.appendChild(herePage());
       api.win.setTitle(`${t(T.hereTitle)} — ${nav}`);
     } else if (ext && isOwnSite(u)) {
-      view.appendChild(h('iframe.xpa-wax-frame', { src: u, title: u }));
+      const project = PROJECTS.find((p) => u.startsWith(p.url));
+      view.appendChild(
+        siteFrame(page, { src: u, overview: project && (() => api.openApp('project', { id: project.id })) }),
+      );
       api.win.setTitle(`${u.replace(/^https?:\/\//, '')} — ${nav}`);
     } else if (ext) {
       view.appendChild(errorPage(u));
       api.win.setTitle(`${t(T.pageCannot)} — ${nav}`);
     } else if (u.startsWith('about:search')) {
-      view.appendChild(searchPage(decodeURIComponent(u.split('q=')[1] ?? '')));
+      view.appendChild(searchPage(searchQuery(u)));
       api.win.setTitle(t(T.search));
     } else {
       view.appendChild(h('div.xpa-br-blank', u === 'about:blank' ? '' : t(T.noPage) + u));
@@ -338,6 +363,7 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
   }
 
   function appLink(id: string, label: Bilingual, iconName: string): HTMLButtonElement {
+    const { h } = page;
     const b = h('button.xpa-br-app', { type: 'button' }, [U.icon(iconName), h('span', label)]);
     b.addEventListener('click', () => {
       U.sound('click');
@@ -355,8 +381,9 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
   const visitor = visitorNo();
 
   function startPage(): HTMLDivElement {
+    const { h, button } = page;
     const q = h('input.xpa-field', { type: 'search', placeholder: T.searchHere, 'aria-label': T.search });
-    const submit = U.button(T.find, null, { primary: true });
+    const submit = button(T.find, null, { primary: true });
     submit.type = 'submit';
     const form = h('form.xpa-br-search', { action: '#' }, [q, submit]);
     form.addEventListener('submit', (e) => {
@@ -428,6 +455,7 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
   }
 
   function herePage(): HTMLDivElement {
+    const { h } = page;
     return h('div.xpa-br-err', [
       h('div.xpa-br-err-head', [h('span.xpa-ico', { html: ICONS.info }), h('h1', T.hereTitle)]),
       h('p', T.hereText),
@@ -449,6 +477,7 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
   }
 
   function errorPage(u: string): HTMLDivElement {
+    const { h } = page;
     const host = u.replace(/^https?:\/\//, '').replace(/\/.*$/, '');
     return h('div.xpa-br-err', [
       h('div.xpa-br-err-head', [h('span.xpa-ico', { html: ICONS.info }), h('h1', T.pageCannot)]),
@@ -481,6 +510,7 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
   }
 
   function searchPage(q: string): HTMLDivElement {
+    const { h } = page;
     const hits = searchHits(q);
     return h('div.xpa-br-start', [
       h('h2', [t(T.results), h('b', q)]),
@@ -521,14 +551,15 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
     if (a instanceof HTMLAnchorElement) st.set(0, a.href);
   });
 
-  U.bind(() => {
-    draw(url);
-    st.set(0, T.done);
-  });
   go(normalize(api.params?.url));
-  U.onCleanup(() => {
-    clearTimeout(loadT);
-  });
+  // a language switch redraws the page in the view; while one is loading, its "Opening…" line is said again instead
+  // (the bilingual statuses follow the language by themselves)
+  U.onCleanup(
+    api.onLang(() => {
+      if (cancelLoad) st.set(0, `${t(T.opening)}${url}...`);
+      else if (shown !== null) draw(shown);
+    }),
+  );
   return U.destroy;
 }
 
