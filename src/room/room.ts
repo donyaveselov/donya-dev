@@ -542,7 +542,7 @@ function frame(now: number): void {
 
 /** A line at the bottom of the page (no 3D, no desktop), which stays. */
 function say(key: 'no3d' | 'noDesktop'): void {
-  note.firstElementChild?.setAttribute('data-t', key);
+  note.firstElementChild?.setAttribute('data-room-t', key);
   panels.applyLang(live.lang);
   note.style.opacity = '1';
 }

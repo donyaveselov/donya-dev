@@ -110,16 +110,19 @@ export class Panels {
     document.querySelectorAll<HTMLElement>('.bar .chip').forEach((el) => fitPixelBox(el));
   }
 
-  /** The page in a language: every data-t string and accessible name, the language switch. */
+  /**
+   * The page in a language: the room's own strings (data-room-t) and accessible names (data-room-aria), the language
+   * switch. The attributes are the room's alone: the desktop's markup has its own data-* and is never touched here.
+   */
   applyLang(lang: Lang): void {
     const T = t(lang);
     document.documentElement.lang = lang;
-    document.querySelectorAll('[data-t]').forEach((el) => {
-      const key = el.getAttribute('data-t');
-      el.textContent = isMarkupKey(key) ? T[key] : '';
+    document.querySelectorAll('[data-room-t]').forEach((el) => {
+      const key = el.getAttribute('data-room-t');
+      if (isMarkupKey(key)) el.textContent = T[key];
     });
-    document.querySelectorAll('[data-t-aria]').forEach((el) => {
-      const key = el.getAttribute('data-t-aria');
+    document.querySelectorAll('[data-room-aria]').forEach((el) => {
+      const key = el.getAttribute('data-room-aria');
       if (isAriaKey(key)) el.setAttribute('aria-label', T.aria[key]);
     });
     byId('cv-note').hidden = !T.resumeNote;

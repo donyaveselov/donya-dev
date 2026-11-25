@@ -21,7 +21,7 @@ export interface TourStrings {
   end: string;
 }
 
-/** The strings the markup asks for by `data-t`. */
+/** The strings the markup asks for by `data-room-t`. */
 export type MarkupKey = 'resume' | 'projects' | 'back' | 'loading' | 'no3d' | 'noDesktop' | 'resumeNote' | 'print';
 
 export interface RoomStrings extends Record<MarkupKey | Status, string> {
@@ -35,11 +35,11 @@ export interface RoomStrings extends Record<MarkupKey | Status, string> {
   /** the one label over the resume and the diploma */
   framesTag: string;
   tour: TourStrings;
-  /** accessible names the markup asks for by `data-t-aria` */
+  /** accessible names the markup asks for by `data-room-aria` */
   aria: Record<AriaKey, string>;
 }
 
-/** The accessible names the markup asks for by `data-t-aria`. */
+/** The accessible names the markup asks for by `data-room-aria`. */
 export type AriaKey = 'lang' | 'music';
 
 export type TourKey = keyof TourStrings;
