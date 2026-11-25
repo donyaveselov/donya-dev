@@ -2,6 +2,7 @@
 // only in debug mode (src/shared/debug.ts), so visitors download neither this code nor its styles. Every button
 // carries data-debug="row:choice" (time:sunset, state:dota, ...) for scripts; the visible labels are in Russian.
 import type { GameKind, Status } from '../shared/types';
+import { PREVIEW_HOURS } from './clock';
 import type { WeatherKind } from './weather';
 import './debug-panel.css';
 
@@ -78,9 +79,9 @@ export function makeDebugPanel(host: DebugHost): HTMLElement {
     'время',
     [
       ['auto', 'auto', null],
-      ['day', 'день', 13],
-      ['sunset', 'закат', 18.2],
-      ['night', 'ночь', 1.5],
+      ['day', 'день', PREVIEW_HOURS.day],
+      ['sunset', 'закат', PREVIEW_HOURS.sunset],
+      ['night', 'ночь', PREVIEW_HOURS.night],
     ],
     null,
     (v) => {

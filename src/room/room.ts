@@ -7,6 +7,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { getDesktop } from '../shared/desktop';
 import type { RoomDesktop, RoomMountOptions } from '../shared/desktop';
+import { SAVER_SCREEN } from '../shared/saver';
 import type { Lang, Status } from '../shared/types';
 import { debugWanted } from '../shared/debug';
 import type { DebugHost } from './debug-panel';
@@ -18,7 +19,7 @@ import { HandOff } from './handoff';
 import { t } from './i18n';
 import { LightRig } from './light-rig';
 import { BACKDROP, roomLight, screenTint, skyColours, skyFactors } from './lighting';
-import { LiveScreens, LIVE_W } from './live-screens';
+import { LiveScreens } from './live-screens';
 import { loadRoom } from './loader';
 import { MaterialIndex, convertMaterials } from './materials';
 import { Music } from './music';
@@ -283,7 +284,7 @@ function mountOptions(): RoomMountOptions {
     },
     // exactly the position the monitor shows this frame
     saverPos: () => must(room).screens.saverPosNow(),
-    saverBase: LIVE_W,
+    saverBase: SAVER_SCREEN.w,
     // the desktop's language switch moves the whole page too
     onLangChange: (l: Lang) => {
       if (l !== live.lang) setLang(l);

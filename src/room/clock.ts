@@ -9,6 +9,9 @@ export function isStatus(s: string): s is Status {
   return (STATUSES as readonly string[]).includes(s);
 }
 
+/** The hours the previews show (#day / #sunset / #night, the debug panel, the tour); 18.2 is 18:12. */
+export const PREVIEW_HOURS = { day: 13, sunset: 18.2, night: 1.5 } as const;
+
 let fmt: Intl.DateTimeFormat | null = null;
 
 /** The wall-clock time in Phuket (UTC+7), or the previewed hour (e.g. 18.2 = 18:12) when one is set. */

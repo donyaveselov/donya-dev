@@ -3,8 +3,9 @@
 import { DESKTOP_DOM } from '../shared/desktop';
 import { EXPERIENCE } from '../shared/experience';
 import type { Lang, Status } from '../shared/types';
-import { isStatus } from './clock';
+import { PREVIEW_HOURS, isStatus } from './clock';
 import { isAriaKey, isMarkupKey, t, timeChip } from './i18n';
+import { GAME_NAMES } from './presence';
 import { fitPixelBox } from './tags';
 import { byId } from './util';
 
@@ -143,12 +144,12 @@ export interface Route {
 
 /** The previews a hash asks for: #day / #sunset / #night an hour (a state link keeps the real hour), a status, a game. */
 export function parseRoute(h: string): Route {
-  const times: Record<string, number> = { day: 13, sunset: 18.2, night: 1.5 };
-  const r: Route = { preview: times[h] ?? null, forced: isStatus(h) ? h : null, game: null };
+  const hours: Partial<Record<string, number>> = PREVIEW_HOURS;
+  const r: Route = { preview: hours[h] ?? null, forced: isStatus(h) ? h : null, game: null };
   const g = h === 'pcdota' ? 'dota' : h;
   if (g === 'dota' || g === 'cs') {
     r.forced = 'play';
-    r.game = { kind: g, name: g === 'dota' ? 'Dota 2' : 'Counter-Strike 2' };
+    r.game = { kind: g, name: GAME_NAMES[g] };
   }
   return r;
 }

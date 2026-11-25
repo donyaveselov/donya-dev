@@ -4,8 +4,10 @@
    back; the labels appear one by one; the camera leans a little towards what is being talked about. */
 import type { Vector3 } from 'three';
 import type { GameKind, Lang, Status } from '../shared/types';
+import { PREVIEW_HOURS } from './clock';
 import { t, tourLine } from './i18n';
 import type { TourKey } from './i18n';
+import { GAME_NAMES } from './presence';
 import type { TagKey } from './tags';
 import { SPEAKING, TALKIE_FRAMES } from './talkie-frames';
 import type { MouthFrame } from './talkie-frames';
@@ -42,10 +44,10 @@ export interface TourSights {
 export function tourSteps(s: TourSights): TourStep[] {
   return [
     { key: 'hello', ask: true },
-    { key: 'work', state: 'work', hour: 13, look: s.desk },
+    { key: 'work', state: 'work', hour: PREVIEW_HOURS.day, look: s.desk },
     { key: 'play', state: 'play', game: 'cs', hour: 21.5, look: s.desk },
     { key: 'outside', state: 'outside', hour: 19.3, look: s.hammock },
-    { key: 'sleep', state: 'sleep', hour: 1.5, look: s.bed },
+    { key: 'sleep', state: 'sleep', hour: PREVIEW_HOURS.night, look: s.bed },
     { key: 'back', real: true },
     { key: 'projects', show: ['projects'], look: s.desk },
     { key: 'resume', show: ['resume'], look: s.resume },
@@ -264,7 +266,7 @@ export class Tour {
       this.host.preview({
         forced: st.state,
         hour: st.hour ?? null,
-        game: st.game ? { kind: 'cs', name: 'Counter-Strike 2' } : cur.game,
+        game: st.game ? { kind: st.game, name: GAME_NAMES[st.game] } : cur.game,
       });
     } else {
       this.host.preview(this.saved);

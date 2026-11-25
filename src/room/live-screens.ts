@@ -3,17 +3,15 @@
 import { CanvasTexture } from 'three';
 import type { GameKind, Status } from '../shared/types';
 import { desktopLogo } from '../shared/desktop';
+import { SAVER_BG, SAVER_LOGO, SAVER_SCREEN } from '../shared/saver';
 import { CodeSession, wrapText } from './opencode';
 import { saverPos } from './saver';
 import type { SaverPos } from './saver';
 import type { LineKind } from './opencode';
 import { canvas, ctx2d, screenCanvasTexture, screenFilter, screenTexture } from './textures';
 
-/** The same colour as the desktop's own saver (the XP shell's saver and its CSS). */
-const SAVER_BG = '#0a1a4a';
-/** The live canvases' size; the desktop's saver matches it ("saverBase"). */
-export const LIVE_W = 768;
-const LIVE_H = 432;
+/** The live canvases (the saver, the opencode session) are all the saver's size. */
+const { w: LIVE_W, h: LIVE_H } = SAVER_SCREEN;
 
 const INDENT: Record<LineKind, number> = { u: 14, a: 14, t: 30, '+': 46, '-': 46, o: 30, ' ': 0 };
 const MONO = 'Menlo, Consolas, monospace';
@@ -186,7 +184,7 @@ export class LiveScreens {
   }
 
   /**
-   * A second, page-sized canvas for the opencode window on the desktop: the monitor's 768x432 picture is right for
+   * A second, page-sized canvas for the opencode window on the desktop: the monitor's own picture is right for
    * the hand-off frame, but on a narrow phone it is either cropped or unreadably small. This one has the window's own
    * shape, the same session, and lines wrapped to its width.
    */
@@ -209,8 +207,7 @@ export class LiveScreens {
     const g = ctx2d(c);
     const W = c.width;
     const H = c.height;
-    const bw = 250;
-    const bh = 78;
+    const { w: bw, h: bh } = SAVER_LOGO;
     if (!this.logo) {
       const src = desktopLogo();
       if (src) {
@@ -218,7 +215,7 @@ export class LiveScreens {
         this.logo.src = src;
       }
     }
-    g.fillStyle = SAVER_BG; // deep blue, not black: asleep, the screens are the room's light source
+    g.fillStyle = SAVER_BG;
     g.fillRect(0, 0, W, H);
     const uv = saverPos(t, this.saverUV);
     const x = uv.u * (W - bw);
