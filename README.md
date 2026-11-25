@@ -14,7 +14,7 @@ into one HTML file. That is why the history starts with an import and not with a
 
 ## Decisions
 
-- **No UI framework.** Plain TypeScript and a small DOM kit (`src/xp/apps/kit.ts`). The desktop is a window manager
+- **No UI framework.** Plain TypeScript and a small DOM kit (`src/components/kit/kit.ts`). The desktop is a window manager
   and a set of small apps: a virtual DOM would add weight and a second source of truth for layout that the 3D hand-off
   reads straight from the DOM. Strict TypeScript (`noUncheckedIndexedAccess`, type-checked ESLint) does the job a
   framework's structure would.
@@ -36,7 +36,7 @@ into one HTML file. That is why the history starts with an import and not with a
 - **Fallbacks.** Without WebGL the page keeps its top bar and a plain projects button instead of an empty canvas
   (the desktop is DOM and still works); without JavaScript a `<noscript>` style makes the resume sheet the page. The
   resume is real markup in `index.html`, so it also prints.
-- **One mute switch.** The room's music and the desktop's sounds share one setting (`src/shared/sound.ts`), so
+- **One mute switch.** The room's music and the desktop's sounds share one setting (`src/store/sound.ts`), so
   muting in either place mutes both.
 
 ## Running
@@ -64,11 +64,22 @@ The harness, re-packing the model, deploying and the traps worth knowing are in
 ## Layout
 
 ```
-index.html         page head and the room's markup (top bar, resume sheet)
-src/main.ts        entry: the room first; the desktop is loaded once the room is up
-src/room/          the 3D room: scene, lights and weather, the PS1 post pass, the tour, the fly-in hand-off
-src/xp/            the Windows XD desktop: shell/ (window manager, taskbar, Start menu), apps/, content/, styles/
-src/shared/        what both sides use: the desktop's contract, i18n helpers, the mute switch
+index.html             page head and the room's markup (top bar, resume sheet)
+src/
+  main.ts              entry: the room first; the desktop is loaded once the room is up
+  modules/             one folder per feature, each with an index.ts
+    room/              the 3D room: scene/ (lights, weather, PS1 post pass), screens/, tour/, handoff/ (the
+                       fly-in to the desktop), components/ (top bar, resume sheet, labels), store/, routes.ts
+    desktop/           the Windows XD shell: windows/, taskbar/ (Start menu, tray), session/ (boot, sleep, shut
+                       down), store/ (state, prefs, constants)
+    apps/<name>/       the desktop's programs: projects, resume, about, contact, terminal, browser, notepad,
+                       calculator, paint, minesweeper, recycle
+    music/             the background lofi loop
+  services/            *.service.ts: the room model, weather, Discord presence, the lazily loaded desktop
+  store/               page-wide state: the one mute switch
+  content/             texts: projects, resume, profile, stack
+  components/kit/      the apps' small DOM kit (h(), menus, bindings)
+  i18n/  types/  enums/  utils/  assets/
 lab/music/         a NES-style synth sketch on Web Audio; dev only, not in the build
 scripts/           deploy.mjs (FTP deploy), pack-room.mjs (Blender export -> room.json), regress.mjs + compare.mjs
 public/            room.json, wallpapers, screenshots, music/ (the lofi loop, with its CREDITS.txt), .htaccess

@@ -7,5 +7,7 @@ package-lock.json
 # hand-tuned: the dense XP stylesheets (one rule per line, aligned by eye) and the page markup are kept as written;
 # Prettier would reflow them into several times the lines without making them clearer
 index.html
-src/xp/styles
-src/xp/assets
+src/modules/desktop/xp.css
+src/modules/apps/apps.css
+src/modules/apps/projects/mocks/*.css
+src/assets

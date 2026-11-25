@@ -14,7 +14,7 @@
 //
 // Order: new and changed files, then index.html (a visitor never gets a page whose scripts are not there yet), then
 // the manifest, then the removals. The previous deploy's files stay for one more deploy: a tab opened before it still
-// has the old index.html and loads its xp-*.js lazily. Only files that are in neither this build nor the previous
+// has the old index.html and loads its desktop-*.js lazily. Only files that are in neither this build nor the previous
 // manifest are removed. `.well-known/` (Let's Encrypt's checks) and `cgi-bin/` are never touched.
 import { createHash } from 'node:crypto';
 import { readFileSync, readdirSync, statSync } from 'node:fs';

@@ -39,7 +39,7 @@ export default defineConfig(({ mode }) => {
     build: {
       outDir: artifact ? 'dist-artifact' : 'dist',
       emptyOutDir: true,
-      // Two chunks of about 660-680 kB each: the room with three.js, and the desktop (xp), whose XP icon bitmaps are
+      // Two chunks of about 660-680 kB each: the room with three.js, and the desktop, whose XP icon bitmaps are
       // inlined as base64 on purpose, so that the artifact build stays one file. Warn only when one outgrows that.
       chunkSizeWarningLimit: 750,
       // esbuild, not the default Lightning CSS: Lightning drops `backdrop-filter` when `-webkit-backdrop-filter` sits

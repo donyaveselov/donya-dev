@@ -106,7 +106,7 @@ certificate for the domain (a free Let's Encrypt one in the panel).
   `-webkit-backdrop-filter` is next to it, and the blur is lost in Chrome.
 - The sit-down hand-off paints the desktop onto the 3D monitor by reading the desktop's DOM (`.xp`, `.xp-wall image`,
   `.xp-taskbar`, `.xp-startbtn`, `.xp-task`, `.xp-tray`, `.xp-clock`, `.xp-lang`, `.xp-icon`, ...): renaming those
-  classes breaks the fly-in without any error. The list is `DESKTOP_DOM` in `src/shared/desktop.ts`.
+  classes breaks the fly-in without any error. The list is `DESKTOP_DOM` in `src/services/desktop-registry.ts`.
 - three gives every geometry, material, texture and object a uuid drawn from `Math.random`, which the harness seeds.
   The rain's particles, the minesweeper layout, Task Manager's graphs and the starfield use the same stream, so
   anything that changes how many three objects exist before them (a removed mesh, three's module-level objects dropped
@@ -115,5 +115,5 @@ certificate for the domain (a free Let's Encrypt one in the panel).
 - The harness finds the debug panel's buttons by their Russian labels: renaming a label in `debug-panel.ts` needs the
   same change in `scripts/regress.mjs`.
 - The desktop shows work done under an NDA only in general terms: it must never name that employer or its
-  repositories. `src/xp/nda.test.ts` checks all of `src/xp` for the names. The room's own resume sheet in `index.html`
+  repositories. `src/nda.test.ts` checks all of `src` for the names. The room's own resume sheet in `index.html`
   is a separate, public document.
