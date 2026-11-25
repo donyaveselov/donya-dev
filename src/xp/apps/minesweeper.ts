@@ -6,8 +6,8 @@ import { registerApp } from '../shell/apps';
 import { ICONS } from './icons';
 import { reduced, ui } from './kit';
 import { Board, ledDigits } from './minesweeper-board';
-
-const d = (ru: string, en: string): Bilingual => ({ ru, en });
+import { d } from '../content/text';
+import { APP } from './strings';
 
 type Level = 'beginner' | 'intermediate' | 'expert';
 const LEVELS: Record<Level, { r: number; c: number; m: number; label: Bilingual }> = {
@@ -24,10 +24,7 @@ const T = {
   marks: d('Метки (?)', 'Marks (?)'),
   flagModeMenu: d('Режим флажков (касание)', 'Flag mode (touch)'),
   bestMenu: d('Лучшие результаты…', 'Best Times…'),
-  exit: d('Выход', 'Exit'),
-  help: d('Справка', 'Help'),
   howTo: d('Как играть', 'How to play'),
-  about: d('О программе', 'About'),
   aboutText: d(
     'Первый ход всегда безопасен. Как и первое сообщение в Telegram.',
     'The first click is always safe. So is the first message on Telegram.',
@@ -177,7 +174,7 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
         { label: T.bestMenu, action: showBest },
         { sep: true },
         {
-          label: T.exit,
+          label: APP.exit,
           action: () => {
             api.win.close();
           },
@@ -185,11 +182,11 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
       ],
     },
     {
-      label: T.help,
+      label: APP.help,
       items: [
         { label: T.howTo, key: 'F1', action: help },
         {
-          label: T.about,
+          label: APP.about,
           action: () => {
             U.aboutDialog(T.title, T.aboutText);
           },

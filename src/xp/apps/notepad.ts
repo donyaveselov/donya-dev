@@ -5,28 +5,22 @@ import { registerApp } from '../shell/apps';
 import { Calculator } from './calculator';
 import { ICONS } from './icons';
 import { copyText, pad, phuketNow, ui } from './kit';
-
-const d = (ru: string, en: string): Bilingual => ({ ru, en });
+import { d } from '../content/text';
+import { APP } from './strings';
 
 const T = {
   notepad: d('Блокнот', 'Notepad'),
   phuket: d('Пхукет', 'Phuket'),
-  file: d('Файл', 'File'),
   new: d('Создать', 'New'),
   untitled: d('Безымянный.txt', 'Untitled.txt'),
   saveAs: d('Сохранить как…', 'Save As…'),
-  exit: d('Выход', 'Exit'),
-  edit: d('Правка', 'Edit'),
-  selectAll: d('Выделить всё', 'Select All'),
   copyAll: d('Копировать всё', 'Copy all'),
   timeDate: d('Время и дата', 'Time/Date'),
   format: d('Формат', 'Format'),
   wordWrap: d('Перенос по словам', 'Word Wrap'),
   larger: d('Шрифт крупнее', 'Larger font'),
   smaller: d('Шрифт мельче', 'Smaller font'),
-  view: d('Вид', 'View'),
   statusBar: d('Строка состояния', 'Status Bar'),
-  help: d('Справка', 'Help'),
   aboutNotepad: d('О программе', 'About Notepad'),
   notepadAbout: d('Лучший редактор кода, если других нет.', 'The best code editor when there is no other.'),
   ln: d('Стр ', 'Ln '),
@@ -35,7 +29,6 @@ const T = {
   divZero: d('Деление на ноль невозможно.', 'Cannot divide by zero.'),
   invalid: d('Недопустимый ввод.', 'Invalid input.'),
   ieee: d('Это не баг, это IEEE 754.', 'Not a bug, that is IEEE 754.'),
-  copy: d('Копировать', 'Copy'),
   aboutCalc: d('О программе', 'About Calculator'),
   calcAbout: d('Считает точнее, чем оценки сроков.', 'More accurate than time estimates.'),
 } as const;
@@ -113,7 +106,7 @@ function renderNotepad(content: HTMLElement, api: XPAppApi): () => void {
   };
   const menu = U.menubar([
     {
-      label: T.file,
+      label: APP.file,
       items: [
         {
           label: T.new,
@@ -130,7 +123,7 @@ function renderNotepad(content: HTMLElement, api: XPAppApi): () => void {
         { label: T.saveAs, key: 'Ctrl+S', action: save },
         { sep: true },
         {
-          label: T.exit,
+          label: APP.exit,
           action: () => {
             api.win.close();
           },
@@ -138,10 +131,10 @@ function renderNotepad(content: HTMLElement, api: XPAppApi): () => void {
       ],
     },
     {
-      label: T.edit,
+      label: APP.edit,
       items: [
         {
-          label: T.selectAll,
+          label: APP.selectAll,
           key: 'Ctrl+A',
           action: () => {
             ta.focus();
@@ -179,7 +172,7 @@ function renderNotepad(content: HTMLElement, api: XPAppApi): () => void {
       ],
     },
     {
-      label: T.view,
+      label: APP.view,
       items: [
         {
           label: T.statusBar,
@@ -192,7 +185,7 @@ function renderNotepad(content: HTMLElement, api: XPAppApi): () => void {
       ],
     },
     {
-      label: T.help,
+      label: APP.help,
       items: [
         {
           label: T.aboutNotepad,
@@ -317,7 +310,7 @@ function renderCalc(content: HTMLElement, api: XPAppApi): () => void {
   const menu = U.menubar([
     {
       label: d('Правка', 'Edit'),
-      items: [{ label: T.copy, key: 'Ctrl+C', action: () => void copyText(calc.err ? '' : calc.cur) }],
+      items: [{ label: APP.copy, key: 'Ctrl+C', action: () => void copyText(calc.err ? '' : calc.cur) }],
     },
     {
       label: d('Справка', 'Help'),

@@ -5,31 +5,25 @@ import { registerApp } from '../shell/apps';
 import { ICONS } from './icons';
 import { ui } from './kit';
 import { bresenham, floodFill, flipHorizontal, invertColors, rgbToHex, shapeBox } from './paint-raster';
-
-const d = (ru: string, en: string): Bilingual => ({ ru, en });
+import { d } from '../content/text';
+import { APP } from './strings';
 
 const T = {
   title: d('Кисть', 'Paint'),
   untitled: d('рисунок', 'untitled'),
   canvas: d('Холст', 'Canvas'),
   saveFailed: d('Не удалось сохранить файл.', 'Could not save the file.'),
-  file: d('Файл', 'File'),
   new: d('Создать', 'New'),
   saveChanges: d('Сохранить изменения в рисунке?', 'Save changes to untitled?'),
   yes: d('Да', 'Yes'),
   no: d('Нет', 'No'),
-  cancel: d('Отмена', 'Cancel'),
   savePng: d('Сохранить как PNG', 'Save as PNG'),
-  exit: d('Выход', 'Exit'),
-  edit: d('Правка', 'Edit'),
   undo: d('Отменить', 'Undo'),
   redo: d('Повторить', 'Repeat'),
   clear: d('Очистить', 'Clear Image'),
   image: d('Рисунок', 'Image'),
   flip: d('Отразить по горизонтали', 'Flip Horizontal'),
   invert: d('Обратить цвета', 'Invert Colors'),
-  help: d('Справка', 'Help'),
-  about: d('О программе', 'About'),
   paint: d('Paint', 'Paint'),
   aboutText: d(
     'Левая кнопка — основной цвет, правая — фоновый. Шедевры сохраняются в PNG.',
@@ -206,7 +200,7 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
 
   const menu = U.menubar([
     {
-      label: T.file,
+      label: APP.file,
       items: [
         {
           label: T.new,
@@ -230,7 +224,7 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
                   },
                 },
                 { label: T.no, onClick: newImage },
-                { label: T.cancel },
+                { label: APP.cancel },
               ],
             });
           },
@@ -238,7 +232,7 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
         { label: T.savePng, key: 'Ctrl+S', action: savePng },
         { sep: true },
         {
-          label: T.exit,
+          label: APP.exit,
           action: () => {
             api.win.close();
           },
@@ -246,7 +240,7 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
       ],
     },
     {
-      label: T.edit,
+      label: APP.edit,
       items: [
         { label: T.undo, key: 'Ctrl+Z', disabled: () => !undo.length, action: doUndo },
         { label: T.redo, key: 'Ctrl+Y', disabled: () => !redo.length, action: doRedo },
@@ -262,10 +256,10 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
       ],
     },
     {
-      label: T.help,
+      label: APP.help,
       items: [
         {
-          label: T.about,
+          label: APP.about,
           action: () => {
             U.aboutDialog(T.paint, T.aboutText);
           },

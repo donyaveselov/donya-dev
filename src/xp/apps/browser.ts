@@ -8,30 +8,20 @@ import { registerApp } from '../shell/apps';
 import { ICONS } from './icons';
 import { copyText, pad, reduced, ui } from './kit';
 import { HOME, isOwnSite, isThisSite, normalize, searchHits } from './browser-url';
-
-const d = (ru: string, en: string): Bilingual => ({ ru, en });
+import { d } from '../content/text';
+import { APP } from './strings';
 
 const T = {
   title: d('Навигатор', 'Navigator'),
-  file: d('Файл', 'File'),
   home: d('Домой', 'Home'),
   newTab: d('Открыть в новой вкладке…', 'Open in a new tab…'),
-  close: d('Закрыть', 'Close'),
-  edit: d('Правка', 'Edit'),
   copyAddress: d('Копировать адрес', 'Copy address'),
-  view: d('Вид', 'View'),
   refresh: d('Обновить', 'Refresh'),
   linksBar: d('Строка ссылок', 'Links bar'),
   favorites: d('Избранное', 'Favorites'),
   startPage: d('Стартовая страница', 'Start page'),
-  help: d('Справка', 'Help'),
-  about: d('О программе', 'About'),
   aboutText: d('Шифрование: 0 бит. Зато без трекеров.', 'Cipher strength: 0-bit. No trackers, though.'),
-  back: d('Назад', 'Back'),
-  forward: d('Вперёд', 'Forward'),
   stop: d('Остановить', 'Stop'),
-  address: d('Адрес', 'Address'),
-  go: d('Переход', 'Go'),
   links: d('Ссылки', 'Links'),
   stopped: d('Остановлено', 'Stopped'),
   opening: d('Открывается ', 'Opening page '),
@@ -48,7 +38,6 @@ const T = {
   search: d('Поиск', 'Search'),
   noPage: d('Нет такой страницы: ', 'No such page: '),
   internet: d('Интернет', 'Internet'),
-  myComputer: d('Мой компьютер', 'My Computer'),
   searchHere: d('Найти на этом компьютере…', 'Search this computer…'),
   find: d('Найти', 'Search'),
   welcome: d('Добро пожаловать на домашнюю страницу', 'Welcome to the home page of'),
@@ -118,7 +107,7 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
   });
   const menu = U.menubar([
     {
-      label: T.file,
+      label: APP.file,
       items: [
         {
           label: T.home,
@@ -134,16 +123,16 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
         },
         { sep: true },
         {
-          label: T.close,
+          label: APP.close,
           action: () => {
             api.win.close();
           },
         },
       ],
     },
-    { label: T.edit, items: [{ label: T.copyAddress, action: () => void copyText(url) }] },
+    { label: APP.edit, items: [{ label: T.copyAddress, action: () => void copyText(url) }] },
     {
-      label: T.view,
+      label: APP.view,
       items: [
         {
           label: T.refresh,
@@ -178,10 +167,10 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
       ],
     },
     {
-      label: T.help,
+      label: APP.help,
       items: [
         {
-          label: T.about,
+          label: APP.about,
           action: () => {
             U.aboutDialog(T.title, T.aboutText);
           },
@@ -191,8 +180,8 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
   ]);
   menu.appendChild(throbber);
 
-  const bBack = U.tbtn({ g: 'back', label: T.back, showLabel: true, big: true, onClick: back });
-  const bFwd = U.tbtn({ g: 'fwd', label: T.forward, big: true, onClick: fwd });
+  const bBack = U.tbtn({ g: 'back', label: APP.back, showLabel: true, big: true, onClick: back });
+  const bFwd = U.tbtn({ g: 'fwd', label: APP.forward, big: true, onClick: fwd });
   const bStop = U.tbtn({ g: 'stop', label: T.stop, big: true, onClick: stop });
   const tb = U.toolbar([
     bBack,
@@ -225,12 +214,12 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
       },
     }),
   ]);
-  const addrIn = h('input', { type: 'text', spellcheck: 'false', autocomplete: 'off', 'aria-label': T.address });
+  const addrIn = h('input', { type: 'text', spellcheck: 'false', autocomplete: 'off', 'aria-label': APP.address });
   const addrIcon = h('span.xpa-g16', { html: ICONS.url });
   const addr = h('form.xpa-addr', { action: '#' }, [
-    h('span.xpa-addr-label', T.address),
+    h('span.xpa-addr-label', APP.address),
     h('div.xpa-addr-box', [addrIcon, addrIn, h('span.xpa-addr-dd', '▼')]),
-    h('button.xpa-go', { type: 'submit' }, [U.glyph('go'), h('span', T.go)]),
+    h('button.xpa-go', { type: 'submit' }, [U.glyph('go'), h('span', APP.go)]),
   ]);
   addr.addEventListener('submit', (e) => {
     e.preventDefault();
@@ -344,7 +333,7 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
       view.appendChild(h('div.xpa-br-blank', u === 'about:blank' ? '' : t(T.noPage) + u));
       api.win.setTitle(u);
     }
-    st.set(1, ext ? T.internet : T.myComputer);
+    st.set(1, ext ? T.internet : APP.myComputer);
     addrIcon.innerHTML = ext ? ICONS.url : ICONS.browser;
   }
 
@@ -468,7 +457,7 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
       h('p', T.tryThis),
       h('ul', [
         h('li', [t(T.openInTab), h('a.xpa-br-out', { href: u, target: '_blank', rel: 'noopener noreferrer' }, u)]),
-        h('li', [t(T.click), h('button.xpa-br-inl', { type: 'button', on: { click: back } }, T.back), t(T.toGoBack)]),
+        h('li', [t(T.click), h('button.xpa-br-inl', { type: 'button', on: { click: back } }, APP.back), t(T.toGoBack)]),
         h('li', T.internet2003),
         h('li', [
           t(T.orReturn),

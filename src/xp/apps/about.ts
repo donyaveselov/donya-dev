@@ -8,8 +8,8 @@ import { G16, ICONS } from './icons';
 import { pad, phuketNow, reduced, ui } from './kit';
 import { hms, nextLoad } from './about-stats';
 import { EXPERIENCE } from '../../shared/experience';
-
-const d = (ru: string, en: string): Bilingual => ({ ru, en });
+import { d } from '../content/text';
+import { APP } from './strings';
 
 const T = {
   title: d('Мой компьютер', 'My Computer'),
@@ -18,7 +18,6 @@ const T = {
   hardware: d('Оборудование', 'Hardware'),
   perf: d('Быстродействие', 'Performance'),
   remote: d('Удалённый доступ', 'Remote'),
-  cancel: d('Отмена', 'Cancel'),
   apply: d('Применить', 'Apply'),
   applied: d(
     'Изменения применены.\nДаниил по-прежнему ищет интересные задачи.',
@@ -191,7 +190,7 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
     },
     { primary: true },
   );
-  const btnCancel = U.button(T.cancel, () => {
+  const btnCancel = U.button(APP.cancel, () => {
     api.win.close();
   });
   const btnApply = U.button(T.apply, () => {

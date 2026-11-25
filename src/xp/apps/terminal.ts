@@ -18,8 +18,8 @@ import {
   prompt,
 } from './terminal-parse';
 import { EXPERIENCE } from '../../shared/experience';
-
-const d = (ru: string, en: string): Bilingual => ({ ru, en });
+import { d } from '../content/text';
+import { APP } from './strings';
 
 const T = {
   title: d('Командная строка', 'Command Prompt'),
@@ -36,7 +36,6 @@ const T = {
     `Based in Phuket. ${EXPERIENCE.en} in development. I like systems where every small thing is thought through.`,
   ),
   dirOf: d('Содержимое папки', 'Directory of'),
-  myProjects: d('Мои проекты', 'My Projects'),
   desktop: d('Рабочий стол', 'Desktop'),
   openHint: d('Откройте: open projects  или  open verifikat', 'Open with: open projects  or  open verifikat'),
   openWhat: d('Что открыть? ', 'Open what? '),
@@ -207,7 +206,7 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
     projects: {
       d: d('список проектов', 'list projects'),
       run: () => {
-        print(` ${t(T.dirOf)} ${HOME_DIR.join('\\')}\\${t(T.myProjects)}`);
+        print(` ${t(T.dirOf)} ${HOME_DIR.join('\\')}\\${t(APP.myProjects)}`);
         print('');
         for (const p of PROJECTS) print(`  <DIR>  ${ljust(t(p.name), 16)}${t(p.tagline)}`);
         print('');
@@ -314,7 +313,7 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
         print('');
         if (cwd.length === 3)
           for (const x of [
-            `<DIR>  ${t(T.myProjects)}`,
+            `<DIR>  ${t(APP.myProjects)}`,
             `<DIR>  ${t(T.desktop)}`,
             '       about.txt',
             '       resume.rtf',
@@ -335,7 +334,7 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
           print(cwd.join('\\'));
           return undefined;
         }
-        const next = changeDir(cwd, a, t(T.myProjects));
+        const next = changeDir(cwd, a, t(APP.myProjects));
         if (!next) {
           pt(T.noPath);
           return undefined;
@@ -401,7 +400,7 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
           'node_modules (1/∞)',
           'node_modules (2/∞)',
           'C:\\WINDOWS\\System32... ',
-          `${HOME_DIR.join('\\')}\\${t(T.myProjects)}...`,
+          `${HOME_DIR.join('\\')}\\${t(APP.myProjects)}...`,
         ];
         let i = 0;
         pt(T.deleting);
@@ -490,7 +489,7 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
       d: d('дерево проектов', 'project tree'),
       run: () => {
         print(HOME_DIR.join('\\'));
-        print(`├── ${t(T.myProjects)}`);
+        print(`├── ${t(APP.myProjects)}`);
         PROJECTS.forEach((p, i) => {
           const last = i === PROJECTS.length - 1;
           print(`│   ${last ? '└── ' : '├── '}${t(p.name)}`);

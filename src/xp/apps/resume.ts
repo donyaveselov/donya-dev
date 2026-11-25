@@ -6,6 +6,7 @@ import { jobPeriod, RESUME } from '../content/resume';
 import { registerApp } from '../shell/apps';
 import { G16, ICONS } from './icons';
 import { copyText, ui } from './kit';
+import { APP } from './strings';
 
 const T = {
   title: { ru: 'Резюме', en: 'Resume' },
@@ -13,19 +14,12 @@ const T = {
   print: { ru: 'Печать', en: 'Print' },
   printMenu: { ru: 'Печать…', en: 'Print…' },
   copyContacts: { ru: 'Копировать контакты', en: 'Copy contacts' },
-  file: { ru: 'Файл', en: 'File' },
   preview: { ru: 'Предварительный просмотр', en: 'Print Preview' },
-  exit: { ru: 'Выход', en: 'Exit' },
-  edit: { ru: 'Правка', en: 'Edit' },
-  selectAll: { ru: 'Выделить всё', en: 'Select All' },
   copySel: { ru: 'Копировать выделенное', en: 'Copy selection' },
-  view: { ru: 'Вид', en: 'View' },
   ruler: { ru: 'Линейка', en: 'Ruler' },
   wrap: { ru: 'Перенос по ширине окна', en: 'Wrap to window' },
   zoomIn: { ru: 'Крупнее', en: 'Zoom in' },
   zoomOut: { ru: 'Мельче', en: 'Zoom out' },
-  help: { ru: 'Справка', en: 'Help' },
-  about: { ru: 'О программе', en: 'About' },
   aboutName: { ru: 'ДокПад — просмотр резюме', en: 'DocPad — resume viewer' },
   aboutText: {
     ru: '«Печать» открывает лист резюме, который можно распечатать.',
@@ -86,7 +80,7 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
 
   const menu = U.menubar([
     {
-      label: T.file,
+      label: APP.file,
       items: [
         { label: T.printMenu, key: 'Ctrl+P', action: print },
         { label: T.preview, action: togglePreview },
@@ -98,7 +92,7 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
         },
         { sep: true },
         {
-          label: T.exit,
+          label: APP.exit,
           action: () => {
             api.win.close();
           },
@@ -106,14 +100,14 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
       ],
     },
     {
-      label: T.edit,
+      label: APP.edit,
       items: [
-        { label: T.selectAll, key: 'Ctrl+A', action: selectAll },
+        { label: APP.selectAll, key: 'Ctrl+A', action: selectAll },
         { label: T.copySel, key: 'Ctrl+C', action: () => void copyText(String(window.getSelection() ?? '')) },
       ],
     },
     {
-      label: T.view,
+      label: APP.view,
       items: [
         {
           label: T.ruler,
@@ -149,10 +143,10 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
       ],
     },
     {
-      label: T.help,
+      label: APP.help,
       items: [
         {
-          label: T.about,
+          label: APP.about,
           action: () => {
             U.aboutDialog(T.aboutName, T.aboutText);
           },

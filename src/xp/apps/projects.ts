@@ -7,9 +7,9 @@ import { registerApp } from '../shell/apps';
 import { G16, G24, ICONS } from './icons';
 import { copyText, reduced, ui } from './kit';
 import { genericMock, MOCKS } from './mocks';
+import { APP } from './strings';
 
 const T = {
-  myProjects: { ru: 'Мои проекты', en: 'My Projects' },
   projectFolder: { ru: 'Папка проекта', en: 'Project folder' },
   textDoc: { ru: 'Текстовый документ', en: 'Text Document' },
   readmeDesc: { ru: 'Как пользоваться этой папкой', en: 'How to use this folder' },
@@ -21,25 +21,14 @@ const T = {
   stack: { ru: 'стек', en: 'stack' },
   shortcut: { ru: 'Интернет-ярлык', en: 'Internet Shortcut' },
   path: { ru: 'C:\\Пользователи\\Даниил\\Мои проекты', en: 'C:\\Users\\Daniil\\My Projects' },
-  file: { ru: 'Файл', en: 'File' },
-  open: { ru: 'Открыть', en: 'Open' },
-  properties: { ru: 'Свойства', en: 'Properties' },
-  close: { ru: 'Закрыть', en: 'Close' },
-  edit: { ru: 'Правка', en: 'Edit' },
   copyAddress: { ru: 'Копировать путь', en: 'Copy address' },
   selectNext: { ru: 'Выделить следующий', en: 'Select next' },
-  view: { ru: 'Вид', en: 'View' },
   tiles: { ru: 'Плитка', en: 'Tiles' },
   icons: { ru: 'Значки', en: 'Icons' },
   details: { ru: 'Таблица', en: 'Details' },
   taskPane: { ru: 'Панель задач', en: 'Task pane' },
-  go: { ru: 'Переход', en: 'Go' },
-  back: { ru: 'Назад', en: 'Back' },
-  forward: { ru: 'Вперёд', en: 'Forward' },
   upOneLevel: { ru: 'Вверх', en: 'Up one level' },
   up: { ru: 'Вверх', en: 'Up' },
-  help: { ru: 'Справка', en: 'Help' },
-  about: { ru: 'О программе', en: 'About' },
   explorer: { ru: 'Проводник проектов', en: 'Project Explorer' },
   explorerAbout: {
     ru: 'Здесь только то, что можно показать. Остальное под NDA и в памяти.',
@@ -47,7 +36,6 @@ const T = {
   },
   views: { ru: 'Вид', en: 'Views' },
   folders: { ru: 'Папки', en: 'Folders' },
-  address: { ru: 'Адрес', en: 'Address' },
   tasks: { ru: 'Задачи', en: 'Project Tasks' },
   otherPlaces: { ru: 'Другие места', en: 'Other Places' },
   detailsBox: { ru: 'Подробно', en: 'Details' },
@@ -68,7 +56,6 @@ const T = {
   type: { ru: 'Тип', en: 'Type' },
   description: { ru: 'Описание', en: 'Description' },
   empty: { ru: 'Эта папка пуста.', en: 'This folder is empty.' },
-  myComputer: { ru: 'Мой компьютер', en: 'My Computer' },
   unknown: { ru: '?', en: '?' },
   // the project document
   visit: { ru: 'Открыть сайт', en: 'Visit site' },
@@ -233,7 +220,7 @@ function renderExplorer(content: HTMLElement, api: XPAppApi): () => void {
 
   const folderTitle = (path: readonly string[]): Bilingual => {
     const id = path[0];
-    if (id === undefined) return T.myProjects;
+    if (id === undefined) return APP.myProjects;
     return findProject(id)?.name ?? T.unknown;
   };
   const addr = (path: readonly string[]): string => {
@@ -243,13 +230,13 @@ function renderExplorer(content: HTMLElement, api: XPAppApi): () => void {
 
   const menu = U.menubar([
     {
-      label: T.file,
+      label: APP.file,
       items: [
-        { label: T.open, key: 'Enter', action: openSel, disabled: () => state.sel < 0 },
-        { label: T.properties, key: 'Alt+Enter', action: props, disabled: () => state.sel < 0 },
+        { label: APP.open, key: 'Enter', action: openSel, disabled: () => state.sel < 0 },
+        { label: APP.properties, key: 'Alt+Enter', action: props, disabled: () => state.sel < 0 },
         { sep: true },
         {
-          label: T.close,
+          label: APP.close,
           action: () => {
             api.win.close();
           },
@@ -257,7 +244,7 @@ function renderExplorer(content: HTMLElement, api: XPAppApi): () => void {
       ],
     },
     {
-      label: T.edit,
+      label: APP.edit,
       items: [
         { label: T.copyAddress, action: () => void copyText(addr(state.path)) },
         {
@@ -270,7 +257,7 @@ function renderExplorer(content: HTMLElement, api: XPAppApi): () => void {
       ],
     },
     {
-      label: T.view,
+      label: APP.view,
       items: [
         {
           label: T.tiles,
@@ -301,18 +288,18 @@ function renderExplorer(content: HTMLElement, api: XPAppApi): () => void {
       ],
     },
     {
-      label: T.go,
+      label: APP.go,
       items: [
-        { label: T.back, key: 'Alt+←', action: goBack, disabled: () => !state.back.length },
-        { label: T.forward, key: 'Alt+→', action: goFwd, disabled: () => !state.fwd.length },
+        { label: APP.back, key: 'Alt+←', action: goBack, disabled: () => !state.back.length },
+        { label: APP.forward, key: 'Alt+→', action: goFwd, disabled: () => !state.fwd.length },
         { label: T.upOneLevel, key: 'Backspace', action: goUp, disabled: () => !state.path.length },
       ],
     },
     {
-      label: T.help,
+      label: APP.help,
       items: [
         {
-          label: T.about,
+          label: APP.about,
           action: () => {
             U.aboutDialog(T.explorer, T.explorerAbout);
           },
@@ -321,8 +308,8 @@ function renderExplorer(content: HTMLElement, api: XPAppApi): () => void {
     },
   ]);
 
-  const bBack = U.tbtn({ g: 'back', label: T.back, showLabel: true, big: true, onClick: goBack });
-  const bFwd = U.tbtn({ g: 'fwd', label: T.forward, big: true, onClick: goFwd });
+  const bBack = U.tbtn({ g: 'back', label: APP.back, showLabel: true, big: true, onClick: goBack });
+  const bFwd = U.tbtn({ g: 'fwd', label: APP.forward, big: true, onClick: goFwd });
   const bUp = U.tbtn({ g: 'up', label: T.up, big: true, onClick: goUp });
   const bViews = U.tbtn({
     g: 'views',
@@ -339,7 +326,7 @@ function renderExplorer(content: HTMLElement, api: XPAppApi): () => void {
   const addrText = h('span.xpa-addr-text.xpa-selectable');
   const addrIcon = h('span.xpa-g16');
   const addrBar = h('div.xpa-addr', [
-    h('span.xpa-addr-label', T.address),
+    h('span.xpa-addr-label', APP.address),
     h('div.xpa-addr-box', [addrIcon, addrText, h('span.xpa-addr-dd', '▼')]),
     h(
       'button.xpa-go',
@@ -352,7 +339,7 @@ function renderExplorer(content: HTMLElement, api: XPAppApi): () => void {
           },
         },
       },
-      [U.glyph('go'), h('span', T.go)],
+      [U.glyph('go'), h('span', APP.go)],
     ),
   ]);
 
@@ -539,7 +526,7 @@ function renderExplorer(content: HTMLElement, api: XPAppApi): () => void {
     if (!state.items.length) view.appendChild(h('div.xpa-muted', { style: { padding: '12px' } }, T.empty));
     if (state.sel >= 0) select(state.sel, false);
     else updateSide();
-    st.set(1, T.myComputer);
+    st.set(1, APP.myComputer);
   }
 
   view.addEventListener('click', (e) => {
@@ -641,7 +628,7 @@ function renderProject(content: HTMLElement, api: XPAppApi): () => void {
   };
   const menu = U.menubar([
     {
-      label: T.file,
+      label: APP.file,
       items: [
         { label: T.openFolder, action: openFolder },
         {
@@ -660,7 +647,7 @@ function renderProject(content: HTMLElement, api: XPAppApi): () => void {
         },
         { sep: true },
         {
-          label: T.close,
+          label: APP.close,
           action: () => {
             api.win.close();
           },
@@ -668,14 +655,14 @@ function renderProject(content: HTMLElement, api: XPAppApi): () => void {
       ],
     },
     {
-      label: T.edit,
+      label: APP.edit,
       items: [
         { label: T.copyLink, disabled: () => !proj().url, action: () => void copyText(proj().url) },
         { label: T.copyStack, action: () => void copyText(proj().stack.join(', ')) },
       ],
     },
     {
-      label: T.view,
+      label: APP.view,
       items: [
         {
           label: T.zoomIn,
@@ -979,7 +966,7 @@ const SITES: Site[] = [
 
 registerApp({
   id: 'projects',
-  title: T.myProjects,
+  title: APP.myProjects,
   icon: ICONS.projects,
   desktop: true,
   startMenu: 'pinned',

@@ -3,8 +3,8 @@ import type { Bilingual, XPAppApi } from '../../shared/types';
 import { registerApp } from '../shell/apps';
 import { ICONS } from './icons';
 import { reduced, ui } from './kit';
-
-const d = (ru: string, en: string): Bilingual => ({ ru, en });
+import { d } from '../content/text';
+import { APP } from './strings';
 
 const T = {
   title: d('Корзина', 'Recycle Bin'),
@@ -42,15 +42,8 @@ const T = {
     'To open this file you need to restore it from the Recycle Bin first.\nAnd it cannot be restored.',
   ),
   restore: d('Восстановить', 'Restore'),
-  file: d('Файл', 'File'),
   emptyBin: d('Очистить корзину', 'Empty Recycle Bin'),
-  properties: d('Свойства', 'Properties'),
-  close: d('Закрыть', 'Close'),
-  edit: d('Правка', 'Edit'),
-  selectAll: d('Выделить всё', 'Select All'),
   undoDelete: d('Отменить удаление', 'Undo Delete'),
-  help: d('Справка', 'Help'),
-  about: d('О программе', 'About'),
   aboutText: d(
     'Здесь лежат старые проекты из прошлой версии портфолио.',
     'Old projects from the previous portfolio live here.',
@@ -65,8 +58,6 @@ const T = {
   emptyTheBin: d('Очистить корзину', 'Empty the Recycle Bin'),
   restoreAllItems: d('Восстановить все объекты', 'Restore all items'),
   otherPlaces: d('Другие места', 'Other Places'),
-  myProjects: d('Мои проекты', 'My Projects'),
-  myComputer: d('Мой компьютер', 'My Computer'),
   noRestore: d('восстановление недоступно', 'cannot be restored'),
   objects: d('объекта', 'objects'),
 } as const;
@@ -222,7 +213,7 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
 
   const menu = U.menubar([
     {
-      label: T.file,
+      label: APP.file,
       items: [
         { label: T.emptyBin, action: empty },
         {
@@ -232,10 +223,10 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
             restore(sel);
           },
         },
-        { label: T.properties, action: props },
+        { label: APP.properties, action: props },
         { sep: true },
         {
-          label: T.close,
+          label: APP.close,
           action: () => {
             api.win.close();
           },
@@ -243,10 +234,10 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
       ],
     },
     {
-      label: T.edit,
+      label: APP.edit,
       items: [
         {
-          label: T.selectAll,
+          label: APP.selectAll,
           key: 'Ctrl+A',
           action: () => {
             select(0);
@@ -262,10 +253,10 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
       ],
     },
     {
-      label: T.help,
+      label: APP.help,
       items: [
         {
-          label: T.about,
+          label: APP.about,
           action: () => {
             U.aboutDialog(T.title, T.aboutText);
           },
@@ -285,7 +276,7 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
       },
     }),
     U.tsep(),
-    U.tbtn({ g: 'props', label: T.properties, big: true, onClick: props }),
+    U.tbtn({ g: 'props', label: APP.properties, big: true, onClick: props }),
   ]);
   const head = h('div.xpa-rb-head', [
     h('span', T.name),
@@ -306,8 +297,8 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
       }),
     ]),
     tpBox(T.otherPlaces, [
-      link('folders', T.myProjects, () => api.openApp('projects')),
-      link('props', T.myComputer, () => api.openApp('about')),
+      link('folders', APP.myProjects, () => api.openApp('projects')),
+      link('props', APP.myComputer, () => api.openApp('about')),
     ]),
   ]);
   const st = U.statusbar(2);

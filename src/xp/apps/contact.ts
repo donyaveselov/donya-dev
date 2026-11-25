@@ -1,28 +1,22 @@
 // Contact me: an Outlook-Express-like "New Message" window. Send opens the chosen channel for real (Telegram, a
 // mailto: with the subject, GitHub, the site); every address can also be copied.
-import type { Bilingual, XPAppApi } from '../../shared/types';
+import type { XPAppApi } from '../../shared/types';
 import { type Contact, CONTACTS, PERSON } from '../content/profile';
 import { registerApp } from '../shell/apps';
 import { ICONS } from './icons';
 import { sendUrl, stepContact } from './contact-logic';
 import { copyText, ui } from './kit';
-
-const d = (ru: string, en: string): Bilingual => ({ ru, en });
+import { d } from '../content/text';
+import { APP } from './strings';
 
 const T = {
   title: d('Написать мне', 'Contact me'),
   winTitle: d('Новое сообщение', 'New Message'),
   sending: d('Открывается: ', 'Opening: '),
-  file: d('Файл', 'File'),
   sendMenu: d('Отправить', 'Send Message'),
-  close: d('Закрыть', 'Close'),
-  edit: d('Правка', 'Edit'),
   copyAll: d('Копировать все контакты', 'Copy all contacts'),
   copyTo: d('Копировать адрес получателя', 'Copy recipient address'),
-  view: d('Вид', 'View'),
   book: d('Адресная книга', 'Address book'),
-  help: d('Справка', 'Help'),
-  about: d('О программе', 'About'),
   aboutName: d('Почта без почты', 'Mail Without Mail'),
   aboutText: d(
     '«Отправить» открывает выбранный канал: Telegram или вашу почтовую программу.',
@@ -49,7 +43,6 @@ const T = {
     'Here are the direct contacts. Send opens the selected one; the addresses can be selected with the mouse or copied with the buttons:',
   ),
   manualCopy: d('Не удалось скопировать — выделите текст вручную.', 'Copy failed: select the text manually.'),
-  open: d('Открыть', 'Open'),
   regards: d('С уважением,', 'Best regards,'),
   visitor: d('посетитель сайта', 'a site visitor'),
   ready: d('Готово. Telegram отвечает быстрее всего.', 'Ready. Telegram gets the fastest reply.'),
@@ -87,12 +80,12 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
 
   const menu = U.menubar([
     {
-      label: T.file,
+      label: APP.file,
       items: [
         { label: T.sendMenu, key: 'Alt+S', action: send },
         { sep: true },
         {
-          label: T.close,
+          label: APP.close,
           action: () => {
             api.win.close();
           },
@@ -100,14 +93,14 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
       ],
     },
     {
-      label: T.edit,
+      label: APP.edit,
       items: [
         { label: T.copyAll, action: () => void copyText(allText()) },
         { label: T.copyTo, action: () => void copyText(to().value) },
       ],
     },
     {
-      label: T.view,
+      label: APP.view,
       items: [
         {
           label: T.book,
@@ -120,10 +113,10 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
       ],
     },
     {
-      label: T.help,
+      label: APP.help,
       items: [
         {
-          label: T.about,
+          label: APP.about,
           action: () => {
             U.aboutDialog(T.aboutName, T.aboutText);
           },
@@ -253,7 +246,7 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
             ? h(
                 'a.xpa-btn.xpa-ct-open',
                 { href: c.href, target: '_blank', rel: 'noopener noreferrer', title: c.href },
-                [U.glyph('link'), h('span', T.open)],
+                [U.glyph('link'), h('span', APP.open)],
               )
             : null,
         ]),

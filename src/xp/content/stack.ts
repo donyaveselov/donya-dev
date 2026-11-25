@@ -1,6 +1,7 @@
 // The tech stack: the single source for every place on the desktop that plays with it (Device Manager in "My
 // Computer", the resume's skills block, `skills` in the terminal). To add or rename a technology, edit it here only.
 import type { Bilingual, Lang } from '../../shared/types';
+import { d } from './text';
 
 export type Area = 'frontend' | 'backend' | 'testing' | 'devops';
 
@@ -18,7 +19,6 @@ export interface DeviceGroup {
   items: StackItem[];
 }
 
-const d = (ru: string, en: string): Bilingual => ({ ru, en });
 const it = (name: string | Bilingual, note: Bilingual | null = null): StackItem => ({ name, note });
 
 /** The plain areas, in display order. */
