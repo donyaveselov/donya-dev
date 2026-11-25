@@ -34,6 +34,8 @@ export interface RoomStrings extends Record<MarkupKey | Status, string> {
   diplomaTag: string;
   /** the one label over the resume and the diploma */
   framesTag: string;
+  /** the opencode screen's footer: "attempt #12" */
+  attempt: string;
   tour: TourStrings;
   /** accessible names the markup asks for by `data-room-aria` */
   aria: Record<AriaKey, string>;
@@ -66,6 +68,7 @@ const STR: Record<Lang, RoomStrings> = {
     resumeTag: 'Резюме',
     diplomaTag: 'Диплом',
     framesTag: 'Резюме и диплом',
+    attempt: 'попытка №',
     tour: {
       hello: 'Привет, я Даниил! Сейчас на Пхукете {time}, и я {what}. Показать вам комнату?',
       yes: 'Да',
@@ -108,6 +111,7 @@ const STR: Record<Lang, RoomStrings> = {
     resumeTag: 'Resume',
     diplomaTag: 'Diploma',
     framesTag: 'Resume & diploma',
+    attempt: 'attempt #',
     tour: {
       hello: 'Hi, I’m Daniil! It’s {time} in Phuket and I’m {what}. Want a quick tour of the room?',
       yes: 'Yes',

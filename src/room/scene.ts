@@ -71,7 +71,7 @@ export function buildScene(gl: WebGLRenderer, gltf: GLTF, stage: HTMLElement, st
 
   const index = new MaterialIndex();
   convertMaterials(root, index);
-  const screens = new LiveScreens(REDUCED_MOTION);
+  const screens = new LiveScreens(REDUCED_MOTION, () => live.lang);
   const monitors = new Monitors(root, [screens.tex.editor, screens.tex.terminal]);
   const lights = new LightRig(scene); // no shadow maps: the model's shadows are painted into its vertex colours
   const duvetMade = root.getObjectByName('Bed_duvet_made');
