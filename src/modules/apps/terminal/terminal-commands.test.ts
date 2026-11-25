@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Lang, Status } from '../../../types';
-import { APP_IDS, CONTACTS, OS } from '../../../content/profile';
+import { APP_IDS, CONTACTS, HEADLINE, OS } from '../../../content/profile';
 import { PROJECTS } from '../../../content/projects';
 import { createTerminal } from './terminal-commands';
 
@@ -96,7 +96,7 @@ describe('terminal commands', () => {
   it('says who lives here, on this computer', () => {
     const out = fake().run('whoami');
     expect(out[0]).toBe(`${OS.pcName.toLowerCase()}\\daniil`);
-    expect(out[1]).toContain('Daniil Ivanov — Fullstack developer (Vue 3 + Python / Django');
+    expect(out[1]).toContain(`Daniil Ivanov — Fullstack developer (${HEADLINE.join(' + ')}`);
     expect(fake('ru').run('whoami')[1]).toContain('Даниил Иванов — Fullstack-разработчик');
   });
 
@@ -205,7 +205,7 @@ describe('terminal commands', () => {
     expect(tree.filter((l) => /^│ {3}[├└]── /.test(l))).toHaveLength(PROJECTS.length);
     const info = c.run('neofetch').join('\n');
     expect(info).toContain(`daniil@${OS.pcName}`);
-    expect(info).toContain('Shell: Vue 3 + Python / Django');
+    expect(info).toContain(`Shell: ${HEADLINE.join(' + ')}`);
     expect(info).toContain('Time: 09:05 (UTC+7)');
   });
 

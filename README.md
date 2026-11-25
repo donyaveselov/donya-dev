@@ -90,3 +90,9 @@ docs/              DEVELOPMENT.md
 
 Third-party assets (the XP wallpapers and icons, game screenshots, the music, fonts, three.js) are listed in
 [CREDITS.md](CREDITS.md).
+
+## License
+
+The code is [MIT](LICENSE). The personal content (the résumé, the project descriptions and the other texts in
+`src/content` and `index.html`) is the author's and is not covered by it, and neither are the third-party assets in
+CREDITS.md, which keep their own terms.

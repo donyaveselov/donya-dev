@@ -4,7 +4,8 @@
   "version": "0.1.0",
   "type": "module",
   "description": "donya.dev: an isometric three.js room with a Windows-XP-style desktop (\"Windows XD\") inside its monitor",
-  "author": "Daniil Ivanov",
+  "author": "Daniil Ivanov (https://github.com/donyaveselov)",
+  "license": "MIT",
   "homepage": "https://donya.dev",
   "engines": {
     "node": ">=24"
