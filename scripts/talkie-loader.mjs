@@ -1,8 +1,9 @@
 // @ts-check
-// Writes the loading screen's talking mouth into index.html as an inline pixel-art SVG, so it is on the very first
-// paint: no script, no font, no request. The frames are the talkie's own (src/modules/room/tour/talkie-frames.ts,
-// 64x31 PNG data URLs): each run of same-coloured pixels on a row becomes a 1-pixel-high rectangle in one path per
-// colour, and the frames are laid side by side in a strip that CSS steps through (index.html, .talkie-loader).
+// Writes the loading screen's talking mouth into index.html as pixel-art SVG, so it is on the very first paint: no
+// script, no font, no request. The frames are the talkie's own (src/modules/room/tour/talkie-frames.ts, 64x31 PNG
+// data URLs): each run of same-coloured pixels on a row becomes a 1-pixel-high rectangle in one path per colour, the
+// frames are laid side by side in a strip, and the SVG's own CSS steps through it. It is an <img> of a data URL, not
+// inline SVG: an image counts as the page's content for Largest Contentful Paint, inline SVG does not.
 //
 //   node scripts/talkie-loader.mjs          rewrite the SVG between the markers in index.html
 //   node scripts/talkie-loader.mjs --check  exit 1 if index.html is out of date (for CI)
@@ -64,10 +65,19 @@ function strip(frames) {
     }
   });
   const paths = [...byColour].map(([hex, runs]) => `<path fill="${hex}" d="${runs.join('')}"/>`).join('');
-  return (
-    `<svg class="talkie-loader" viewBox="0 0 ${String(W)} ${String(H)}" width="${String(W * 3)}" height="${String(H * 3)}" ` +
-    `shape-rendering="crispEdges" aria-hidden="true"><g class="talkie-loader__strip">${paths}</g></svg>`
-  );
+  const steps = STRIP.length - 1;
+  // the grin (frame 0) when motion is reduced; otherwise the speaking frames 1..n, one every 110 ms like the talkie
+  const css =
+    `g{transform:translateX(-${String(W)}px);animation:t ${String(steps * 0.11)}s steps(${String(steps)}) infinite}` +
+    `@keyframes t{from{transform:translateX(-${String(W)}px)}to{transform:translateX(-${String(W * (steps + 1))}px)}}` +
+    `@media (prefers-reduced-motion:reduce){g{animation:none;transform:none}}`;
+  const svg =
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${String(W)} ${String(H)}" shape-rendering="crispEdges">` +
+    `<style>${css}</style><g>${paths}</g></svg>`;
+  const url =
+    'data:image/svg+xml,' +
+    svg.replace(/%/g, '%25').replace(/#/g, '%23').replace(/</g, '%3C').replace(/>/g, '%3E').replace(/"/g, "'");
+  return `<img class="talkie-loader" src="${url}" width="${String(W * 3)}" height="${String(H * 3)}" alt="">`;
 }
 
 const svg = strip(readFrames());

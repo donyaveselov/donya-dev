@@ -155,6 +155,7 @@ export class Tour {
     this.btns = must(el.querySelector<HTMLElement>('.tbtns'));
     this.mouth = mouth;
     this.btn = btn;
+    this.labelMouth(); // its name from the start (it joins the tab order only once the tour is over)
     mouth.src = TALKIE_FRAMES.idle;
     bub.addEventListener('click', () => {
       if (this.typing) this.finishLine();
@@ -341,7 +342,7 @@ export class Tour {
     const again = t(this.host.lang()).tour.again;
     btn.setAttribute('aria-label', again);
     btn.title = again;
-    btn.setAttribute('tabindex', '0');
+    if (!this.steps) btn.setAttribute('tabindex', '0'); // after the tour (or before it starts)
   }
 
   /** The page language changed: say the current line again, or relabel the corner button. */
