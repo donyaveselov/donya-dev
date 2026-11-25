@@ -416,6 +416,31 @@ button.chip:active {
     padding: 7px 8px;
     font-size: 14px;
   }
+  /* a phone has no room for one row: the buttons get a row of their own and the status chip the row under it, so
+     the language switch and the music button stay put whatever the status says (a wrapping row moved them). The
+     1fr column takes the status chip's width, the buttons' columns are sized by the buttons alone. */
+  .tools {
+    flex: 1;
+    min-width: 0;
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    gap: 16px;
+    pointer-events: none; /* the empty part of the grid lets taps through to the room */
+  }
+  .tools > * {
+    pointer-events: auto;
+  }
+  #open-resume {
+    justify-self: end;
+  }
+  .chip.time {
+    grid-row: 2;
+    grid-column: 1 / -1;
+    justify-self: end;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis; /* a long game name from Discord */
+  }
 }
 @media (prefers-reduced-motion: reduce) {
   button.chip,

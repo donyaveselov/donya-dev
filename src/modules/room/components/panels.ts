@@ -24,6 +24,11 @@ export class Panels {
     void document.fonts.ready.then(() => {
       this.fitChips();
     });
+    // and whenever a font arrives later: on a first visit the fonts' stylesheet itself comes late (it does not block
+    // the first paint), both promises above can settle before Tiny5 is in, and the badges kept the fallback's widths
+    document.fonts.addEventListener('loadingdone', () => {
+      this.fitChips();
+    });
     byId('open-resume').addEventListener('click', () => {
       this.openResume();
     });
@@ -107,6 +112,17 @@ export class Panels {
   /** The top bar's pixel badges on whole pixels (an even width each), or their frames smear. */
   private fitChips(): void {
     document.querySelectorAll<HTMLElement>('.bar .chip').forEach((el) => fitPixelBox(el));
+    // the Resume button is as wide as its widest translation, so the language switch next to it stays put when the
+    // language changes
+    const resume = byId('open-resume');
+    const label = resume.textContent;
+    let w = 0;
+    for (const lang of ['ru', 'en'] satisfies Lang[]) {
+      resume.textContent = t(lang).resume;
+      w = Math.max(w, fitPixelBox(resume).w);
+    }
+    resume.textContent = label;
+    resume.style.width = String(w) + 'px';
   }
 
   /**
