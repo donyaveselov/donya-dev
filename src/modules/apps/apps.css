@@ -335,33 +335,32 @@
 .xp .xpa-resume .xpa-res-page.f-b { font-weight: bold; }
 .xp .xpa-resume .xpa-res-page.f-i { font-style: italic; }
 .xp .xpa-resume .xpa-res-page.f-u li { text-decoration: underline; }
-.xp .xpa-resume .xpa-res-head { display: flex; gap: 16px; align-items: flex-start; padding-bottom: 12px; border-bottom: 2px solid #1d3f7a; }
-.xp .xpa-resume .xpa-res-photo { width: 58px; height: 58px; flex: none; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: linear-gradient(135deg, #3b7be0, #1d3f7a); color: #fff; font: bold 20px Tahoma, sans-serif; letter-spacing: 1px; }
+.xp .xpa-resume .cv-top { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 16px; padding-bottom: 12px; border-bottom: 2px solid #1d3f7a; }
 .xp .xpa-resume h1 { margin: 0; font: bold 2em/1.1 Georgia, "Times New Roman", serif; color: #1d3f7a; }
-.xp .xpa-resume .xpa-res-role { font-size: 1.1em; color: #333; margin-top: 2px; }
-.xp .xpa-resume .xpa-res-city { color: #777; }
-.xp .xpa-resume .xpa-res-contacts { display: flex; flex-wrap: wrap; gap: 2px 14px; margin-top: 6px; font-size: .95em; }
-.xp .xpa-resume .xpa-res-lead { margin: 12px 0; font-size: 1.05em; }
+.xp .xpa-resume .cv-role { margin: 2px 0 0; font-size: 1.1em; color: #333; }
+.xp .xpa-resume .cv-role span { color: #777; }
+.xp .xpa-resume .cv-contacts { font-size: .95em; line-height: 1.5; }
+.xp .xpa-resume .cv-sum { margin: 12px 0; font-size: 1.05em; }
 .xp .xpa-resume h2 { margin: 18px 0 8px; font: bold 1.15em Georgia, "Times New Roman", serif; color: #1d3f7a; text-transform: uppercase; letter-spacing: .04em; border-bottom: 1px solid #c9d4e8; }
-.xp .xpa-resume .xpa-res-alt { color: #9aa6b5; font-weight: normal; text-transform: none; letter-spacing: 0; font-size: .85em; }
-.xp .xpa-resume .xpa-res-job { margin-bottom: 12px; }
-.xp .xpa-resume .xpa-res-jhead { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 4px; }
-.xp .xpa-resume .xpa-res-when { margin-left: auto; color: #777; white-space: nowrap; padding-left: 10px; font-size: .95em; }
-.xp .xpa-resume .xpa-res-stack { color: #4f6a95; font-size: .92em; }
-.xp .xpa-resume .xpa-res-job ul { margin: 4px 0 0; padding-left: 18px; }
-.xp .xpa-resume .xpa-res-skills { display: grid; grid-template-columns: max-content 1fr; gap: 4px 14px; margin: 0; }
-.xp .xpa-resume .xpa-res-skills dt { font-weight: bold; }
-.xp .xpa-resume .xpa-res-skills dd { margin: 0; }
-.xp .xpa-resume .xpa-res-edu { list-style: none; padding: 0; margin: 0; }
-.xp .xpa-resume .xpa-res-edu li { display: flex; gap: 8px; margin: 3px 0; }
+.xp .xpa-resume .cv-job { margin-bottom: 12px; }
+.xp .xpa-resume .cv-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 4px; }
+.xp .xpa-resume h3 { margin: 0; font-size: 1em; }
+.xp .xpa-resume h3 span { font-weight: normal; }
+.xp .xpa-resume .cv-when { margin-left: auto; color: #777; white-space: nowrap; padding-left: 10px; font-size: .95em; }
+.xp .xpa-resume .cv-stack { margin: 0; color: #4f6a95; font-size: .92em; }
+.xp .xpa-resume .cv-job ul { margin: 4px 0 0; padding-left: 18px; }
+.xp .xpa-resume dl { display: grid; grid-template-columns: max-content 1fr; gap: 4px 14px; margin: 0; }
+.xp .xpa-resume dt { font-weight: bold; }
+.xp .xpa-resume dd { margin: 0; }
+.xp .xpa-resume .cv-edu { display: flex; gap: 8px; margin: 3px 0; }
 .xp .xpa-resume .xpa-res-end { margin-top: 22px; text-align: center; color: #bbb; font-size: .9em; }
 .xp .xpa-resume.xpa-narrow .xpa-res-scroll { padding: 6px; }
 .xp .xpa-resume.xpa-narrow .xpa-res-page { padding: 16px 14px; }
 .xp .xpa-resume.xpa-narrow .xpa-ruler, .xp .xpa-resume.xpa-narrow .xpa-res-font, .xp .xpa-resume.xpa-narrow .xpa-fmt-u, .xp .xpa-resume.xpa-narrow .xpa-fmt-i { display: none; }
-.xp .xpa-resume.xpa-narrow .xpa-res-skills { grid-template-columns: 1fr; gap: 0; }
-.xp .xpa-resume.xpa-narrow .xpa-res-skills dd { margin-bottom: 6px; }
-.xp .xpa-resume.xpa-narrow .xpa-res-when { margin-left: 0; padding-left: 0; width: 100%; }
-.xp .xpa-resume.xpa-narrow .xpa-res-edu li { flex-direction: column; gap: 0; }
+.xp .xpa-resume.xpa-narrow dl { grid-template-columns: 1fr; gap: 0; }
+.xp .xpa-resume.xpa-narrow dd { margin-bottom: 6px; }
+.xp .xpa-resume.xpa-narrow .cv-when { margin-left: 0; padding-left: 0; width: 100%; }
+.xp .xpa-resume.xpa-narrow .cv-edu { flex-direction: column; gap: 0; }
 
 /* ================================================================ About (System Properties) */
 .xp .xpa-about .xpa-about-body { flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 8px 8px 0; }

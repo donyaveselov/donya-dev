@@ -1,8 +1,8 @@
-// Resume: a WordPad-like viewer of the public resume.
+// Resume: a WordPad-like viewer of the public resume. The text is the room's resume sheet (#sheet in index.html, the one
+// source the PDF is printed from too), without the jobs under NDA: the desktop names none of them (see nda.test.ts).
 import type { Text } from '../../../i18n/i18n';
 import type { Bilingual, XPAppApi } from '../../../types';
 import { CONTACTS, PERSON } from '../../../content/profile';
-import { jobPeriod, RESUME } from '../../../content/resume';
 import { registerApp } from '../../desktop/apps';
 import { G16, ICONS } from '../../../components/kit/icons';
 import { copyText, ui } from '../../../components/kit/kit';
@@ -37,9 +37,6 @@ const T = {
   underline: { ru: 'Подчёркнутый', en: 'Underline' },
   font: { ru: 'Шрифт', en: 'Font' },
   zoom: { ru: 'Масштаб', en: 'Zoom' },
-  experience: { ru: 'Опыт работы', en: 'Experience' },
-  skills: { ru: 'Навыки', en: 'Skills' },
-  education: { ru: 'Образование', en: 'Education' },
   end: { ru: 'конец документа', en: 'end of document' },
   helpHint: { ru: 'Для справки нажмите F1', en: 'For Help, press F1' },
   page: { ru: 'Стр. 1 из 1', en: 'Page 1 of 1' },
@@ -225,71 +222,22 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
     s?.addRange(r);
   }
 
-  /** A section heading in the current language, with the other one after it. */
-  const sec = (title: Bilingual): HTMLHeadingElement => {
-    const other = U.lang() === 'ru' ? title.en : title.ru;
-    return h('h2', [h('span', t(title)), h('span.xpa-res-alt', ` / ${other}`)]);
-  };
-
   function build(): void {
-    page.innerHTML = '';
-    const contactLine = h(
-      'div.xpa-res-contacts',
-      CONTACTS.map((c) =>
-        h('span', [
-          h('span.xpa-muted', `${t(c.label)}: `),
-          c.href ? h('a', { href: c.href, target: '_blank', rel: 'noopener noreferrer' }, c.value) : h('span', c.value),
-        ]),
-      ),
-    );
-    page.appendChild(
-      h('header.xpa-res-head', [
-        h('div.xpa-res-photo', { 'aria-hidden': 'true' }, U.lang() === 'ru' ? 'ДИ' : 'DI'),
-        h('div.xpa-grow', [
-          h('h1', t(PERSON.name)),
-          h('div.xpa-res-role', t(RESUME.title)),
-          h('div.xpa-res-city', t(PERSON.city)),
-          contactLine,
-        ]),
-      ]),
-    );
-    page.appendChild(h('p.xpa-res-lead', t(RESUME.lead)));
-    page.appendChild(sec(T.experience));
-    for (const j of RESUME.jobs)
-      page.appendChild(
-        h('section.xpa-res-job', [
-          h('div.xpa-res-jhead', [
-            h('b', t(j.org)),
-            h('span', ` — ${t(j.role)}`),
-            j.link
-              ? h('span', [
-                  ' · ',
-                  h('a', { href: `https://${j.link}`, target: '_blank', rel: 'noopener noreferrer' }, j.link),
-                ])
-              : null,
-            h('span.xpa-res-when', t(jobPeriod(j))),
-          ]),
-          j.stack ? h('div.xpa-res-stack', j.stack) : null,
-          h(
-            'ul',
-            j.items.map((x) => h('li', t(x))),
-          ),
-        ]),
-      );
-    page.appendChild(sec(T.skills));
-    page.appendChild(
-      h(
-        'dl.xpa-res-skills',
-        RESUME.skills.map(([area, line]) => [h('dt', t(area)), h('dd', t(line))]),
-      ),
-    );
-    page.appendChild(sec(T.education));
-    page.appendChild(
-      h(
-        'ul.xpa-res-edu',
-        RESUME.edu.map(([school, years]) => h('li', [h('span', t(school)), h('span.xpa-res-when', years)])),
-      ),
-    );
+    const sheet = document.querySelector(`#sheet .cv-lang[lang="${U.lang()}"]`)?.cloneNode(true);
+    page.replaceChildren();
+    if (sheet instanceof HTMLElement) {
+      sheet.querySelectorAll('[data-nda]').forEach((el) => {
+        el.remove();
+      });
+      sheet.querySelectorAll('[id]').forEach((el) => {
+        el.removeAttribute('id'); // the sheet's own ids stay unique on the page
+      });
+      sheet.querySelectorAll('a').forEach((a) => {
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+      });
+      page.append(...sheet.childNodes);
+    }
     page.appendChild(h('div.xpa-res-end', `— ${t(T.end)} —`));
     api.win.setTitle(t(T.winTitle));
     st.set(0, t(T.helpHint));

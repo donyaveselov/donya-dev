@@ -33,8 +33,9 @@ into one HTML file. That is why the history starts with an import and not with a
 - **Routes are paths, pages are copies.** `/resume`, `/pc`, `/night` and the rest are real addresses: the host serves
   files only, so the build writes the page into a folder per route, taking the names from the route table.
 - **Fallbacks.** Without WebGL the page keeps its top bar and a plain projects button instead of an empty canvas
-  (the desktop is DOM and still works); without JavaScript a `<noscript>` style makes the resume sheet the page. The
-  resume is real markup in `index.html`, so it also prints.
+  (the desktop is DOM and still works); without JavaScript a `<noscript>` style makes the resume sheet the page.
+- **One resume.** The resume sheet in `index.html` (Russian and English) is its only source: the desktop's DocPad
+  shows the same markup, and `npm run resume:pdf` prints it to one-page PDFs.
 - **One mute switch.** The room's music and the desktop's sounds share one setting (`src/store/sound.ts`), so
   muting in either place mutes both.
 
@@ -42,19 +43,20 @@ into one HTML file. That is why the history starts with an import and not with a
 
 Node 24 (`nvm use` reads `.nvmrc`), then `npm ci`.
 
-| Command             | What                                                                           |
-| ------------------- | ------------------------------------------------------------------------------ |
-| `npm run dev`       | dev server with hot reload                                                     |
-| `npm run build`     | the multi-file site in `dist/`                                                 |
-| `npm run preview`   | serve `dist/` (port 4173)                                                      |
-| `npm run check`     | everything CI runs before the build: typecheck, lint, format check, tests      |
-| `npm run typecheck` | `tsc --noEmit`, strict, for the app and the typed scripts                      |
-| `npm run lint`      | ESLint (typescript-eslint strict + stylistic, type-checked)                    |
-| `npm run format`    | Prettier (`format:check` only checks)                                          |
-| `npm test`          | Vitest: the DOM-free logic of the room, the desktop and the deploy             |
-| `npm run regress`   | pixel regression capture; `npm run compare` diffs two captures                 |
-| `npm run pack:room` | re-pack `public/room.json` from a Blender export                               |
-| `npm run deploy`    | check, build, upload `dist/` over FTP with TLS (`-- --dry-run` shows the plan) |
+| Command              | What                                                                            |
+| -------------------- | ------------------------------------------------------------------------------- |
+| `npm run dev`        | dev server with hot reload                                                      |
+| `npm run build`      | the multi-file site in `dist/`                                                  |
+| `npm run preview`    | serve `dist/` (port 4173)                                                       |
+| `npm run check`      | everything CI runs before the build: typecheck, lint, format check, tests       |
+| `npm run typecheck`  | `tsc --noEmit`, strict, for the app and the typed scripts                       |
+| `npm run lint`       | ESLint (typescript-eslint strict + stylistic, type-checked)                     |
+| `npm run format`     | Prettier (`format:check` only checks)                                           |
+| `npm test`           | Vitest: the DOM-free logic of the room, the desktop and the deploy              |
+| `npm run regress`    | pixel regression capture; `npm run compare` diffs two captures                  |
+| `npm run pack:room`  | re-pack `public/room.json` from a Blender export                                |
+| `npm run deploy`     | check, build, upload `dist/` over FTP with TLS (`-- --dry-run` shows the plan)  |
+| `npm run resume:pdf` | the resume as PDF (RU, EN) from a running `npm run preview`, into `resume-pdf/` |
 
 The harness, re-packing the model, deploying and the traps worth knowing are in
 [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).

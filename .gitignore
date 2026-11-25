@@ -7,3 +7,4 @@ dist-artifact/
 # renders and exports from lab/ sketches
 lab/**/out/
 lab/**/*.wav
+resume-pdf/

@@ -254,7 +254,7 @@ button.chip:active {
   color: inherit;
   text-decoration: none;
 }
-.cv-contacts a {
+.cv .cv-contacts a {
   text-decoration: underline;
   text-decoration-color: rgba(0, 0, 0, 0.25);
   text-underline-offset: 2px;
@@ -297,7 +297,7 @@ button.chip:active {
 .cv p {
   margin: 0;
 }
-.cv-top {
+.cv .cv-top {
   display: flex;
   flex-wrap: wrap;
   justify-content: space-between;
@@ -312,21 +312,21 @@ button.chip:active {
   margin: 0 0 6px;
   letter-spacing: -0.01em;
 }
-.cv-role {
+.cv .cv-role {
   font-size: 16px;
   font-weight: 600;
 }
-.cv-role span {
+.cv .cv-role span {
   color: var(--ink-muted);
   font-weight: 400;
 }
-.cv-contacts {
+.cv .cv-contacts {
   font-size: 13.5px;
   line-height: 1.55;
   color: var(--ink-soft);
   user-select: text;
 }
-.cv-sum {
+.cv .cv-sum {
   margin: 14px 0 0 !important;
   color: var(--ink-soft);
 }
@@ -346,10 +346,10 @@ button.chip:active {
   height: 1px;
   background: var(--rule);
 }
-.cv-job {
+.cv .cv-job {
   margin-bottom: 20px;
 }
-.cv-head {
+.cv .cv-head {
   display: flex;
   flex-wrap: wrap;
   justify-content: space-between;
@@ -366,12 +366,12 @@ button.chip:active {
   font-size: 14px;
   color: var(--ink-soft);
 }
-.cv-when {
+.cv .cv-when {
   color: var(--ink-muted);
   font-size: 13px;
   font-variant-numeric: tabular-nums;
 }
-.cv-stack {
+.cv .cv-stack {
   color: var(--ink-muted);
   font-size: 13px;
   margin-top: 2px !important;
@@ -398,7 +398,7 @@ button.chip:active {
 .cv dd {
   margin: 0;
 }
-.cv-edu {
+.cv .cv-edu {
   display: flex;
   flex-wrap: wrap;
   justify-content: space-between;
@@ -721,11 +721,60 @@ body.no-3d .note span {
   .cv-tools {
     display: none !important;
   }
+  /* one A4 page, as the PDF is printed from this (scripts/resume-pdf.mjs) */
   .cv {
     max-width: none;
-    font-size: 11pt;
+    font-size: 8.9pt;
+    line-height: 1.33;
   }
-  .cv-job {
+  .cv h1 {
+    font-size: 19pt;
+    margin: 0 0 2px;
+  }
+  .cv .cv-role {
+    font-size: 10.5pt;
+  }
+  .cv .cv-contacts {
+    font-size: 8.4pt;
+    line-height: 1.4;
+  }
+  .cv .cv-top {
+    padding-bottom: 6px;
+  }
+  .cv .cv-sum {
+    margin-top: 6px !important;
+  }
+  .cv h2 {
+    margin: 10px 0 5px;
+    font-size: 7.8pt;
+  }
+  .cv .cv-job {
+    margin-bottom: 7px;
     break-inside: avoid;
   }
+  .cv h3 {
+    font-size: 9.8pt;
+  }
+  .cv h3 span,
+  .cv .cv-when,
+  .cv .cv-stack {
+    font-size: 8.8pt;
+  }
+  .cv ul {
+    margin-top: 3px;
+  }
+  .cv li {
+    margin: 1px 0;
+  }
+  .cv dl {
+    grid-template-columns: 84px minmax(0, 1fr);
+    gap: 2px 8px;
+  }
+  .cv .cv-edu {
+    margin-bottom: 2px;
+  }
+}
+@page {
+  size: A4;
+  margin: 10mm 12mm;
 }

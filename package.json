@@ -23,7 +23,8 @@
     "pack:room": "node scripts/pack-room.mjs",
     "regress": "node scripts/regress.mjs",
     "compare": "node scripts/compare.mjs",
-    "deploy": "npm run check && npm run build && node scripts/deploy.mjs"
+    "deploy": "npm run check && npm run build && node scripts/deploy.mjs",
+    "resume:pdf": "node scripts/resume-pdf.mjs"
   },
   "dependencies": {
     "three": "0.128.0"

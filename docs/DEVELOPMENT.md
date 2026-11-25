@@ -115,5 +115,5 @@ certificate for the domain (a free Let's Encrypt one in the panel).
 - The harness finds the debug panel's buttons by their Russian labels: renaming a label in `debug-panel.ts` needs the
   same change in `scripts/regress.mjs`.
 - The desktop shows work done under an NDA only in general terms: it must never name that employer or its
-  repositories. `src/nda.test.ts` checks all of `src` for the names. The room's own resume sheet in `index.html`
-  is a separate, public document.
+  repositories. `src/nda.test.ts` checks all of `src` for the names. The resume sheet in `index.html` names the
+  employer; its job is marked `data-nda`, and the DocPad leaves those out when it copies the sheet.
