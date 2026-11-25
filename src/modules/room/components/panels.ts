@@ -8,6 +8,12 @@ import { currentRoute, go } from '../../../services/router.service';
 import { fitPixelBox } from './tags';
 import { byId } from '../../../utils/dom';
 import { track } from '../../../services/analytics.service';
+
+/** The tab title per language; index.html carries the English one for crawlers and link previews. */
+export const PAGE_TITLE: Record<Lang, string> = {
+  en: 'Daniil Ivanov | Fullstack Developer | Vue Django NodeJS',
+  ru: 'Даниил Иванов | Fullstack-разработчик | Vue Django NodeJS',
+};
 import type { EventProps } from '../../../services/analytics.service';
 
 export class Panels {
@@ -138,6 +144,7 @@ export class Panels {
   applyLang(lang: Lang): void {
     const T = t(lang);
     document.documentElement.lang = lang;
+    document.title = PAGE_TITLE[lang];
     document.querySelectorAll('[data-room-t]').forEach((el) => {
       const key = el.getAttribute('data-room-t');
       if (isMarkupKey(key)) el.textContent = T[key];
