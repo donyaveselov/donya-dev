@@ -170,20 +170,27 @@ export function buildQuickLaunch(): void {
   }
 }
 
+const setText = (el: Element | null, s: string): void => {
+  if (el && el.textContent !== s) el.textContent = s;
+};
+
+/** Brings the tray (and the Start button's caption) up to date; it runs on a timer, so it only writes what changed. */
 export function updateTray(): void {
   const R = domOrNull();
   if (!R) return;
-  const ct = clockText();
-  if (R.clock.textContent !== ct) R.clock.textContent = ct;
-  R.lang.textContent = S.lang === 'en' ? 'EN' : 'RU';
+  setText(R.clock, clockText());
+  setText(R.lang, S.lang === 'en' ? 'EN' : 'RU');
   const st = status();
   if (R.statusIc.dataset.st !== st) {
     R.statusIc.dataset.st = st;
     R.statusIc.innerHTML = statusIcon(st);
   }
-  R.vol.innerHTML = isMuted() ? ICON.mute : ICON.volume;
-  const t = R.startBtn.querySelector('.xp-startbtn__t');
-  if (t) t.textContent = L('start');
+  const muted = String(isMuted());
+  if (R.vol.dataset.muted !== muted) {
+    R.vol.dataset.muted = muted;
+    R.vol.innerHTML = isMuted() ? ICON.mute : ICON.volume;
+  }
+  setText(R.startBtn.querySelector('.xp-startbtn__t'), L('start'));
 }
 
 /** The tray's Mute: the page's one sound switch (src/shared/sound.ts), the same one as the room's speaker button. */
