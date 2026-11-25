@@ -78,6 +78,9 @@ export function stepButtons(step: TourStep): TourButton[] {
   ];
 }
 
+/** The mouth changes shape this often while it talks, ms. */
+const FLAP_MS = 110;
+
 /** The typewriter pauses after a comma or a full stop. */
 export const typeDelay = (prev: string): number => (prev === ',' || prev === '.' ? 160 : 34);
 
@@ -117,6 +120,7 @@ export class Tour {
   private steps: TourStep[] | null = null;
   private i = -1;
   private typing = false;
+  private flap: ReturnType<typeof setInterval> | null = null;
   private full = '';
   private sayId = 0;
   private saved: ReturnType<TourHost['current']> | null = null;
@@ -162,14 +166,27 @@ export class Tour {
         replay();
       }
     });
-    // lip flap while the text types, the grin when it stops
-    setInterval(() => {
-      const f: MouthFrame = this.typing ? (SPEAKING[(Math.random() * SPEAKING.length) | 0] ?? 'idle') : 'idle';
-      if (mouth.getAttribute('data-f') !== f) {
-        mouth.src = TALKIE_FRAMES[f];
-        mouth.setAttribute('data-f', f);
-      }
-    }, 110);
+  }
+
+  private showMouth(f: MouthFrame): void {
+    const mouth = this.mouth;
+    if (!mouth || mouth.getAttribute('data-f') === f) return;
+    mouth.src = TALKIE_FRAMES[f];
+    mouth.setAttribute('data-f', f);
+  }
+
+  /** The lips flap while the text types (a timer that runs only then) and grin when it stops. */
+  private setTyping(typing: boolean): void {
+    this.typing = typing;
+    if (typing) {
+      this.flap ??= setInterval(() => {
+        this.showMouth(SPEAKING[(Math.random() * SPEAKING.length) | 0] ?? 'idle');
+      }, FLAP_MS);
+    } else {
+      if (this.flap !== null) clearInterval(this.flap);
+      this.flap = null;
+      this.showMouth('idle');
+    }
   }
 
   private step(): TourStep | undefined {
@@ -179,14 +196,14 @@ export class Tour {
   private say(text: string): void {
     const bub = must(this.bub);
     this.full = text;
-    this.typing = false;
     if (this.host.reducedMotion) {
+      this.setTyping(false);
       bub.textContent = text;
       this.renderButtons();
       return;
     }
     bub.textContent = '';
-    this.typing = true;
+    this.setTyping(true);
     this.renderButtons();
     let n = 0;
     const id = ++this.sayId;
@@ -196,7 +213,7 @@ export class Tour {
       bub.textContent = text.slice(0, n);
       if (n < text.length) setTimeout(type, typeDelay(text.charAt(n - 1)));
       else {
-        this.typing = false;
+        this.setTyping(false);
         this.renderButtons();
       }
     };
@@ -205,7 +222,7 @@ export class Tour {
 
   private finishLine(): void {
     this.sayId++;
-    this.typing = false;
+    this.setTyping(false);
     must(this.bub).textContent = this.full;
     this.renderButtons();
   }
@@ -310,7 +327,7 @@ export class Tour {
 
   private end(): void {
     this.sayId++;
-    this.typing = false;
+    this.setTyping(false);
     if (this.saved) this.setState(null);
     this.goBack();
     this.all = true;
