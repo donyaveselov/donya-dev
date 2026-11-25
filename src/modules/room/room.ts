@@ -142,6 +142,11 @@ class RoomApp {
     });
     window.addEventListener('resize', this.layout);
     window.addEventListener('hashchange', () => {
+      // #loader typed into an open page: load it again, so that it stays on the loading screen
+      if (currentRoute().holdLoader) {
+        location.reload();
+        return;
+      }
       // a link to #projects followed on the page; the boot handles the hash the page was loaded with
       if (this.applyRoute().sit === 'projects') this.openProjects();
     });

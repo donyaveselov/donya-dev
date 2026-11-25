@@ -37,8 +37,10 @@
   html, body { margin: 0; height: 100%; background: #0d1630; color: #fff; }
   /* until the room (or the plain page without 3D) is ready, the loader is all there is: no half-filled top bar */
   body.booting > :not(.loading) { visibility: hidden !important; }
+  /* a curtain of its own colour: the sky behind it takes the hour's colours as soon as the script runs, and shows
+     only when the curtain fades out over the room */
   .loading { position: fixed; inset: 0; z-index: 8; display: grid; place-content: center; pointer-events: none;
-    transition: opacity 0.4s; }
+    background: #0d1630; transition: opacity 0.4s; }
   .talkie-loader { display: block; overflow: hidden; filter: drop-shadow(0 4px 0 rgba(0, 0, 0, 0.25)); }
   @media (prefers-reduced-motion: reduce) {
     .loading { transition: none; }
