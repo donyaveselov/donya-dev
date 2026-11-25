@@ -1,18 +1,12 @@
-// The room's DOM chrome: the top bar (time chip, resume button, language switch), the resume sheet, and the hash
-// routes that open it or preview a time of day or a status. The projects live on the desktop (src/xp).
+// The room's DOM chrome: the top bar (time chip, resume button, language switch) and the resume sheet. The projects
+// live on the desktop (src/xp).
 import { DESKTOP_DOM, DESKTOP_ROOT_ID } from '../shared/desktop';
 import { EXPERIENCE } from '../shared/experience';
 import type { Lang, Status } from '../shared/types';
-import { PREVIEW_HOURS, isStatus } from './clock';
 import { isAriaKey, isMarkupKey, t, timeChip } from './i18n';
-import { GAME_NAMES } from './presence';
+import { setHash } from './routes';
 import { fitPixelBox } from './tags';
 import { byId } from './util';
-
-const hash = (): string => location.hash.replace('#', '');
-function setHash(h: string): void {
-  if (hash() !== h) location.hash = h;
-}
 
 export class Panels {
   private readonly sheet = byId('sheet');
@@ -90,11 +84,10 @@ export class Panels {
     }
   }
 
-  /** Opens or closes the panels for the hash. */
-  syncPanels(): void {
-    const h = hash();
-    if (h === 'resume') this.openResume();
-    else if (!this.sheet.hidden) this.closeResume();
+  /** Opens or closes the sheet for the route (#resume). */
+  showResume(open: boolean): void {
+    if (open) this.openResume();
+    else this.closeResume();
   }
 
   /** The time chip: "Пхукет 13:00 · работаю". */
@@ -132,26 +125,3 @@ export class Panels {
     this.fitChips();
   }
 }
-
-export interface Route {
-  /** a previewed hour, or null for the clock */
-  preview: number | null;
-  /** a previewed status, or null for the schedule */
-  forced: Status | null;
-  /** a game to show (#dota, #cs, #pcdota) */
-  game: { kind: 'dota' | 'cs'; name: string } | null;
-}
-
-/** The previews a hash asks for: #day / #sunset / #night an hour (a state link keeps the real hour), a status, a game. */
-export function parseRoute(h: string): Route {
-  const hours: Partial<Record<string, number>> = PREVIEW_HOURS;
-  const r: Route = { preview: hours[h] ?? null, forced: isStatus(h) ? h : null, game: null };
-  const g = h === 'pcdota' ? 'dota' : h;
-  if (g === 'dota' || g === 'cs') {
-    r.forced = 'play';
-    r.game = { kind: g, name: GAME_NAMES[g] };
-  }
-  return r;
-}
-
-export const currentHash = hash;

@@ -2,7 +2,8 @@
    No labels on load. The talkie says hello and asks for a tour. "No": all labels appear and it folds into a corner
    button. "Yes": one line per step; the status steps switch the room to that state and hour, then the real one comes
    back; the labels appear one by one; the camera leans a little towards what is being talked about. */
-import type { Vector3 } from 'three';
+import type { OrthographicCamera, Vector3 } from 'three';
+import type { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import type { GameKind, Lang, Status } from '../shared/types';
 import { PREVIEW_HOURS } from './clock';
 import { t, tourLine } from './i18n';
@@ -92,9 +93,8 @@ export interface TourHost {
   ): void;
   /** what is shown now, to come back to */
   current(): { forced: Status | null; hour: number | null; game: { kind: GameKind; name: string | null } };
-  camera: { target: Vector3; zoom: number; maxZoom: number };
-  /** applies a camera change made through `camera` */
-  updateCamera(): void;
+  /** the room's camera and its orbit controls; asked for only while a tour runs (the room is built by then) */
+  rig(): { camera: OrthographicCamera; controls: OrbitControls };
   /** false while at the PC: the camera belongs to the hand-off */
   canDrift(): boolean;
   hideHint(): void;
@@ -234,9 +234,9 @@ export class Tour {
       this.cam = null;
       return;
     }
-    const c = this.host.camera;
-    this.base ??= { t: c.target.clone(), z: c.zoom };
-    this.cam = { t: this.base.t.clone().lerp(p, 0.35), z: Math.min(c.maxZoom, this.base.z * 1.18) };
+    const { camera, controls } = this.host.rig();
+    this.base ??= { t: controls.target.clone(), z: camera.zoom };
+    this.cam = { t: this.base.t.clone().lerp(p, 0.35), z: Math.min(controls.maxZoom, this.base.z * 1.18) };
   }
 
   private goBack(): void {
@@ -247,12 +247,12 @@ export class Tour {
   drift(dt: number): void {
     const cam = this.cam;
     if (!cam || !this.host.canDrift()) return;
-    const c = this.host.camera;
+    const { camera, controls } = this.host.rig();
     const k = 1 - Math.exp(-dt * 2.6);
-    c.target.lerp(cam.t, k);
-    c.zoom += (cam.z - c.zoom) * k;
-    this.host.updateCamera();
-    if (cam.back && c.target.distanceTo(cam.t) < 0.01) {
+    controls.target.lerp(cam.t, k);
+    camera.zoom += (cam.z - camera.zoom) * k;
+    camera.updateProjectionMatrix();
+    if (cam.back && controls.target.distanceTo(cam.t) < 0.01) {
       this.cam = null;
       this.base = null;
     }
