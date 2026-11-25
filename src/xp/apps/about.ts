@@ -3,6 +3,7 @@
 import type { Bilingual, Status, XPAppApi } from '../../shared/types';
 import { HEADLINE, OS, PERSON } from '../content/profile';
 import { DEVICES, type StackItem } from '../content/stack';
+import { OWNER_STATUS } from '../content/status';
 import { registerApp } from '../shell/apps';
 import { G16, ICONS } from './icons';
 import { pad, phuketNow, reduced, ui } from './kit';
@@ -73,36 +74,12 @@ const T = {
   resume: d('Резюме…', 'Resume…'),
 } as const;
 
-interface StatusInfo {
-  label: Bilingual;
-  /** The range the focus graph wanders in, in %. */
-  load: [number, number];
-  note: Bilingual;
-}
-const STATUS: Record<Status, StatusInfo> = {
-  work: {
-    label: d('Работает', 'At work'),
-    load: [62, 94],
-    note: d(
-      'Пишет код. Не отвлекать, если только не с оффером.',
-      'Writing code. Do not disturb, unless it is an offer.',
-    ),
-  },
-  play: {
-    label: d('Играет', 'Gaming'),
-    load: [88, 100],
-    note: d('Видеокарта занята. Код подождёт до конца катки.', 'The GPU is busy. Code waits until the match ends.'),
-  },
-  sleep: {
-    label: d('Спит', 'Asleep'),
-    load: [1, 6],
-    note: d('Энергосбережение. Ответит утром по времени Пхукета.', 'Power saving. Will reply in the Phuket morning.'),
-  },
-  outside: {
-    label: d('Вне дома', 'Away'),
-    load: [8, 22],
-    note: d('Где-то на острове. Телефон с собой.', 'Somewhere on the island. Has the phone.'),
-  },
+/** The range the focus graph wanders in, in %, by what the owner is doing. */
+const LOAD: Record<Status, [number, number]> = {
+  work: [62, 94],
+  play: [88, 100],
+  sleep: [1, 6],
+  outside: [8, 22],
 };
 
 interface Device {
@@ -226,14 +203,11 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
     return b;
   });
 
-  let stopFns: (() => void)[] = [];
-  const stopAll = (): void => {
-    for (const f of stopFns) f();
-    stopFns = [];
-  };
+  // the open tab: its bilingual text and its timers go when another tab (or the language) replaces it
+  const tab = U.scope();
   function show(id: TabId): void {
     cur = id;
-    stopAll();
+    tab.dispose();
     tabEls.forEach((b, i) => {
       const on = TABS[i]?.id === id;
       b.setAttribute('aria-selected', String(on));
@@ -244,10 +218,10 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
     api.win.setTitle(t(T.sysProps));
   }
 
-  const status = (): StatusInfo => STATUS[api.status()];
   const uptime = (): string => hms(Math.floor((Date.now() - openedAt) / 1000));
 
   function general(): void {
+    const { h } = tab;
     const timeEl = h('span');
     const upEl = h('span');
     const tick = (): void => {
@@ -256,10 +230,7 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
       upEl.textContent = uptime();
     };
     tick();
-    const id = window.setInterval(tick, 1000);
-    stopFns.push(() => {
-      clearInterval(id);
-    });
+    tab.every(1000, tick);
     const compName = h('input.xpa-field.xpa-about-name', {
       type: 'text',
       value: OS.pcName,
@@ -294,7 +265,7 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
             h('div', T.cpu),
             h('div', T.cooling),
             h('div', [t(T.localTime), timeEl]),
-            h('div', [t(T.status), h('b', t(status().label))]),
+            h('div', [t(T.status), h('b', t(OWNER_STATUS[api.status()].label))]),
             h('div', [t(T.uptime), upEl]),
           ]),
         ]),
@@ -304,6 +275,7 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
   }
 
   function hardware(): void {
+    const { h } = tab;
     const info = h('div.xpa-about-devinfo');
     const tree = h('div.xpa-about-tree.xpa-sunken', { role: 'tree', tabindex: '0', 'aria-label': T.deviceManager });
     interface Row {
@@ -403,7 +375,9 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
   }
 
   function perf(): void {
-    const S = status();
+    const { h } = tab;
+    const now = api.status();
+    const S = { ...OWNER_STATUS[now], load: LOAD[now] };
     const cv = h('canvas.xpa-about-graph', { width: '300', height: '110', 'aria-label': T.loadGraph });
     const pct = h('div.xpa-about-pct');
     const meterFill = h('div.xpa-about-meter-fill');
@@ -479,16 +453,12 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
       draw();
     };
     draw();
-    if (!reduced()) {
-      const id = window.setInterval(tick, 1000);
-      stopFns.push(() => {
-        clearInterval(id);
-      });
-    }
+    if (!reduced()) tab.every(1000, tick);
   }
 
   function remote(): void {
-    const cb1 = h('input', { type: 'checkbox', id: 'xpa-rem-1', checked: true });
+    const { h, button } = tab;
+    const cb1 = h('input', { type: 'checkbox', checked: true });
     cb1.addEventListener('change', () => {
       if (cb1.checked) return;
       cb1.checked = true;
@@ -511,8 +481,8 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
         ]),
         h('div.xpa-group', [h('span.xpa-legend', T.timeZone), tz]),
         h('div.xpa-about-rbtns', [
-          U.button(T.contact, () => api.openApp('contact'), { primary: true }),
-          U.button(T.resume, () => api.openApp('resume')),
+          button(T.contact, () => api.openApp('contact'), { primary: true }),
+          button(T.resume, () => api.openApp('resume')),
         ]),
       ]),
     );
@@ -530,7 +500,6 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
   U.bind(() => {
     show(cur);
   });
-  U.onCleanup(stopAll);
   U.later(30, () => tabEls[TABS.findIndex((x) => x.id === cur)]?.focus({ preventScroll: true }));
   return U.destroy;
 }

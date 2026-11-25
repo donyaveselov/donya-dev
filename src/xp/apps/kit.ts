@@ -8,9 +8,8 @@ import { G16, G24, iconMarkup } from './icons';
 import { createScope, type Scope } from './kit-scope';
 import { APP } from './strings';
 
+export { pad } from '../content/text';
 export { reduced } from '../shell/dom';
-
-export const pad = (n: number | string, w = 2): string => String(n).padStart(w, '0');
 
 /** Phuket time (UTC+7), with the host's hour and minute when it provides them. */
 export function phuketNow(api?: XPAppApi): { h: number; m: number; s: number; date: Date } {
