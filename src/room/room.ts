@@ -29,7 +29,7 @@ import { makePost, psx, render, setBackdrop } from './psx';
 import { Figure } from './figure';
 import { REDUCED_MOTION, hourOfDay, live, readClock, saveLang, status } from './state';
 import { pollSteam } from './steam';
-import { Tags } from './tags';
+import { Tags, fitPixelBox, placePixelBox } from './tags';
 import { Tour } from './tour';
 import type { TourSights } from './tour';
 import { byId, must } from './util';
@@ -130,8 +130,15 @@ function applyTime(): void {
   r.tags.refresh(live.lang);
 }
 
+/** the Projects button's size, measured when its text or font changes (it is placed on whole pixels every frame) */
+let pinSize = { w: 0, h: 0 };
+function measurePin(): void {
+  if (!pin.hidden) pinSize = fitPixelBox(pin);
+}
+
 function applyLang(): void {
   panels.applyLang(live.lang);
+  measurePin();
   renderTime();
   if (room) {
     for (const f of room.frames) f.draw(live.lang);
@@ -502,8 +509,13 @@ function frame(now: number): void {
     if (!r.handoff.covered && !panels.sheetOpen) {
       render(r.renderer, r.scene, r.camera);
       r.anchor.getWorldPosition(pinAt).project(r.camera);
-      pin.style.left = String(((pinAt.x + 1) / 2) * stage.clientWidth) + 'px';
-      pin.style.top = String(((1 - pinAt.y) / 2) * stage.clientHeight - 8) + 'px';
+      // the pixel tail's tip on the desk
+      placePixelBox(
+        pin,
+        ((pinAt.x + 1) / 2) * stage.clientWidth,
+        ((1 - pinAt.y) / 2) * stage.clientHeight - 12,
+        pinSize,
+      );
       view ??= tagView(r);
       view.width = stage.clientWidth;
       view.height = stage.clientHeight;
@@ -531,8 +543,10 @@ function fail(): void {
   byId('loading').style.opacity = '0';
   document.body.classList.add('no-3d');
   say('no3d');
-  pin.style.left = '50%';
-  pin.style.top = '50%';
+  pin.hidden = false;
+  measurePin();
+  placePixelBox(pin, window.innerWidth / 2, window.innerHeight / 2, pinSize);
+  pin.hidden = true; // the desktop opens at once; leaving it shows the button
   pin.style.visibility = 'visible';
   pin.style.opacity = '1';
   openFlatDesktop(currentHash() === 'projects' ? (d) => d.openApp('projects') : undefined);
@@ -677,6 +691,8 @@ export function startRoom(): void {
         applyTime();
         byId('loading').style.opacity = '0';
         pin.hidden = false;
+        measurePin();
+        void document.fonts.ready.then(measurePin);
         setTimeout(
           () => {
             if (!r.handoff.atPC) tour.start(false);

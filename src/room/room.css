@@ -17,6 +17,10 @@
   --marker: #9a9a9a;
   --font-ui: 'Golos Text', 'Helvetica Neue', Arial, sans-serif;
   --font-sign: 'Unbounded', 'Golos Text', 'Helvetica Neue', Arial, sans-serif;
+  /* pixel chrome (the talkie's look): Tiny5, a 4 px black frame with stepped corners, a stepped tail pointing down */
+  --font-pixel: 'Tiny5', ui-monospace, monospace;
+  --px-frame: 0 -4px #111, 0 4px #111, -4px 0 #111, 4px 0 #111;
+  --px-tail: -4px 0 #fff, 4px 0 #fff, 0 4px #fff, -8px 0 #111, 8px 0 #111, -4px 4px #111, 4px 4px #111, 0 8px #111;
 }
 html,
 body {
@@ -123,37 +127,49 @@ button {
   z-index: 6;
   left: 0;
   top: 0;
-  transform: translate(-50%, -100%);
-  background: var(--text);
-  color: var(--ink);
+  box-sizing: border-box; /* placed by its corner on whole pixels from JS (tags.ts: placePixelBox) */
+  font: inherit;
+  font-family: var(--font-pixel);
+  font-size: 16px;
+  line-height: 1;
+  padding: 8px 12px 8px 10px;
   border: 0;
-  border-radius: 999px;
-  padding: 7px 14px 7px 12px;
-  font-weight: 600;
-  font-size: 13.5px;
+  background: #fff;
+  color: #111;
   white-space: nowrap;
-  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.28);
+  cursor: pointer;
+  box-shadow: var(--px-frame);
+  filter: drop-shadow(0 4px 0 rgba(0, 0, 0, 0.3));
   transition: opacity 0.25s;
 }
+.pin:hover {
+  background: #fff4d6;
+}
+.pin:focus-visible {
+  outline: 3px solid #e2583e;
+  outline-offset: 8px;
+}
+/* a square "live" dot, like a pixel LED */
 .pin::before {
   content: '';
   display: inline-block;
   width: 8px;
   height: 8px;
-  border-radius: 50%;
   background: #e2583e;
   margin-right: 8px;
-  vertical-align: 1px;
+  vertical-align: 0;
 }
-.pin::after {
+.pin::after,
+.tag::after {
   content: '';
   position: absolute;
   left: 50%;
-  bottom: -5px;
-  width: 10px;
-  height: 10px;
-  background: var(--text);
-  transform: translateX(-50%) rotate(45deg);
+  top: 100%;
+  width: 4px;
+  height: 4px;
+  margin-left: -2px;
+  background: #fff;
+  box-shadow: var(--px-tail);
 }
 
 .note {
@@ -407,35 +423,25 @@ button {
   z-index: 5;
   left: 0;
   top: 0;
-  transform: translate(-50%, -100%);
-  background: var(--text);
-  color: var(--ink);
-  border-radius: 999px;
-  padding: 7px 14px;
-  font-weight: 600;
-  font-size: 13.5px;
+  box-sizing: border-box; /* placed by its corner on whole pixels from JS (tags.ts: placePixelBox) */
+  background: #fff;
+  color: #111;
+  padding: 7px 10px;
+  font-family: var(--font-pixel);
+  font-size: 15px;
+  line-height: 1;
   white-space: nowrap;
   pointer-events: none;
-  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.28);
+  box-shadow: var(--px-frame);
+  filter: drop-shadow(0 4px 0 rgba(0, 0, 0, 0.3));
   transition: opacity 0.25s;
   opacity: 0;
 }
-.tag::after {
-  content: '';
-  position: absolute;
-  left: 50%;
-  bottom: -5px;
-  width: 10px;
-  height: 10px;
-  background: var(--text);
-  transform: translateX(-50%) rotate(45deg);
-}
 .tag--info {
   white-space: normal;
-  max-width: min(320px, calc(100vw - 32px));
+  max-width: min(320px, calc(100vw - 40px));
   text-align: center;
-  line-height: 1.35;
-  border-radius: 14px;
+  line-height: 1.25;
 }
 body.at-pc .tag {
   opacity: 0 !important;
