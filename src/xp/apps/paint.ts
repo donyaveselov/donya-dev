@@ -121,16 +121,20 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
 
   const cv = h('canvas.xpa-pt-canvas', { width: String(W), height: String(H), 'aria-label': T.canvas, tabindex: '0' });
   const ov = h('canvas.xpa-pt-overlay', { width: String(W), height: String(H), 'aria-hidden': 'true' });
-  const ctx = cv.getContext('2d', { willReadFrequently: true });
-  const octx = ov.getContext('2d');
-  if (!ctx || !octx) return U.destroy;
+  const main2d = cv.getContext('2d', { willReadFrequently: true });
+  const overlay2d = ov.getContext('2d');
+  if (!main2d || !overlay2d) return U.destroy;
+  // under their own names the two contexts are known to exist in every function below
+  const ctx = main2d;
+  const octx = overlay2d;
 
   const refreshTitle = (): void => {
     api.win.setTitle(`${dirty ? '*' : ''}${t(T.untitled)} — ${t(T.title)}`);
   };
   const grab = (): ImageData => ctx.getImageData(0, 0, W, H);
-  function snapshot(): void {
-    undo.push(grab());
+  /** Remembers the picture (as it is now, or as it was just before a change) for Undo. */
+  function snapshot(img: ImageData = grab()): void {
+    undo.push(img);
     if (undo.length > 30) undo.shift();
     redo = [];
     dirty = true;
@@ -143,7 +147,7 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
       return;
     }
     redo.push(grab());
-    ctx?.putImageData(img, 0, 0);
+    ctx.putImageData(img, 0, 0);
   }
   function doRedo(): void {
     const img = redo.pop();
@@ -152,16 +156,14 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
       return;
     }
     undo.push(grab());
-    ctx?.putImageData(img, 0, 0);
+    ctx.putImageData(img, 0, 0);
   }
   function clearAll(): void {
     snapshot();
-    if (!ctx) return;
     ctx.fillStyle = bg;
     ctx.fillRect(0, 0, W, H);
   }
   function newImage(): void {
-    if (!ctx) return;
     ctx.fillStyle = '#fff';
     ctx.fillRect(0, 0, W, H);
     undo = [];
@@ -185,7 +187,6 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
   }
   function flipH(): void {
     snapshot();
-    if (!ctx) return;
     const img = grab();
     const out = ctx.createImageData(W, H);
     flipHorizontal(img.data, out.data, W, H);
@@ -195,7 +196,7 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
     snapshot();
     const img = grab();
     invertColors(img.data);
-    ctx?.putImageData(img, 0, 0);
+    ctx.putImageData(img, 0, 0);
   }
 
   const menu = U.menubar([
@@ -394,7 +395,6 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
     c.stroke();
   }
   function spray(p: Pt, color: string): void {
-    if (!ctx) return;
     ctx.fillStyle = color;
     for (let i = 0; i < size * 1.5; i++) {
       const a = Math.random() * Math.PI * 2;
@@ -426,7 +426,7 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
     }
   }
 
-  let drag: { a: Pt; last: Pt; color: string; other: string; timer: number } | null = null;
+  let drag: { a: Pt; last: Pt; color: string; other: string; stopSpray: (() => void) | null } | null = null;
   cv.addEventListener('contextmenu', (e) => {
     e.preventDefault();
   });
@@ -447,26 +447,31 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
       setTool(prevTool ?? 'pencil');
       return;
     }
-    snapshot();
     if (tool === 'fill') {
       const img = grab();
-      if (floodFill(img.data, W, H, p.x, p.y, color)) ctx.putImageData(img, 0, 0);
+      // a fill that changes nothing (the same colour) is not a step to undo
+      if (floodFill(img.data, W, H, p.x, p.y, color)) {
+        snapshot();
+        ctx.putImageData(img, 0, 0);
+      }
       return;
     }
+    snapshot();
     try {
       cv.setPointerCapture(e.pointerId);
     } catch {
       /* the pointer is already gone */
     }
-    const dg = { a: p, last: p, color, other, timer: 0 };
+    const dg: NonNullable<typeof drag> = { a: p, last: p, color, other, stopSpray: null };
     drag = dg;
     if (tool === 'pencil' || tool === 'brush') strokeSeg(ctx, p, p, size, color);
     if (tool === 'eraser') strokeSeg(ctx, p, p, size, bg, true);
     if (tool === 'air') {
       spray(p, color);
-      dg.timer = window.setInterval(() => {
+      // the airbrush keeps spraying while it is held still (and stops with the window)
+      dg.stopSpray = U.every(40, () => {
         spray(dg.last, color);
-      }, 40);
+      });
     }
   });
   cv.addEventListener('pointermove', (e) => {
@@ -487,19 +492,14 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
   function end(e: PointerEvent | null): void {
     if (!drag) return;
     const p = e ? pos(e) : drag.last;
-    clearInterval(drag.timer);
-    octx?.clearRect(0, 0, W, H);
-    if (ctx) {
-      if (tool === 'line') strokeSeg(ctx, drag.a, p, size, drag.color);
-      else if (SHAPES.includes(tool)) shape(ctx, drag.a, p, drag.color, drag.other, !!e?.shiftKey);
-    }
+    drag.stopSpray?.();
+    octx.clearRect(0, 0, W, H);
+    if (tool === 'line') strokeSeg(ctx, drag.a, p, size, drag.color);
+    else if (SHAPES.includes(tool)) shape(ctx, drag.a, p, drag.color, drag.other, !!e?.shiftKey);
     drag = null;
     st.set(2, `${String(W)}×${String(H)}`);
   }
   cv.addEventListener('pointerup', end);
-  U.onCleanup(() => {
-    if (drag) clearInterval(drag.timer); // closed mid-spray
-  });
   cv.addEventListener('pointercancel', () => {
     end(null);
   });
