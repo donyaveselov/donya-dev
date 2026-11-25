@@ -77,6 +77,7 @@ export function unlockSound(): void {
 }
 
 export function setSoundLevel(): void {
+  S.opts?.onSoundChange?.(S.prefs.muted, S.prefs.volume); // the host's music follows the tray
   if (!ctx || !master) return;
   master.gain.cancelScheduledValues(ctx.currentTime);
   master.gain.setTargetAtTime(level(), ctx.currentTime, 0.01);

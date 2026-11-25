@@ -40,7 +40,7 @@ export interface RoomStrings extends Record<MarkupKey | Status, string> {
 }
 
 /** The accessible names the markup asks for by `data-t-aria`. */
-export type AriaKey = 'lang';
+export type AriaKey = 'lang' | 'music';
 
 export type TourKey = keyof TourStrings;
 
@@ -85,7 +85,7 @@ const STR: Record<Lang, RoomStrings> = {
       place: 'Часы показывают моё местное время, а за окном Пхукет с его настоящей погодой.',
       end: 'Вот и всё! Захотите пройтись ещё раз, я тут, в углу.',
     },
-    aria: { lang: 'Язык' },
+    aria: { lang: 'Язык', music: 'Музыка' },
   },
   en: {
     resume: 'Resume',
@@ -127,7 +127,7 @@ const STR: Record<Lang, RoomStrings> = {
       place: 'The clock shows my local time, and outside the window is Phuket with its real weather.',
       end: 'That’s it! If you want the tour again, I’m right here in the corner.',
     },
-    aria: { lang: 'Language' },
+    aria: { lang: 'Language', music: 'Music' },
   },
 };
 
@@ -151,7 +151,7 @@ export function isMarkupKey(key: string | null): key is MarkupKey {
   return key !== null && MARKUP_KEYS.includes(key);
 }
 
-const ARIA_KEYS: readonly string[] = ['lang'] satisfies AriaKey[];
+const ARIA_KEYS: readonly string[] = ['lang', 'music'] satisfies AriaKey[];
 
 export function isAriaKey(key: string | null): key is AriaKey {
   return key !== null && ARIA_KEYS.includes(key);

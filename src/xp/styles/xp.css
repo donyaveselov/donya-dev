@@ -686,7 +686,6 @@
 @media (prefers-reduced-motion: reduce) { .xp .xp-mon__stars i { animation: none; } }
 
 /* the volume control is not shown in the tray (sounds stay on at the default level) */
-.xp .xp-tray-vol[hidden] { display: none !important; }
 
 /* a terminal session shown full-screen: never crop its text, a slight stretch is better than a cut-off prompt */
 .xp .xp-game--term > img, .xp .xp-game--term > canvas { object-fit: fill; }

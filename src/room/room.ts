@@ -20,6 +20,7 @@ import { BACKDROP, roomLight, screenTint, skyColours, skyFactors } from './light
 import { LiveScreens, LIVE_W } from './live-screens';
 import { loadRoom } from './loader';
 import { MaterialIndex, convertMaterials } from './materials';
+import { Music } from './music';
 import { Monitors } from './monitors';
 import type { Side } from './monitors';
 import { lightCoast, makeOutdoor } from './outdoor';
@@ -70,6 +71,7 @@ const stage = byId('stage');
 const pin = byId('pin');
 const note = byId('note');
 const panels = new Panels();
+const music = new Music(byId('music') as HTMLButtonElement);
 let room: Built | null = null;
 /** the debug panel's slow-motion factor for the fly-in */
 let slow = 1;
@@ -284,6 +286,10 @@ function mountOptions(): RoomMountOptions {
     // the desktop's language switch moves the whole page too
     onLangChange: (l: Lang) => {
       if (l !== live.lang) setLang(l);
+    },
+    // the tray's volume control turns the room's music down too
+    onSoundChange: (muted: boolean, volume: number) => {
+      music.follow(muted, volume);
     },
   };
 }
@@ -552,6 +558,7 @@ function fail(): void {
   pin.style.visibility = 'visible';
   pin.style.opacity = '1';
   openFlatDesktop(currentHash() === 'projects' ? (d) => d.openApp('projects') : undefined);
+  music.prefetch();
 }
 
 let flatRoot: HTMLElement | null = null;
@@ -586,6 +593,9 @@ function openFlatDesktop(then?: (desk: RoomDesktop) => void): void {
         },
         onLangChange: (l: Lang) => {
           if (l !== live.lang) setLang(l);
+        },
+        onSoundChange: (muted: boolean, volume: number) => {
+          music.follow(muted, volume);
         },
       });
     }
@@ -708,6 +718,7 @@ export function startRoom(): void {
           else setTimeout(f, 1200);
         };
         later(() => {
+          music.prefetch();
           void loadDesktop().then((ok) => {
             if (ok)
               later(() => {

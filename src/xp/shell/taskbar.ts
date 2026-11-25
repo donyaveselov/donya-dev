@@ -28,7 +28,7 @@ export function buildTaskbar(): TaskbarRefs {
   tb.innerHTML =
     `<button class="xp-startbtn" tabindex="-1"><span class="xp-startbtn__logo">${ICON.startFlag}</span><span class="xp-startbtn__t"></span></button>` +
     '<div class="xp-ql"></div><div class="xp-tasks"></div>' +
-    '<div class="xp-tray"><button class="xp-trayic xp-tray-status" tabindex="-1"></button><button class="xp-lang" tabindex="-1"></button><button class="xp-trayic xp-tray-vol" tabindex="-1" hidden></button><span class="xp-clock"></span></div>';
+    '<div class="xp-tray"><button class="xp-trayic xp-tray-status" tabindex="-1"></button><button class="xp-lang" tabindex="-1"></button><button class="xp-trayic xp-tray-vol" tabindex="-1"></button><span class="xp-clock"></span></div>';
   const r: TaskbarRefs = {
     taskbar: tb,
     startBtn: qs(tb, '.xp-startbtn', HTMLButtonElement),

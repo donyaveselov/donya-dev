@@ -143,6 +143,17 @@ button.chip:active {
   background: #fff;
   color: #111;
 }
+/* the music switch: a pixel speaker, with waves while it plays and a cross while it is off */
+.music svg {
+  display: block;
+}
+.music .x,
+.music--off .w {
+  display: none;
+}
+.music--off .x {
+  display: inline;
+}
 
 .pin {
   position: fixed;
