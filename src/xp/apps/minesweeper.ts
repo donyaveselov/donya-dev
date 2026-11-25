@@ -1,21 +1,21 @@
 // Minesweeper: classic rules (minesweeper-board.ts) with the original winmine.exe sprites, flags, question marks,
 // chording, a touch flag mode and three sizes.
+import { fill } from '../../shared/i18n';
 import type { Bilingual, XPAppApi } from '../../shared/types';
 import { ico } from '../icons';
 import { registerApp } from '../shell/apps';
 import { ICONS } from './icons';
 import { reduced, ui } from './kit';
 import { Board, ledDigits } from './minesweeper-board';
+import { type Level, LEVEL_IDS, parseBest, parseJson, parseSettings } from './minesweeper-store';
 import { d } from '../content/text';
 import { APP } from './strings';
 
-type Level = 'beginner' | 'intermediate' | 'expert';
 const LEVELS: Record<Level, { r: number; c: number; m: number; label: Bilingual }> = {
   beginner: { r: 9, c: 9, m: 10, label: d('Новичок', 'Beginner') },
   intermediate: { r: 16, c: 16, m: 40, label: d('Любитель', 'Intermediate') },
   expert: { r: 16, c: 30, m: 99, label: d('Профессионал', 'Expert') },
 };
-const isLevel = (v: unknown): v is Level => typeof v === 'string' && v in LEVELS;
 
 const T = {
   title: d('Сапёр', 'Minesweeper'),
@@ -85,15 +85,11 @@ function led(n: number): string {
   return `${out}</svg>`;
 }
 
-interface Saved {
-  level?: unknown;
-  marks?: unknown;
-}
-function readJson(key: string): unknown {
+function stored(key: string): unknown {
   try {
-    return JSON.parse(localStorage.getItem(key) ?? '{}') as unknown;
+    return parseJson(localStorage.getItem(key));
   } catch {
-    return {};
+    return undefined;
   }
 }
 
@@ -104,21 +100,17 @@ interface Press {
   rightOnly?: boolean;
   flagged?: boolean;
   cancel?: boolean;
-  longT?: number;
+  /** Cancels the long press that would plant a flag. */
+  cancelLong?: () => void;
 }
 
 function render(content: HTMLElement, api: XPAppApi): () => void {
   const U = ui(api);
   const { h, t } = U;
   const root = U.root(content, 'xpa-mines', 520);
-  let level: Level = 'beginner';
-  let marks = true;
+  let { level, marks } = parseSettings(stored('xpa-mines'));
   let flagMode = false;
-  const saved = readJson('xpa-mines') as Saved | null;
-  if (saved && isLevel(saved.level)) level = saved.level;
-  if (saved?.marks === false) marks = false;
-  let best: Partial<Record<Level, number>> =
-    (readJson('xpa-mines-best') as Partial<Record<Level, number>> | null) ?? {};
+  let best = parseBest(stored('xpa-mines-best'));
   const save = (): void => {
     try {
       localStorage.setItem('xpa-mines', JSON.stringify({ level, marks }));
@@ -131,7 +123,7 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
   let G = new Board(LEVELS[level].r, LEVELS[level].c, LEVELS[level].m);
   let cells: HTMLDivElement[] = [];
   let time = 0;
-  let timerId = 0;
+  let stopClock: (() => void) | null = null;
   let cursor = 0;
 
   const menu = U.menubar([
@@ -146,7 +138,7 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
           },
         },
         { sep: true },
-        ...(Object.keys(LEVELS) as Level[]).map((l) => ({
+        ...LEVEL_IDS.map((l) => ({
           label: LEVELS[l].label,
           radio: true,
           checked: () => level === l,
@@ -227,8 +219,7 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
 
   function newGame(): void {
     const L = LEVELS[level];
-    clearInterval(timerId);
-    timerId = 0;
+    stopClock?.();
     G = new Board(L.r, L.c, L.m);
     time = 0;
     board.innerHTML = '';
@@ -287,12 +278,12 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
     const wasPlaced = G.placed;
     const r = G.reveal(i);
     if (!wasPlaced && G.placed) {
-      timerId = window.setInterval(() => {
+      stopClock = U.every(1000, () => {
         if (time < 999) {
           time++;
           updateLeds();
         }
-      }, 1000);
+      });
       time = 1;
       updateLeds();
     }
@@ -314,7 +305,7 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
   }
 
   function lose(): void {
-    clearInterval(timerId);
+    stopClock?.();
     setFace('dead');
     paintAll();
     U.sound('error');
@@ -327,7 +318,7 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
   }
   function checkWin(): void {
     if (!G.checkWin()) return;
-    clearInterval(timerId);
+    stopClock?.();
     paintAll();
     updateLeds();
     setFace('cool');
@@ -340,7 +331,7 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
       U.dialog({
         title: T.title,
         icon: 'info',
-        text: `${t(T.record).replace('%s', t(LEVELS[level].label))}${String(time)}${t(T.recordTail)}`,
+        text: `${t(fill(T.record, t(LEVELS[level].label)))}${String(time)}${t(T.recordTail)}`,
         buttons: [{ label: 'OK', primary: true }],
       });
     }
@@ -387,7 +378,7 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
     if (e.pointerType === 'touch') {
       const p: Press = { i, touch: true, flagged: false };
       // a long press plants a flag
-      p.longT = window.setTimeout(() => {
+      p.cancelLong = U.later(420, () => {
         if (press && !G.open[press.i]) {
           toggleFlag(press.i);
           press.flagged = true;
@@ -397,7 +388,7 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
             /* no vibration motor */
           }
         }
-      }, 420);
+      });
       press = p;
       if (!G.over) setFace('oh');
       showPressed(i, false);
@@ -425,7 +416,7 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
     if (!press || press.rightOnly) return;
     const i = cellIndex(document.elementFromPoint(e.clientX, e.clientY));
     if (press.touch && i !== press.i) {
-      clearTimeout(press.longT);
+      press.cancelLong?.();
       press.cancel = true;
     }
     if (i !== press.i) {
@@ -438,7 +429,7 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
     const p = press;
     if (!p) return;
     press = null;
-    clearTimeout(p.longT);
+    p.cancelLong?.();
     clearPressed();
     if (!G.over) setFace('smile');
     if (p.rightOnly || p.i < 0 || p.cancel) return;
@@ -458,7 +449,7 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
   });
   board.addEventListener('pointercancel', () => {
     if (!press) return;
-    clearTimeout(press.longT);
+    press.cancelLong?.();
     press = null;
     clearPressed();
     if (!G.over) setFace('smile');
@@ -514,7 +505,7 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
     U.dialog({ title: T.howTo, icon: 'info', text: T.rules, buttons: [{ label: 'OK', primary: true }] });
   }
   function showBest(): void {
-    const lines = (Object.keys(LEVELS) as Level[]).map((k) => {
+    const lines = LEVEL_IDS.map((k) => {
       const b = best[k];
       return `${t(LEVELS[k].label)}: ${b ? String(b) + t(T.seconds) : `999 ${t(T.anonymous)}`}`;
     });
@@ -559,9 +550,6 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
   U.bind(() => {
     api.win.setTitle(t(T.title));
     updateLeds();
-  });
-  U.onCleanup(() => {
-    clearInterval(timerId);
   });
   U.later(30, () => {
     board.focus({ preventScroll: true });
