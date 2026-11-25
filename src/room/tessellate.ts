@@ -1,6 +1,6 @@
 /* Gouraud needs vertices where the light changes: a floor that is two triangles has no lamp pool. Long edges are split
    at their midpoints until none is longer than maxLen (world metres). The decision depends only on the edge's two end
-   points, so neighbouring faces split the same way and no T-junctions (cracks under vertex snapping) appear. A mesh
+   points, so neighbouring faces split the same way and no T-junctions (cracks between faces) appear. A mesh
    that already comes as a fine grid is left untouched. */
 import { BufferAttribute, BufferGeometry, Matrix3, Vector3 } from 'three';
 import type { InterleavedBufferAttribute, Mesh } from 'three';

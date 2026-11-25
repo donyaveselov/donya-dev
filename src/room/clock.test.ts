@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { gameKind, phuketTime, statusAt } from './clock';
+import { phuketTime, statusAt } from './clock';
 
 const at = (h: number, m = 0) => ({ h, m });
 
@@ -26,16 +26,14 @@ describe('statusAt', () => {
     expect(statusAt(at(20, 30), null, null)).toBe('play');
     expect(statusAt(at(23, 30), null, null)).toBe('sleep');
   });
-  it('lets a forced status win, then Steam', () => {
-    expect(statusAt(at(13), 'sleep', { state: 'in-game' })).toBe('sleep');
-    expect(statusAt(at(13), null, { state: 'in-game' })).toBe('play');
-    // with Steam connected, the evening is "outside" unless Steam says a game runs
-    expect(statusAt(at(21), null, { state: 'online' })).toBe('outside');
+  it('lets a forced status win, then a game being played', () => {
+    const playing = { playing: true, game: 'Dota 2', kind: 'dota' } as const;
+    expect(statusAt(at(13), 'sleep', playing)).toBe('sleep');
+    expect(statusAt(at(13), null, playing)).toBe('play');
+    expect(statusAt(at(3), null, playing)).toBe('play');
   });
-  it('maps Steam app ids to the games the room can show', () => {
-    expect(gameKind(570)).toBe('dota');
-    expect(gameKind(730)).toBe('cs');
-    expect(gameKind(1)).toBe('other');
-    expect(gameKind(undefined)).toBe('other');
+  it('guesses "play" in the evening only without a presence reading', () => {
+    expect(statusAt(at(21), null, null)).toBe('play');
+    expect(statusAt(at(21), null, { playing: false, status: 'online' })).toBe('outside');
   });
 });

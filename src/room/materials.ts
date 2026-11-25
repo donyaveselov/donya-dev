@@ -82,8 +82,8 @@ export function convertMaterials(root: Object3D, index: MaterialIndex): void {
     }
     o.material = m;
     const indoorPart = !out && !SCREEN_OR_GLASS.test(o.name); // the screens' corners define the hand-off frame
-    // flat decals (clock face, LED quads, painted plates) sit a millimetre off their base; vertex snapping tilts each
-    // triangle's depth by up to half a pixel of slope, so without an offset the base wins and the decal vanishes
+    // flat decals (clock face, LED quads, painted plates) sit a millimetre off their base: too little for the depth
+    // buffer at a grazing angle, so without an offset the base wins and the decal vanishes
     if (indoorPart) {
       box.setFromObject(o).getSize(size);
       if (Math.min(size.x, size.y, size.z) < 0.004 && Math.max(size.x, size.y, size.z) < 1 && !m.polygonOffset)
@@ -108,8 +108,6 @@ export function convertMaterials(root: Object3D, index: MaterialIndex): void {
     if (!isMesh(o) || !DECAL.test(o.name) || Array.isArray(o.material)) return;
     const c = cloneM(materialOf(o));
     biasForward(c);
-    const d = mdata(c);
-    d.psxKey = (d.psxKey ?? '') + 'dec';
     o.material = c;
     index.addKnown(c);
   });

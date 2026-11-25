@@ -38,39 +38,49 @@
 <div class="bar">
   <div class="tools">
     <span class="chip time" id="time"></span>
-    <button class="chip" id="open-resume" type="button" data-t="resume"></button>
-    <div class="chip lang" role="group" aria-label="Язык" data-t-aria="lang">
+    <button class="chip" id="open-resume" type="button" data-room-t="resume"></button>
+    <div class="chip lang" role="group" aria-label="Язык" data-room-aria="lang">
       <button id="lang-ru" type="button" aria-pressed="false">RU</button>
       <button id="lang-en" type="button" aria-pressed="false">EN</button>
     </div>
-    <button class="chip music" id="music" type="button" aria-pressed="true" aria-label="Музыка" data-t-aria="music"><svg viewBox="0 0 15 15" width="15" height="15" aria-hidden="true" shape-rendering="crispEdges" fill="currentColor"><rect x="0" y="5" width="3" height="5"/><rect x="3" y="4" width="1" height="7"/><rect x="4" y="3" width="1" height="9"/><rect x="5" y="2" width="1" height="11"/><rect x="6" y="1" width="1" height="13"/><g class="w"><rect x="8" y="6" width="2" height="3"/><rect x="11" y="3" width="1" height="2"/><rect x="12" y="5" width="2" height="5"/><rect x="11" y="10" width="1" height="2"/></g><g class="x"><rect x="8" y="4" width="2" height="2"/><rect x="12" y="4" width="2" height="2"/><rect x="10" y="6" width="2" height="2"/><rect x="8" y="8" width="2" height="2"/><rect x="12" y="8" width="2" height="2"/></g></svg></button>
+    <button class="chip music" id="music" type="button" aria-pressed="true" aria-label="Музыка" data-room-aria="music"><svg viewBox="0 0 15 15" width="15" height="15" aria-hidden="true" shape-rendering="crispEdges" fill="currentColor"><rect x="0" y="5" width="3" height="5"/><rect x="3" y="4" width="1" height="7"/><rect x="4" y="3" width="1" height="9"/><rect x="5" y="2" width="1" height="11"/><rect x="6" y="1" width="1" height="13"/><g class="w"><rect x="8" y="6" width="2" height="3"/><rect x="11" y="3" width="1" height="2"/><rect x="12" y="5" width="2" height="5"/><rect x="11" y="10" width="1" height="2"/></g><g class="x"><rect x="8" y="4" width="2" height="2"/><rect x="12" y="4" width="2" height="2"/><rect x="10" y="6" width="2" height="2"/><rect x="8" y="8" width="2" height="2"/><rect x="12" y="8" width="2" height="2"/></g></svg></button>
   </div>
 </div>
 
-<button class="pin" id="pin" type="button" hidden data-t="projects"></button>
+<button class="pin" id="pin" type="button" hidden data-room-t="projects"></button>
 <p class="note" id="note" style="opacity:0"><span></span></p>
-<div class="loading" id="loading"><b data-t="loading"></b><div class="meter"><i id="meter"></i></div></div>
+<div class="loading" id="loading"><b data-room-t="loading"></b><div class="meter"><i id="meter"></i></div></div>
 
 
 <div id="sheet" hidden role="dialog" aria-modal="true" aria-labelledby="cv-name" lang="ru">
-  <button class="sheet-back" id="sheet-back" type="button" hidden>← <span data-t="back"></span></button>
+  <button class="sheet-back" id="sheet-back" type="button" hidden>← <span data-room-t="back"></span></button>
   <article class="cv">
-    <p class="cv-note" id="cv-note" data-t="resumeNote"></p>
-    <button class="cv-print" id="print-resume" type="button" data-t="print"></button>
+    <p class="cv-note" id="cv-note" data-room-t="resumeNote"></p>
+    <button class="cv-print" id="print-resume" type="button" data-room-t="print"></button>
     <div class="cv-top">
       <div>
         <h1 id="cv-name">Иванов Даниил</h1>
-        <p class="cv-role">Fullstack-разработчик <span>· Vue 3 / Nuxt · Python / Django</span></p>
+        <p class="cv-role">Fullstack-разработчик <span>· Vue 3 · Python / Django</span></p>
       </div>
       <div class="cv-contacts">
         <a href="tel:+79020574388">+7 (902) 057-43-88</a> · <a href="https://t.me/work_veselov">t.me/work_veselov</a><br>
         <a href="mailto:donya.withlove@gmail.com">donya.withlove@gmail.com</a><br>
-        <a href="https://github.com/le5tef">github.com/le5tef</a> · <a href="https://donya.dev">donya.dev</a>
+        <a href="https://github.com/donyaveselov">github.com/donyaveselov</a> · <a href="https://donya.dev">donya.dev</a>
       </div>
     </div>
     <p class="cv-sum"><span id="cv-years">4,5 года</span> в разработке: frontend на Vue 3 с 2022 года, с 2025-го — fullstack (Django, Node.js).</p>
 
     <h2>Опыт работы</h2>
+    <div class="cv-job">
+      <div class="cv-head"><h3>ИП Жуковский С. В. <span>— Frontend-разработчик · NDA</span></h3><span class="cv-when">январь 2023 — наст. время (частичная занятость)</span></div>
+      <p class="cv-stack">Vue 3, Pinia, Vue Router, PrimeVue, Vite, Axios, Chart.js, Leaflet, Telegram Mini Apps</p>
+      <ul>
+        <li>Расширил <b>Pinia собственной опцией</b> defineStore: CRUD, пагинация и фильтры для любого стора</li>
+        <li>Спроектировал <b>API-слой</b>: прозрачное обновление токена с повтором запроса, отмена запросов</li>
+        <li>Написал SPA-дашборд с собственным UI-китом и <b>графиками на чистом SVG</b></li>
+        <li>Разработал <b>Telegram Mini App</b>: авторизация по initData + JWT, оплата Stars, моки по OpenAPI</li>
+      </ul>
+    </div>
     <div class="cv-job">
       <div class="cv-head"><h3>Верификат <span>— Fullstack-разработчик · проектная работа · <a href="https://verifikat.ru">verifikat.ru</a></span></h3><span class="cv-when">июль 2025 — сентябрь 2026</span></div>
       <p class="cv-stack">Python, Django, DRF, Channels, Celery, Redis, PostgreSQL, S3, Vue 3, Pinia, Vite, Docker, GitLab CI</p>
@@ -91,16 +101,6 @@
         <li>Написал <b>Pinia-плагины</b> для CRUD и пагинации с отменой устаревших запросов; кэш справочников с TTL</li>
         <li>Реализовал <b>silent refresh JWT без гонок</b> при параллельных 401; 2FA (TOTP), SSO, RBAC</li>
         <li>Сделал <b>редактор тем</b>: вся палитра генерируется из одного цвета; white-label сборки под бренды</li>
-      </ul>
-    </div>
-    <div class="cv-job">
-      <div class="cv-head"><h3>ИП Жуковский С. В. <span>— Frontend-разработчик · NDA</span></h3><span class="cv-when">январь 2023 — наст. время (частичная занятость)</span></div>
-      <p class="cv-stack">Vue 3, Pinia, Vue Router, PrimeVue, Vite, Axios, Chart.js, Leaflet, Telegram Mini Apps</p>
-      <ul>
-        <li>Расширил <b>Pinia собственной опцией</b> defineStore: CRUD, пагинация и фильтры для любого стора</li>
-        <li>Спроектировал <b>API-слой</b>: прозрачное обновление токена с повтором запроса, отмена запросов</li>
-        <li>Написал SPA-дашборд с собственным UI-китом и <b>графиками на чистом SVG</b></li>
-        <li>Разработал <b>Telegram Mini App</b>: авторизация по initData + JWT, оплата Stars, моки по OpenAPI</li>
       </ul>
     </div>
     <div class="cv-job">

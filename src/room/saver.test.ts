@@ -20,5 +20,8 @@ describe('the floating logo', () => {
       expect(p.v).toBeLessThanOrEqual(1);
     }
     expect(saverPos(0)).toEqual({ u: 40 / 518, v: 25 / 354 });
+    // 46 px/s across a 518 px span: the far edge after (518 - 40) / 46 s, then back
+    expect(saverPos((518 - 40) / 46).u).toBeCloseTo(1);
+    expect(saverPos((2 * 518 - 40) / 46).u).toBeCloseTo(0);
   });
 });

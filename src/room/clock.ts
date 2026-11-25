@@ -1,13 +1,7 @@
 // Phuket time drives the owner's status, the light and the sky. Four states: sleep, work, play, outside. They follow a
-// daily schedule; 'play' can also come from Steam (see steam.ts).
-import type { GameKind, PhuketTime, Status } from '../shared/types';
-
-/** What the Steam proxy reports; null while it is not connected. */
-export interface SteamState {
-  state: string;
-  appid?: number;
-  game?: string;
-}
+// daily schedule; 'play' can also come from my Discord presence (see presence.ts).
+import type { PhuketTime, Status } from '../shared/types';
+import type { Presence } from './presence';
 
 export const STATUSES: readonly Status[] = ['work', 'play', 'sleep', 'outside'];
 
@@ -15,11 +9,8 @@ export function isStatus(s: string): s is Status {
   return (STATUSES as readonly string[]).includes(s);
 }
 
-export function gameKind(appid: number | undefined): GameKind {
-  return appid === 570 ? 'dota' : appid === 730 ? 'cs' : 'other';
-}
-
-export const GAME_NAMES: Record<GameKind, string | null> = { dota: 'Dota 2', cs: 'Counter-Strike 2', other: null };
+/** The hours the previews show (#day / #sunset / #night, the debug panel, the tour); 18.2 is 18:12. */
+export const PREVIEW_HOURS = { day: 13, sunset: 18.2, night: 1.5 } as const;
 
 let fmt: Intl.DateTimeFormat | null = null;
 
@@ -49,13 +40,16 @@ export function phuketTime(now: Date, preview: number | null): PhuketTime {
   return { h, m };
 }
 
-/** The status for a time of day; a forced one (preview, tour) wins, then a game running on Steam. */
-export function statusAt(time: PhuketTime, forced: Status | null, steam: SteamState | null): Status {
+/**
+ * The status for a time of day; a forced one (preview, tour) wins, then a game being played. `presence` is null while
+ * there is no reading (not polled yet, or the request failed).
+ */
+export function statusAt(time: PhuketTime, forced: Status | null, presence: Presence | null): Status {
   if (forced) return forced;
-  if (steam?.state === 'in-game') return 'play';
+  if (presence?.playing) return 'play';
   const h = time.h + time.m / 60;
   if (h < 8 || h >= 23.5) return 'sleep';
   if (h >= 10 && h < 19) return 'work';
-  if (h >= 20.5) return steam ? 'outside' : 'play'; // with Steam connected, 'play' only ever comes from Steam
+  if (h >= 20.5) return presence ? 'outside' : 'play'; // with a presence reading, 'play' only ever comes from it
   return 'outside'; // mornings and the hour around sunset
 }

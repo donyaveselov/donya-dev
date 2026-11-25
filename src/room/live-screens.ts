@@ -1,19 +1,18 @@
 /* What the two monitors show: the floating logo while the owner sleeps or is out, an opencode session while he works,
    a game and a video while he plays. */
 import { CanvasTexture } from 'three';
-import type { GameKind, Status } from '../shared/types';
+import type { GameKind, Lang, Status } from '../shared/types';
 import { desktopLogo } from '../shared/desktop';
+import { SAVER_BG, SAVER_LOGO, SAVER_SCREEN } from '../shared/saver';
+import { t as strings } from './i18n';
 import { CodeSession, wrapText } from './opencode';
 import { saverPos } from './saver';
 import type { SaverPos } from './saver';
 import type { LineKind } from './opencode';
 import { canvas, ctx2d, screenCanvasTexture, screenFilter, screenTexture } from './textures';
 
-/** The same colour as the desktop's own saver (the XP shell's saver and its CSS). */
-const SAVER_BG = '#0a1a4a';
-/** The live canvases' size; the desktop's saver matches it ("saverBase"). */
-export const LIVE_W = 768;
-const LIVE_H = 432;
+/** The live canvases (the saver, the opencode session) are all the saver's size. */
+const { w: LIVE_W, h: LIVE_H } = SAVER_SCREEN;
 
 const INDENT: Record<LineKind, number> = { u: 14, a: 14, t: 30, '+': 46, '-': 46, o: 30, ' ': 0 };
 const MONO = 'Menlo, Consolas, monospace';
@@ -22,8 +21,8 @@ const SPINNER = '⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏';
 /** One row on screen: kind, text, whether the typing cursor follows it, whether it continues a wrapped line. */
 type Row = [LineKind, string, boolean, boolean];
 
-/** The opencode TUI at k device pixels per CSS pixel. */
-function paintCode(c: HTMLCanvasElement, s: CodeSession, t: number, k: number): void {
+/** The opencode TUI at k device pixels per CSS pixel; the session is in Russian, its footer in the page's language. */
+function paintCode(c: HTMLCanvasElement, s: CodeSession, t: number, k: number, lang: Lang): void {
   const g = ctx2d(c);
   const W = c.width / k;
   const H = c.height / k;
@@ -122,7 +121,7 @@ function paintCode(c: HTMLCanvasElement, s: CodeSession, t: number, k: number): 
       : spin + ' working   esc interrupt';
   g.fillText(hint, pad + 52, H - 16);
   g.textAlign = 'right';
-  g.fillText('попытка №' + String(Math.max(1, s.n)), W - pad, H - 16);
+  g.fillText(strings(lang).attempt + String(Math.max(1, s.n)), W - pad, H - 16);
   g.textAlign = 'left';
   g.setTransform(1, 0, 0, 1, 0, 0);
 }
@@ -143,7 +142,10 @@ export class LiveScreens {
   private saverT = 0;
   private readonly saverUV: SaverPos = { u: 0, v: 0 };
 
-  constructor(private readonly reducedMotion: boolean) {
+  constructor(
+    private readonly reducedMotion: boolean,
+    private readonly lang: () => Lang,
+  ) {
     const live = (c: HTMLCanvasElement): CanvasTexture => screenFilter(screenCanvasTexture(c));
     this.tex = {
       saver: live(this.saverC),
@@ -186,7 +188,7 @@ export class LiveScreens {
   }
 
   /**
-   * A second, page-sized canvas for the opencode window on the desktop: the monitor's 768x432 picture is right for
+   * A second, page-sized canvas for the opencode window on the desktop: the monitor's own picture is right for
    * the hand-off frame, but on a narrow phone it is either cropped or unreadably small. This one has the window's own
    * shape, the same session, and lines wrapped to its width.
    */
@@ -209,8 +211,7 @@ export class LiveScreens {
     const g = ctx2d(c);
     const W = c.width;
     const H = c.height;
-    const bw = 250;
-    const bh = 78;
+    const { w: bw, h: bh } = SAVER_LOGO;
     if (!this.logo) {
       const src = desktopLogo();
       if (src) {
@@ -218,7 +219,7 @@ export class LiveScreens {
         this.logo.src = src;
       }
     }
-    g.fillStyle = SAVER_BG; // deep blue, not black: asleep, the screens are the room's light source
+    g.fillStyle = SAVER_BG;
     g.fillRect(0, 0, W, H);
     const uv = saverPos(t, this.saverUV);
     const x = uv.u * (W - bw);
@@ -240,8 +241,9 @@ export class LiveScreens {
     // starts a few lines in, never from an empty screen
     s.step(s.last ? Math.min(Math.max(t - s.last, 0), 0.25) : this.reducedMotion ? 40 : 6);
     s.last = t;
-    paintCode(this.codeC, s, t, 1);
-    if (this.readable && atPC) paintCode(this.readable.c, s, t, this.readable.dpr);
+    const lang = this.lang();
+    paintCode(this.codeC, s, t, 1, lang);
+    if (this.readable && atPC) paintCode(this.readable.c, s, t, this.readable.dpr, lang);
   }
 
   /** Redraws the live picture for the status: the terminal at 12 fps, the logo every frame. */

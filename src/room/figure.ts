@@ -1,15 +1,11 @@
 /* The owner: one figure per status (Me_work, Me_play, Me_sleep, Me_outside), only the current one visible, with one
-   small idle loop each. Figure parts are separate meshes with their origins on the joints (see character.py), so each
-   is turned about its joint. In a figure's own axes: x is sideways, y is up, -z is forward. */
+   small idle loop each. Figure parts are separate meshes with their origins on the joints (the Blender model is built
+   that way), so each is turned about its joint. In a figure's own axes: x is sideways, y is up, -z is forward. */
 import { Euler, Quaternion, Sprite, SpriteMaterial, Vector3 } from 'three';
 import type { Object3D, Scene } from 'three';
 import type { Status } from '../shared/types';
 import { STATUSES } from './clock';
 import { smooth } from './lighting';
-import type { MaterialIndex } from './materials';
-import { isMesh, materialOf } from './materials';
-import { cloneM, mdata, ps1 } from './psx';
-import type { RoomMaterial } from './psx';
 import { bitmapTexture } from './textures';
 
 const PARTS = ['head', 'torso', 'arm_n', 'arm_p', 'prop', 'breath'] as const;
@@ -37,37 +33,7 @@ export class Figure {
   private readonly zzz: Sprite[] = [];
   private readonly zHead = new Vector3();
 
-  /**
-   * The figure is not vertex-snapped (CRASH.md §4): one unsnapped copy per source material, shared by the four poses,
-   * listed in the index so the LED levels still reach the headphones. A material already private to the coast (portal
-   * copy, tinted by the hour) is flagged in place instead, so it stays in the coast's list.
-   */
-  constructor(root: Object3D, index: MaterialIndex, coastMats: readonly RoomMaterial[]) {
-    const unsnapped = new Map<string, RoomMaterial>();
-    for (const k of STATUSES) {
-      root.getObjectByName('Me_' + k)?.traverse((o) => {
-        if (!isMesh(o)) return;
-        const m0 = materialOf(o);
-        if (coastMats.includes(m0)) {
-          const d = mdata(m0);
-          d.psxNoSnap = true;
-          d.psxKey = (d.psxKey ?? '') + 'ns';
-          ps1(m0);
-          return;
-        }
-        let c = unsnapped.get(m0.uuid);
-        if (!c) {
-          c = cloneM(m0);
-          const d = mdata(c);
-          d.psxNoSnap = true;
-          d.psxKey = (d.psxKey ?? '') + 'ns';
-          ps1(c);
-          unsnapped.set(m0.uuid, c);
-          if (c.name) index.add(c);
-        }
-        o.material = c;
-      });
-    }
+  constructor(root: Object3D) {
     for (const k of STATUSES) {
       const me = root.getObjectByName('Me_' + k);
       if (me) this.persons[k] = me;

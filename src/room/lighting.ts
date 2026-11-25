@@ -1,10 +1,9 @@
-// The light of the room and the sky in the window for an hour and a status (CRASH.md §3, §5). Pure colour maths: the
-// scene side (lights, materials) is in light-rig.ts.
+// The light of the room and the sky in the window for an hour and a status. Pure colour maths: the scene side (lights,
+// materials) is in light-rig.ts.
 import { Color } from 'three';
 import type { Status } from '../shared/types';
 
 export const lerp = (a: number, b: number, k: number): number => a + (b - a) * k;
-export const clamp01 = (x: number): number => Math.max(0, Math.min(1, x));
 /** Smoothstep from a to b. */
 export function smooth(a: number, b: number, x: number): number {
   const k = Math.min(1, Math.max(0, (x - a) / (b - a)));
@@ -23,7 +22,7 @@ export function mixHex(a: number, b: number, k: number): number {
   return ca.setHex(a).lerp(cb.setHex(b), k).getHex();
 }
 
-/** The page behind the room, per state (CRASH.md §1): top, bottom. White labels keep >= 4.5:1 on every one of them. */
+/** The page behind the room, per state: top, bottom. White labels keep >= 4.5:1 on every one of them. */
 export const BACKDROP: Record<Status, readonly [string, string]> = {
   work: ['#0B3B4A', '#1C7A78'],
   play: ['#241B52', '#8A3A4A'],

@@ -2,7 +2,7 @@
 import { initialLang } from '../shared/i18n';
 import type { GameKind, Lang, Status } from '../shared/types';
 import { phuketTime, statusAt } from './clock';
-import type { SteamState } from './clock';
+import type { Presence } from './presence';
 import { newWeather } from './weather';
 
 function savedLang(): string | null {
@@ -23,12 +23,13 @@ export const live = {
   preview: null as number | null,
   /** a previewed status (#work, the debug panel, the tour) instead of the schedule */
   forced: null as Status | null,
-  steam: null as SteamState | null,
+  /** my Discord presence as last read; null before the first reading and after a failed one */
+  presence: null as Presence | null,
   game: { kind: 'other' as GameKind, name: null as string | null },
   wx: newWeather(),
 };
 
-export const status = (): Status => statusAt(live.time, live.forced, live.steam);
+export const status = (): Status => statusAt(live.time, live.forced, live.presence);
 
 /** The hour as a number, 13.5 = 13:30. */
 export const hourOfDay = (): number => live.time.h + live.time.m / 60;

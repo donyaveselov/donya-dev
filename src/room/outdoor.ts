@@ -3,7 +3,7 @@
    Water is a pattern that just floats, as in PS1 games: the sea and the shallows carry one 64 px caustic tile in two
    layers, the mesh itself scrolling one way, an additive copy just above it (mirrored, larger) scrolling another.
    Offsets move in whole texels, never sub-texel sliding; where the two nets cross, bright knots travel. A slow vertex
-   bob makes the snapped surface swim a little. */
+   bob makes the surface swim a little. */
 import {
   AdditiveBlending,
   AlwaysStencilFunc,
@@ -24,7 +24,7 @@ import type { BufferGeometry, Material, Object3D, Shader, Texture } from 'three'
 import { linear } from './lighting';
 import type { SkyFactors } from './lighting';
 import { isMesh, materialOf } from './materials';
-import { cloneM, mdata, ps1, psx } from './psx';
+import { cloneM, mdata, ps1 } from './psx';
 import type { RoomMaterial } from './psx';
 import { seaTile } from './textures';
 import { must } from './util';
@@ -38,12 +38,19 @@ export function portal<M extends Material>(m: M): M {
   return m;
 }
 
+/** The sea's clock, in seconds: one uniform shared by every sea material. */
+const seaTime = { value: 0 };
+
+/** The slow vertex bob of the sea and the shallows (a shader edit, see MatData.psxExtra). */
 function seaBob(sh: Shader): void {
-  sh.vertexShader = sh.vertexShader.replace(
-    '#include <begin_vertex>',
-    '#include <begin_vertex>\n' +
-      '{ vec4 wp = modelMatrix * vec4(transformed, 1.0); transformed.y += 0.02 * sin(wp.x * 0.5 + uTime * 1.1) + 0.015 * sin(wp.z * 0.45 - uTime * 0.8); }',
-  );
+  sh.uniforms.uTime = seaTime;
+  sh.vertexShader =
+    'uniform float uTime;\n' +
+    sh.vertexShader.replace(
+      '#include <begin_vertex>',
+      '#include <begin_vertex>\n' +
+        '{ vec4 wp = modelMatrix * vec4(transformed, 1.0); transformed.y += 0.02 * sin(wp.x * 0.5 + uTime * 1.1) + 0.015 * sin(wp.z * 0.45 - uTime * 0.8); }',
+    );
 }
 
 interface SeaLayer {
@@ -175,7 +182,7 @@ export function makeOutdoor(root: Object3D): Outdoor {
 
   const q3 = (o: number): number => Math.ceil(o * 3) / 3; // opacity in three steps, like a semi-transparency mode
   function animate(t: number): void {
-    psx.time.value = t; // the sea's vertex bob
+    seaTime.value = t;
     // a third of a texel per step: one internal pixel at 96 px/m, never a sub-pixel slide
     for (const l of layers) l.map.offset.set(Math.floor(t * l.vx * 3) / 3 / 64, Math.floor(t * l.vy * 3) / 3 / 64);
     // foam lines roll in and fade, the shoreline foam band slides up and back

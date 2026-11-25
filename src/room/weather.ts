@@ -73,25 +73,32 @@ interface MeteoReply {
   current?: { weather_code?: number; precipitation?: number; temperature_2m?: number };
 }
 
-/** Fetches the current weather into `wx`; offline or blocked, the window simply stays as it is. */
-export function fetchWeather(wx: Weather, changed: () => void): void {
-  fetch(WEATHER_URL)
-    .then((r) => r.json() as Promise<MeteoReply | null>)
-    .then((d) => {
-      const c = d?.current ?? {};
-      const code = (c.weather_code ?? 0) | 0;
-      wx.code = code;
-      wx.precip = Number(c.precipitation) || 0;
-      wx.temp = c.temperature_2m ?? null;
-      wx.at = Date.now();
-      wx.kind = weatherKind(code);
-      try {
-        const { at, kind, precip, temp } = wx;
-        localStorage.setItem(STORE_KEY, JSON.stringify({ at, kind, precip, code, temp }));
-      } catch {
-        // storage full or blocked: only the repeat visit loses the head start
-      }
-      changed();
-    })
-    .catch(() => undefined);
+/**
+ * Fetches the current weather into `wx`, remembers it and calls `changed`. A failed request, an error status or a
+ * reply without a reading (offline, blocked, the API down) changes nothing: the window stays as it is and the last
+ * good answer stays remembered.
+ */
+export async function fetchWeather(wx: Weather, changed: () => void): Promise<void> {
+  let current: MeteoReply['current'];
+  try {
+    const r = await fetch(WEATHER_URL);
+    if (!r.ok) return;
+    current = ((await r.json()) as MeteoReply | null)?.current;
+  } catch {
+    return;
+  }
+  if (!current) return;
+  const code = (current.weather_code ?? 0) | 0;
+  wx.code = code;
+  wx.precip = Number(current.precipitation) || 0;
+  wx.temp = current.temperature_2m ?? null;
+  wx.at = Date.now();
+  wx.kind = weatherKind(code);
+  try {
+    const { at, kind, precip, temp } = wx;
+    localStorage.setItem(STORE_KEY, JSON.stringify({ at, kind, precip, code, temp }));
+  } catch {
+    // storage full or blocked: only the repeat visit loses the head start
+  }
+  changed();
 }

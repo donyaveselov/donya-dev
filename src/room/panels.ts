@@ -1,17 +1,12 @@
-// The room's DOM chrome: the top bar (time chip, resume button, language switch), the resume sheet, and the hash
-// routes that open it or preview a time of day or a status. The projects live on the desktop (src/xp).
-import { DESKTOP_DOM } from '../shared/desktop';
+// The room's DOM chrome: the top bar (time chip, resume button, language switch) and the resume sheet. The projects
+// live on the desktop (src/xp).
+import { DESKTOP_DOM, DESKTOP_ROOT_ID } from '../shared/desktop';
 import { EXPERIENCE } from '../shared/experience';
 import type { Lang, Status } from '../shared/types';
-import { isStatus } from './clock';
 import { isAriaKey, isMarkupKey, t, timeChip } from './i18n';
+import { setHash } from './routes';
 import { fitPixelBox } from './tags';
 import { byId } from './util';
-
-const hash = (): string => location.hash.replace('#', '');
-function setHash(h: string): void {
-  if (hash() !== h) location.hash = h;
-}
 
 export class Panels {
   private readonly sheet = byId('sheet');
@@ -68,7 +63,7 @@ export class Panels {
     // back to what opened it; a Start menu item has gone by now, so at the PC the desktop takes the keyboard again
     if (back?.isConnected && back.offsetParent) back.focus({ preventScroll: true });
     else if (document.body.classList.contains('at-pc'))
-      document.querySelector<HTMLElement>(`#xp-root ${DESKTOP_DOM.root}`)?.focus({ preventScroll: true });
+      document.querySelector<HTMLElement>(`#${DESKTOP_ROOT_ID} ${DESKTOP_DOM.root}`)?.focus({ preventScroll: true });
   }
 
   /** Keeps Tab inside the open sheet (its back button, links and buttons), as a modal dialog does. */
@@ -89,11 +84,10 @@ export class Panels {
     }
   }
 
-  /** Opens or closes the panels for the hash. */
-  syncPanels(): void {
-    const h = hash();
-    if (h === 'resume') this.openResume();
-    else if (!this.sheet.hidden) this.closeResume();
+  /** Opens or closes the sheet for the route (#resume). */
+  showResume(open: boolean): void {
+    if (open) this.openResume();
+    else this.closeResume();
   }
 
   /** The time chip: "Пхукет 13:00 · работаю". */
@@ -110,16 +104,19 @@ export class Panels {
     document.querySelectorAll<HTMLElement>('.bar .chip').forEach((el) => fitPixelBox(el));
   }
 
-  /** The page in a language: every data-t string and accessible name, the language switch. */
+  /**
+   * The page in a language: the room's own strings (data-room-t) and accessible names (data-room-aria), the language
+   * switch. The attributes are the room's alone: the desktop's markup has its own data-* and is never touched here.
+   */
   applyLang(lang: Lang): void {
     const T = t(lang);
     document.documentElement.lang = lang;
-    document.querySelectorAll('[data-t]').forEach((el) => {
-      const key = el.getAttribute('data-t');
-      el.textContent = isMarkupKey(key) ? T[key] : '';
+    document.querySelectorAll('[data-room-t]').forEach((el) => {
+      const key = el.getAttribute('data-room-t');
+      if (isMarkupKey(key)) el.textContent = T[key];
     });
-    document.querySelectorAll('[data-t-aria]').forEach((el) => {
-      const key = el.getAttribute('data-t-aria');
+    document.querySelectorAll('[data-room-aria]').forEach((el) => {
+      const key = el.getAttribute('data-room-aria');
       if (isAriaKey(key)) el.setAttribute('aria-label', T.aria[key]);
     });
     byId('cv-note').hidden = !T.resumeNote;
@@ -128,26 +125,3 @@ export class Panels {
     this.fitChips();
   }
 }
-
-export interface Route {
-  /** a previewed hour, or null for the clock */
-  preview: number | null;
-  /** a previewed status, or null for the schedule */
-  forced: Status | null;
-  /** a game to show (#dota, #cs, #pcdota) */
-  game: { kind: 'dota' | 'cs'; name: string } | null;
-}
-
-/** The previews a hash asks for: #day / #sunset / #night an hour (a state link keeps the real hour), a status, a game. */
-export function parseRoute(h: string): Route {
-  const times: Record<string, number> = { day: 13, sunset: 18.2, night: 1.5 };
-  const r: Route = { preview: times[h] ?? null, forced: isStatus(h) ? h : null, game: null };
-  const g = h === 'pcdota' ? 'dota' : h;
-  if (g === 'dota' || g === 'cs') {
-    r.forced = 'play';
-    r.game = { kind: g, name: g === 'dota' ? 'Dota 2' : 'Counter-Strike 2' };
-  }
-  return r;
-}
-
-export const currentHash = hash;
