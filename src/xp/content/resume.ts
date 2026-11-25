@@ -73,10 +73,7 @@ export const RESUME: Resume = {
     {
       // the employer is under NDA: the desktop never names it or its repositories (see nda.test.ts)
       org: d('Проект под NDA', 'NDA project'),
-      role: d(
-        'Frontend-разработчик · проект под NDA · частичная занятость',
-        'Frontend developer · NDA project · part-time',
-      ),
+      role: d('Frontend-разработчик · частичная занятость', 'Frontend developer · part-time'),
       from: [2023, 1],
       to: null,
       stack: 'Vue 3, Pinia, Vue Router, PrimeVue, Vite, Axios, Chart.js, Leaflet, Telegram Mini Apps',

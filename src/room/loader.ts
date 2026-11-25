@@ -1,5 +1,5 @@
 // The model: public/room.json is {"gz": base64(gzip(GLB))}, the GLB quantized by gltfpack (scripts/pack-room.mjs).
-// The build cache-busts the literal fetch('room.json') below (vite.config.ts): keep that spelling.
+// Fetched as room.json?v=<md5> (vite.config.ts defines __ROOM_VERSION__ from the file), so the host can cache it for good.
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
@@ -12,7 +12,7 @@ function gunzip(buf: Uint8Array<ArrayBuffer>): Promise<ArrayBuffer> {
 
 /** Fetches, unpacks and parses the room; `progress` gets 0.6 once the file is in. */
 export async function loadRoom(progress: (k: number) => void): Promise<GLTF> {
-  const res = await fetch('room.json');
+  const res = await fetch(`room.json?v=${__ROOM_VERSION__}`);
   if (!res.ok) throw new Error(`room.json: HTTP ${String(res.status)}`);
   const data = (await res.json()) as { gz: string };
   progress(0.6);

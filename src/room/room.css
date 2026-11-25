@@ -259,7 +259,7 @@ button.chip:active {
 #sheet {
   position: fixed;
   inset: 0;
-  z-index: 20;
+  z-index: 35; /* above the top bar (30): the sheet's own Back and Print buttons sit where the bar's badges are */
   background: var(--paper);
   color: var(--ink);
   opacity: 0;

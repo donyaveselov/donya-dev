@@ -6,13 +6,11 @@ import { viteSingleFile } from 'vite-plugin-singlefile';
 import { defineConfig } from 'vitest/config';
 
 const ROOM_JSON = fileURLToPath(new URL('./public/room.json', import.meta.url));
-const ROOM_FETCH = "fetch('room.json')";
 
 /**
  * Cache-busts the model: the page fetches room.json?v=<md5[:10] of the file>, so the host can cache it for good.
- * The version reaches the code as the `__ROOM_VERSION__` constant (declared in src/build-env.d.ts). Until the loader
- * uses it, the literal fetch('room.json') is rewritten as well. Either way a build whose scripts have no
- * "room.json?v=" fails instead of shipping a model that browsers would keep forever.
+ * The version reaches the loader as the `__ROOM_VERSION__` constant (declared in src/build-env.d.ts). A build whose
+ * scripts have no "room.json?v=" fails instead of shipping a model that browsers would keep forever.
  */
 function roomCacheBust(): Plugin {
   let version = '';
@@ -22,10 +20,6 @@ function roomCacheBust(): Plugin {
     config() {
       version = createHash('md5').update(readFileSync(ROOM_JSON)).digest('hex').slice(0, 10);
       return { define: { __ROOM_VERSION__: JSON.stringify(version) } };
-    },
-    transform(code, id) {
-      if (!id.includes('/src/') || !code.includes(ROOM_FETCH)) return null;
-      return code.replaceAll(ROOM_FETCH, `fetch('room.json?v=${version}')`);
     },
     generateBundle(_options, bundle) {
       const busted = Object.values(bundle).some((file) => file.type === 'chunk' && file.code.includes('room.json?v='));

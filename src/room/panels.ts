@@ -16,8 +16,13 @@ export class Panels {
   private returnFocus: HTMLElement | null = null;
 
   constructor() {
+    // the badges are sized to their text: measure again once the pixel font is in (fonts.ready alone can resolve
+    // before Tiny5 is even requested, and then a phone's bar wraps differently from run to run)
+    void document.fonts.load('15px "Tiny5"').then(() => {
+      this.fitChips();
+    });
     void document.fonts.ready.then(() => {
-      this.fitChips(); // the pixel font changes the widths
+      this.fitChips();
     });
     byId('open-resume').addEventListener('click', () => {
       this.openResume();
