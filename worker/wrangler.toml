@@ -1,0 +1,30 @@
+# donya.dev's visit analytics (README, «Analytics and notifications»). Deploy: npm run deploy -w worker.
+# Secrets, not here: wrangler secret put TG_TOKEN / TG_CHAT_ID / DIGEST_KEY.
+name = "donya-analytics"
+main = "src/index.ts"
+compatibility_date = "2026-11-20"
+workers_dev = true
+preview_urls = false
+
+[vars]
+# the pages allowed to send events
+ALLOWED_ORIGINS = "https://donya.dev,https://www.donya.dev"
+# non-empty: http://localhost:<port> and http://127.0.0.1:<port> may send too (npm run dev -w worker sets it)
+DEV_ORIGINS = ""
+# the Phuket hour (0-23) the daily digest goes in
+DIGEST_HOUR = "9"
+# "0": no message per visit, only the data and the digest
+NOTIFY = "1"
+
+# hourly: the digest (once a day, in DIGEST_HOUR) and the housekeeping
+[triggers]
+crons = ["0 * * * *"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "donya-analytics"
+database_id = "a3537276-73b7-4640-8212-5110726fe4e3"
+migrations_dir = "migrations"
+
+[observability]
+enabled = true

@@ -1,90 +1,30 @@
 // Visit analytics without personal data: what a visitor did here (the tour, the PC, the apps, the resume) and for how
-// long, batched to /api/collect.php (public/api: PHP on the host), which logs it and tells the owner in Telegram.
-// No cookies, no ids in localStorage, no fingerprint: a random id per tab in sessionStorage, a coarse device class and
-// viewport, the referrer's host only. Off in dev (unless VITE_ANALYTICS=1), with Do Not Track or Global Privacy
-// Control, for automated browsers and in debug mode. Until initAnalytics() turns it on, track() does nothing.
-// The event list (SCHEMA) is mirrored in public/api/analytics-lib.php: an event or a prop missing there is dropped.
+// long, batched to the Cloudflare Worker in worker/ (POST /collect), which stores it in D1 and tells the owner in
+// Telegram. No cookies, no ids in localStorage, no fingerprint: a random id per tab in sessionStorage, a coarse device
+// class and viewport, the referrer's host only. Off in dev (unless VITE_ANALYTICS=1), with Do Not Track or Global
+// Privacy Control, for automated browsers and in debug mode. Until initAnalytics() turns it on, track() does nothing.
+// The event list (SCHEMA) is in analytics.schema.ts, which the Worker imports too.
 import type { Lang } from '../types';
 import { debugWanted } from '../utils/debug';
 import { ROUTES } from '../modules/room/routes';
 import { routeName } from './router.service';
+import { BOT_UA, LANGS, MAX_BYTES, MILESTONES, SCHEMA, TEXT_MAX, sanitize } from './analytics.schema';
+import type { EventName, EventProps, Milestone } from './analytics.schema';
+
+export { MAX_BYTES, SCHEMA, sanitize };
+export type { EventName, EventProps, Milestone };
 
 export type Device = 'phone' | 'tablet' | 'desktop';
 
-/** How far the visit got, in the order it is usually reached; visit_end lists the ones reached. */
-const MILESTONES = ['tour', 'tour_done', 'pc', 'app', 'resume', 'project', 'site'] as const;
-export type Milestone = (typeof MILESTONES)[number];
-
-const LANGS = ['ru', 'en'] as const satisfies readonly Lang[];
-
-/** A prop's kind: a slug (lowercase id), a short text, a whole number, a flag, one of a list, or a list of those. */
-type Spec = 'id' | 'text' | 'int' | 'bool' | readonly string[] | { readonly list: readonly string[] };
-
-/** Every event and its props: the only data that leaves the page. */
-export const SCHEMA = {
-  /** the first page of a tab's visit */
-  visit_start: {
-    /** the route ('home', 'resume', 'pc', ...; 'other' for an unknown path) and the #fragment */
-    route: 'id',
-    hash: 'id',
-    /** the page's language and the browser's (its primary subtag) */
-    lang: LANGS,
-    blang: 'id',
-    device: ['phone', 'tablet', 'desktop'],
-    /** the window in CSS px, rounded to tens: "390x840" */
-    vp: 'text',
-    /** the referrer's host, or 'direct' */
-    ref: 'text',
-    utm: 'text',
-  },
-  /** the talkie asks (replay: from its corner button, which starts at the first step) */
-  tour_offer: {},
-  tour_accept: { replay: 'bool' },
-  tour_decline: {},
-  tour_step: { step: 'id' },
-  /** Skip in the middle; `step` is where */
-  tour_skip: { step: 'id' },
-  tour_complete: {},
-  /** the fly-in to a monitor (or the desktop without the room); the way out: Log Off / Esc, or Turn Off Computer */
-  pc_enter: { screen: ['left', 'right', 'flat'] },
-  pc_exit: { how: ['normal', 'shutdown'] },
-  app_open: { app: 'id' },
-  resume_open: { from: ['header', 'frame', 'desktop', 'route'] },
-  diploma_click: {},
-  project_open: { id: 'id' },
-  site_window_open: { site: 'id' },
-  lang_switch: { to: LANGS },
-  /** sent when the tab hides or closes and every minute while it is shown: the latest wins on the server */
-  visit_end: { activeMs: 'int', totalMs: 'int', maxDepth: { list: MILESTONES } },
-} as const satisfies Record<string, Record<string, Spec>>;
-
-type Value<S> = S extends 'id' | 'text'
-  ? string
-  : S extends 'int'
-    ? number
-    : S extends 'bool'
-      ? boolean
-      : S extends { readonly list: readonly (infer V)[] }
-        ? V[]
-        : S extends readonly (infer V)[]
-          ? V
-          : never;
-
-export type EventName = keyof typeof SCHEMA;
-export type EventProps = {
-  [E in EventName]: { -readonly [K in keyof (typeof SCHEMA)[E]]: Value<(typeof SCHEMA)[E][K]> };
-};
 /** One event with its props, as a discriminated union on `e`. */
 export type AnalyticsEvent = { [E in EventName]: { e: E; p: EventProps[E] } }[EventName];
 /** What the page's own code may track; the visit's start and end belong to this module. */
 export type TrackedEvent = Exclude<EventName, 'visit_start' | 'visit_end'>;
 
-/** The endpoint, at the site's root (public/api/collect.php). */
-const COLLECT_URL = '/api/collect.php';
-/** The server refuses a bigger body. */
-export const MAX_BYTES = 4096;
-const ID_MAX = 32;
-const TEXT_MAX = 64;
+/** The endpoint: the Cloudflare Worker (worker/), unless the build says otherwise with VITE_ANALYTICS_URL. */
+const COLLECT_URL =
+  (import.meta.env as { VITE_ANALYTICS_URL?: string }).VITE_ANALYTICS_URL ??
+  'https://donya-analytics.donya-analytics.workers.dev/collect';
 /** Input within this long counts the time as active. */
 export const IDLE_MS = 60_000;
 /** Inputs closer together than this are one. */
@@ -96,55 +36,9 @@ const STORE_KEY = 'dd.visit';
 /** A visit_end is sent again only for this much more active time (or with other events). */
 const END_STEP_MS = 1000;
 
-/** Crawlers, link previews, headless and scripted browsers. */
-const BOT_UA =
-  /bot|crawl|spider|slurp|headless|lighthouse|pagespeed|prerender|phantom|selenium|puppeteer|playwright|preview|facebookexternalhit|embedly|curl|wget|python|go-http|java\//i;
-
-/* ---------- what a prop may hold ---------- */
-
 const MILESTONE_IDS: readonly string[] = MILESTONES;
-
-function clean(spec: Spec, v: unknown): unknown {
-  if (spec === 'id')
-    return typeof v === 'string'
-      ? v
-          .toLowerCase()
-          .replace(/[^a-z0-9_.-]/g, '')
-          .slice(0, ID_MAX)
-      : undefined;
-  if (spec === 'text')
-    return typeof v === 'string'
-      ? v
-          .replace(/[\p{Cc}\p{Cf}]/gu, '')
-          .trim()
-          .slice(0, TEXT_MAX)
-      : undefined;
-  if (spec === 'int')
-    return typeof v === 'number' && Number.isFinite(v) ? Math.min(1e9, Math.max(0, Math.round(v))) : undefined;
-  if (spec === 'bool') return typeof v === 'boolean' ? v : undefined;
-  if ('list' in spec) {
-    if (!Array.isArray(v)) return undefined;
-    const allowed: readonly string[] = spec.list;
-    return [...new Set(v.filter((x): x is string => typeof x === 'string' && allowed.includes(x)))];
-  }
-  return typeof v === 'string' && spec.includes(v) ? v : undefined;
-}
-
-/**
- * The props an event may send, cleaned: unknown props are dropped, ids are slugs, texts are cut short, a value outside
- * its list goes, empty strings and lists are left out. null for an event that is not in the list.
- */
-export function sanitize(event: string, props: Readonly<Record<string, unknown>> = {}): Record<string, unknown> | null {
-  if (!Object.hasOwn(SCHEMA, event)) return null;
-  const specs: Readonly<Record<string, Spec>> = SCHEMA[event as EventName];
-  const out: Record<string, unknown> = {};
-  for (const [key, spec] of Object.entries(specs)) {
-    const v = clean(spec, props[key]);
-    if (v === undefined || v === '' || (Array.isArray(v) && v.length === 0)) continue;
-    out[key] = v;
-  }
-  return out;
-}
+/** the list's languages are the page's */
+export const ANALYTICS_LANGS: readonly Lang[] = LANGS;
 
 /* ---------- the visitor, coarsely ---------- */
 

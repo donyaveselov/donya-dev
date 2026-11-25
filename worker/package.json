@@ -1,0 +1,19 @@
+{
+  "name": "donya-analytics",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "donya.dev's visit analytics: a Cloudflare Worker with D1 that takes the page's events and tells Telegram",
+  "license": "MIT",
+  "scripts": {
+    "dev": "wrangler dev --var DEV_ORIGINS:1",
+    "deploy": "wrangler deploy",
+    "tail": "wrangler tail",
+    "migrate": "wrangler d1 migrations apply donya-analytics --remote",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "5.20261124.1",
+    "wrangler": "4.168.0"
+  }
+}

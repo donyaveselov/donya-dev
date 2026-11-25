@@ -83,7 +83,7 @@ export default defineConfig({
     cssMinify: 'esbuild',
   },
   test: {
-    include: ['src/**/*.test.ts', 'scripts/**/*.test.mjs'],
+    include: ['src/**/*.test.ts', 'scripts/**/*.test.mjs', 'worker/src/**/*.test.ts'],
     environment: 'node',
   },
 });
