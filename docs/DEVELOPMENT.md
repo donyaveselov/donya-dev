@@ -28,13 +28,12 @@ so there it is the plain room. The router is `src/services/router.service.ts`.
 npm run build && npx vite preview --port 4173 --strictPort --host 127.0.0.1 &
 node scripts/regress.mjs http://127.0.0.1:4173/ .work/candidate
 
-# against a baseline capture (of main, of the previous commit, of the earlier site...)
+# against a baseline capture (of main, of the previous commit...)
 node scripts/compare.mjs .work/baseline .work/candidate .work/diff     # exit 1 on any regression
 ```
 
-The usual baseline is a capture of the build before the change. The original baseline was the earlier single-file
-site, which the port had to match pixel for pixel; it is not in this repository, and comparing against it is optional
-now (any URL that serves a page with the same debug panel works as `<url>`).
+The usual baseline is a capture of the build before the change (any URL that serves a page with the same debug panel
+works as `<url>`).
 
 Playwright comes from `playwright-core` (a dev dependency) and drives an installed Chrome with `--use-gl=angle`. The
 binary is `$CHROME_PATH`, else Google Chrome on macOS, else the usual Linux paths (`google-chrome`, `chromium`).
@@ -44,31 +43,26 @@ talkie tour (hello, first step, last step), the room after the tour, day / sunse
 CS, sleep, outside), cloud / rain / storm, the `/night`, `/play` and `/resume` routes, the room in English, the
 desktop after sitting down, every app opened once, the Start menu, the desktop in English, standing up, and a 390x844
 phone (tour, room, desktop, projects). `--only=name,name` limits the shots. Console errors, page errors and failed
-requests go to `errors.json`; each state's chip and label positions go to `states.json`.
+requests go to `errors.json`, the list of states to `states.json`.
 
 It is deterministic: Playwright's fake clock is paused before the page loads (2026-11-24 13:00 in Phuket) and only the
 harness moves it, `Math.random` is seeded, the weather API gets a fixed reply, every other outside request except
 Google Fonts is blocked, and fonts are cached in `.work/font-cache`.
 
-**Noise threshold.** `compare.mjs` fails an image above `--max=0.002` % (about 20 px of a 1280x800 frame).
-`--noise=dirA,dirB` additionally ignores pixels that differ between the baseline and re-runs of it. Frames in the
-middle of the slow (x20) fly-in are not reproducible (pointer timing), so compare those by eye.
-
-**Known diffs against the earlier site.** `14-wx-rain` and `15-wx-storm` differ by 0.02-0.04 %: the rain drops sit
-elsewhere (see Traps, `Math.random`). Everything else was identical at the time of the port.
+**Noise threshold.** `compare.mjs` fails an image above `--max=0.002` % (about 20 px of a 1280x800 frame). Frames in
+the middle of the slow (x20) fly-in are not reproducible (pointer timing), so compare those by eye.
 
 ## Re-packing the room model
 
 ```sh
-npm run pack:room -- path/to/room.glb   # or ROOM_GLB=path/to/room.glb npm run pack:room
+npm run pack:room -- path/to/room.glb
 ```
 
 Without an argument it looks for `../resume/portfolio/blender/room.glb` next to this repository (where the Blender
 project lives on the author's machine) and stops with an error if it is not there.
 
 It runs `gltfpack -kn -km -kv -vpf -vtf` (a dev dependency pinned at 0.24.0, since its output is the model's bytes),
-gzips the GLB and writes `{"gz": base64}`. If gltfpack cannot run, the script exits with an error;
-`--allow-unpacked` writes a gzip-only model instead. The build cache-busts the fetch with the file's md5, so a re-pack
+gzips the GLB and writes `{"gz": base64}`. If gltfpack cannot run, the script exits with an error. The build cache-busts the fetch with the file's md5, so a re-pack
 needs a rebuild and nothing else. Keep object names in Blender: the code finds meshes by name (`Screen_L`,
 `Poster_0`, `WallN`, `Anchor_projects`, ...).
 
