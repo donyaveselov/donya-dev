@@ -431,9 +431,11 @@ class RoomApp {
     const room = this.room;
     if (room) {
       const atPC = room.handoff.atPC;
-      animateScene(room, { now, dt, atPC, hovering: room.pointer.hovering });
-      // nothing to draw while the desktop or the (opaque) resume sheet covers the whole window
-      if (!room.handoff.covered && !this.panels.sheetOpen) this.draw(room, dt, atPC);
+      const sheetOpen = this.panels.sheetOpen;
+      // the (opaque) resume sheet hides the monitors, except at the PC: the desktop mirrors their live canvases
+      animateScene(room, { now, dt, atPC, hovering: room.pointer.hovering, screensSeen: atPC || !sheetOpen });
+      // nothing to draw while the desktop or the resume sheet covers the whole window
+      if (!room.handoff.covered && !sheetOpen) this.draw(room, dt, atPC);
     }
     requestAnimationFrame(this.frame);
   };

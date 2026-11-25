@@ -169,6 +169,8 @@ export interface FrameState {
   atPC: boolean;
   /** the pointer is over a monitor */
   hovering: boolean;
+  /** somebody sees the monitors' live pictures: redraw them */
+  screensSeen: boolean;
 }
 
 /** One frame of everything that moves in the room. */
@@ -184,7 +186,7 @@ export function animateScene(r: RoomScene, f: FrameState): void {
   r.clock?.tick(live.time, Date.now());
   // one clock for everything that must agree with the desktop (frame timestamps drift from it in some browsers)
   const t = performance.now() / 1000;
-  r.screens.tick(t, st, f.atPC);
+  if (f.screensSeen) r.screens.tick(t, st, f.atPC);
   r.outdoor.animate(t);
   r.weather.tick(t, f.dt);
 }
