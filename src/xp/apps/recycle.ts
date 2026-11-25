@@ -1,9 +1,10 @@
 // Recycle Bin: retired old projects as greyed file names. Nothing can be restored, and nothing is shown.
+import { fill } from '../../shared/i18n';
 import type { Bilingual, XPAppApi } from '../../shared/types';
 import { registerApp } from '../shell/apps';
 import { ICONS } from './icons';
 import { reduced, ui } from './kit';
-import { d } from '../content/text';
+import { counted, d, fillEach } from '../content/text';
 import { APP } from './strings';
 
 const T = {
@@ -13,8 +14,8 @@ const T = {
   openProjects: d('Открыть «Мои проекты»', 'Open My Projects'),
   confirm: d('Подтверждение удаления', 'Confirm Multiple File Delete'),
   confirmText: d(
-    'Вы действительно хотите удалить эти %s объекта навсегда?',
-    'Are you sure you want to delete these %s items for good?',
+    'Вы действительно хотите удалить эти %s навсегда?',
+    'Are you sure you want to delete these %s for good?',
   ),
   yes: d('Да', 'Yes'),
   no: d('Нет', 'No'),
@@ -59,7 +60,6 @@ const T = {
   restoreAllItems: d('Восстановить все объекты', 'Restore all items'),
   otherPlaces: d('Другие места', 'Other Places'),
   noRestore: d('восстановление недоступно', 'cannot be restored'),
-  objects: d('объекта', 'objects'),
 } as const;
 
 interface Trashed {
@@ -127,7 +127,7 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
   let sel = -1;
   let jokeI = 0;
   let emptyTries = 0;
-  const n = String(FILES.length);
+  const n = FILES.length;
 
   /** i < 0: everything. */
   function restore(i: number): void {
@@ -137,7 +137,7 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
     U.dialog({
       title: T.restoreError,
       icon: 'error',
-      text: t(j).replace('%s', i < 0 ? t(T.allItems) : f.name),
+      text: fill(j, i < 0 ? t(T.allItems) : f.name),
       buttons: [
         { label: T.openProjects, onClick: () => api.openApp('projects') },
         { label: 'OK', primary: true },
@@ -148,7 +148,7 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
     U.dialog({
       title: T.confirm,
       icon: 'warn',
-      text: t(T.confirmText).replace('%s', n),
+      text: fillEach(T.confirmText, counted(n, ['объект', 'объекта', 'объектов'], ['item', 'items'])),
       buttons: [
         {
           label: T.yes,
@@ -163,7 +163,7 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
               U.dialog({
                 title: T.title,
                 icon: 'info',
-                text: emptyTries > 2 ? t(T.stillHere).replace('%s', String(emptyTries)) : t(T.memories),
+                text: emptyTries > 2 ? fill(T.stillHere, emptyTries) : T.memories,
                 buttons: [{ label: 'OK', primary: true }],
               });
             });
@@ -179,7 +179,7 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
       U.dialog({
         title: T.binProps,
         icon: 'info',
-        text: t(T.binPropsText).replace('%s', n),
+        text: fill(T.binPropsText, n),
         buttons: [{ label: 'OK', primary: true }],
       });
       return;
@@ -311,7 +311,10 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
       el.setAttribute('aria-selected', String(k === i));
     });
     const f = FILES[i];
-    st.set(0, f ? `${f.name} — ${t(T.noRestore)}` : `${n} ${t(T.objects)}`);
+    st.set(
+      0,
+      f ? `${f.name} — ${t(T.noRestore)}` : t(counted(n, ['объект', 'объекта', 'объектов'], ['object', 'objects'])),
+    );
   }
   function build(): void {
     list.innerHTML = '';
