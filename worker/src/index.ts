@@ -336,11 +336,13 @@ async function runDigest(env: Env, now: number, opts: DigestOpts): Promise<{ sta
   if (!tgReady(env)) return { status: 503, text: `no TG_TOKEN / TG_CHAT_ID secret\n\n${text}` };
   if ((await sendMessage(env, text)) === null)
     return { status: 502, text: `Telegram did not take the message\n\n${text}` };
-  await env.DB.prepare(
-    "INSERT INTO state (key, value) VALUES ('digest_last', ?1) ON CONFLICT (key) DO UPDATE SET value = excluded.value",
-  )
-    .bind(day)
-    .run();
+  // only the scheduled run marks the day done: a forced one (a test, a resend) must not stop tomorrow's
+  if (!opts.force)
+    await env.DB.prepare(
+      "INSERT INTO state (key, value) VALUES ('digest_last', ?1) ON CONFLICT (key) DO UPDATE SET value = excluded.value",
+    )
+      .bind(day)
+      .run();
   const removed = await cleanup(env, now);
   return { status: 200, text: `${text}\n\n(sent; ${String(removed)} old rows removed)` };
 }
