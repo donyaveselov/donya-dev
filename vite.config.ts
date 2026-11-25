@@ -37,7 +37,7 @@ export default defineConfig(({ mode }) => {
       cssMinify: false,
     },
     test: {
-      include: ['src/**/*.test.ts', 'scripts/**/*.test.ts'],
+      include: ['src/**/*.test.ts', 'lab/**/*.test.ts', 'scripts/**/*.test.ts'],
       environment: 'node',
     },
   };

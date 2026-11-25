@@ -1,4 +1,4 @@
-// music-lab.html (dev only, not in the build): listen to a track, mute voices, watch a pixel oscilloscope.
+// lab/music/index.html (dev only, not in the build): listen to a track, mute voices, watch a pixel oscilloscope.
 import { ChipPlayer, VOICES, flatten } from './chip';
 import type { Track } from './chip';
 import { TRACKS } from './tracks';
