@@ -685,12 +685,12 @@ export function startRoom(): void {
 
   // the weather goes first, in parallel with the room; the last answer is remembered for a repeat visit
   restoreWeather(live.wx, Date.now());
-  fetchWeather(live.wx, applyTime);
+  void fetchWeather(live.wx, applyTime);
   setInterval(() => {
-    if (!document.hidden) fetchWeather(live.wx, applyTime); // a hidden tab catches up when it is shown again
+    if (!document.hidden) void fetchWeather(live.wx, applyTime); // a hidden tab catches up when it is shown again
   }, 15 * 60e3);
   document.addEventListener('visibilitychange', () => {
-    if (!document.hidden && Date.now() - live.wx.at > 15 * 60e3) fetchWeather(live.wx, applyTime);
+    if (!document.hidden && Date.now() - live.wx.at > 15 * 60e3) void fetchWeather(live.wx, applyTime);
   });
   applyLang();
   readClock();
