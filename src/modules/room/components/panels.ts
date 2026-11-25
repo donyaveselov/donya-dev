@@ -14,6 +14,12 @@ export const PAGE_TITLE: Record<Lang, string> = {
   en: 'Daniil Ivanov | Fullstack Developer | Vue Django NodeJS',
   ru: 'Даниил Иванов | Fullstack-разработчик | Vue Django NodeJS',
 };
+
+/** The meta description per language; index.html carries the English one. */
+export const PAGE_DESCRIPTION: Record<Lang, string> = {
+  en: 'Portfolio of Daniil Ivanov, a fullstack developer: Vue 3 / Nuxt, Python / Django, Node.js. An interactive 3D room with projects, a resume and contacts.',
+  ru: 'Портфолио Даниила Иванова, fullstack-разработчика: Vue 3 / Nuxt, Python / Django, Node.js. Интерактивная 3D-комната с проектами, резюме и контактами.',
+};
 import type { EventProps } from '../../../services/analytics.service';
 
 export class Panels {
@@ -145,6 +151,7 @@ export class Panels {
     const T = t(lang);
     document.documentElement.lang = lang;
     document.title = PAGE_TITLE[lang];
+    document.querySelector('meta[name="description"]')?.setAttribute('content', PAGE_DESCRIPTION[lang]);
     document.querySelectorAll('[data-room-t]').forEach((el) => {
       const key = el.getAttribute('data-room-t');
       if (isMarkupKey(key)) el.textContent = T[key];
