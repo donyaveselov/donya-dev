@@ -3,8 +3,8 @@
 //
 //   node scripts/regress.mjs <url> <outDir> [--only=name,name] [--headed]
 //
-// <url> is the page itself (e.g. http://127.0.0.1:8123/local.html for the old site, http://127.0.0.1:4173/ for a
-// `vite preview`). Compare two captures with scripts/compare.mjs.
+// <url> is the page itself (e.g. http://127.0.0.1:4173/ for a `vite preview`). Compare two captures with
+// scripts/compare.mjs.
 //
 // Determinism:
 //  - Playwright's fake clock is installed and paused BEFORE the page loads, so Date, performance.now, timers and
@@ -18,21 +18,34 @@
 // Console errors, page errors and failed requests go to <outDir>/errors.json, the state list to <outDir>/states.json.
 import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { createRequire } from 'node:module';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { chromium } from 'playwright-core';
 
-const require = createRequire(import.meta.url);
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const CHROME = process.env.CHROME_PATH ?? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
-const FALLBACK_PW = '/Users/donya/.npm/_npx/9833c18b2d85bc59/node_modules/playwright';
+/** Chrome binaries tried in order when CHROME_PATH is not set. */
+const CHROME_CANDIDATES = [
+  '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+  '/usr/bin/google-chrome',
+  '/usr/bin/google-chrome-stable',
+  '/usr/bin/chromium',
+  '/usr/bin/chromium-browser',
+  '/snap/bin/chromium',
+];
 
-function loadPlaywright() {
-  try {
-    return require('playwright-core');
-  } catch {
-    return require(FALLBACK_PW);
+function findChrome() {
+  const fromEnv = process.env.CHROME_PATH;
+  if (fromEnv) {
+    if (existsSync(fromEnv)) return fromEnv;
+    console.error(`CHROME_PATH points to ${fromEnv}, which does not exist`);
+    process.exit(2);
   }
+  const found = CHROME_CANDIDATES.find((p) => existsSync(p));
+  if (found) return found;
+  console.error(
+    `no Chrome found (tried:\n  ${CHROME_CANDIDATES.join('\n  ')}\n); set CHROME_PATH to a Chrome or Chromium binary`,
+  );
+  process.exit(2);
 }
 
 const args = process.argv.slice(2);
@@ -44,6 +57,7 @@ if (!pageUrl || !outArg) {
 }
 // the debug panel (which the harness drives) is only on the page with ?debug
 const url = /[?&]debug\b/.test(pageUrl) ? pageUrl : pageUrl + (pageUrl.includes('?') ? '&' : '?') + 'debug';
+const CHROME = findChrome();
 const OUT = resolve(outArg);
 const ONLY = flags.only ? new Set(String(flags.only).split(',')) : null;
 const START = new Date('2026-11-24T06:00:00Z'); // 13:00 in Phuket (UTC+7): the "work" hours
@@ -430,7 +444,6 @@ async function mobileSession(browser) {
   await context.close();
 }
 
-const { chromium } = loadPlaywright();
 const browser = await chromium.launch({
   executablePath: CHROME,
   args: ['--use-gl=angle', ...(process.env.REGRESS_CHROME_ARGS ? process.env.REGRESS_CHROME_ARGS.split(' ') : [])],

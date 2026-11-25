@@ -1,6 +1,6 @@
 // A small NES-flavoured synthesizer on Web Audio: pulse waves (12.5 / 25 / 50 % duty), the 4-bit stepped triangle
 // and LFSR noise (long and short "metallic" mode), each built from the real stepped waveform so it sounds like the
-// chip and not like clean oscillators. Tracks are notes (src/music/tracks.ts): a few kilobytes, synthesized live.
+// chip and not like clean oscillators. Tracks are notes (tracks.ts): a few kilobytes, synthesized live.
 //
 // Voices: lead (25 % pulse, vibrato), guitar (50 % pulse, plucked, with an echo), bass (an "808" on the triangle:
 // a pitch drop and a long tail, a touch of drive so laptop speakers hear it), kick (a triangle sweep), snare (noise

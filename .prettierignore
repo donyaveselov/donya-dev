@@ -4,7 +4,8 @@ dist-artifact
 public
 node_modules
 package-lock.json
-# the page markup and the desktop's CSS are kept as imported from the old site: reformatting would only add noise
+# hand-tuned: the dense XP stylesheets (one rule per line, aligned by eye) and the page markup are kept as written;
+# Prettier would reflow them into several times the lines without making them clearer
 index.html
 src/xp/styles
 src/xp/assets

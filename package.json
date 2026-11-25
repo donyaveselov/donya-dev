@@ -3,7 +3,9 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "donya.dev: the isometric three.js room with the Windows XD desktop inside its monitor",
+  "description": "donya.dev: an isometric three.js room with a Windows-XP-style desktop (\"Windows XD\") inside its monitor",
+  "author": "Daniil Ivanov",
+  "homepage": "https://donya.dev",
   "engines": {
     "node": ">=24"
   },
@@ -13,15 +15,16 @@
     "build:artifact": "vite build --mode artifact",
     "preview": "vite preview",
     "preview:artifact": "vite preview --mode artifact",
-    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.scripts.json",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "vitest run",
+    "check": "npm run typecheck && npm run lint && npm run format:check && npm run test",
     "pack:room": "node scripts/pack-room.mjs",
     "regress": "node scripts/regress.mjs",
     "compare": "node scripts/compare.mjs",
-    "deploy": "npm run build && node scripts/deploy.mjs"
+    "deploy": "npm run check && npm run build && node scripts/deploy.mjs"
   },
   "dependencies": {
     "three": "0.128.0"
@@ -31,9 +34,11 @@
     "@types/node": "24.19.2",
     "@types/three": "0.128.0",
     "basic-ftp": "6.2.6",
+    "esbuild": "0.28.2",
     "eslint": "10.15.0",
     "eslint-config-prettier": "10.1.8",
     "globals": "17.14.0",
+    "gltfpack": "0.24.0",
     "pixelmatch": "7.0.0",
     "playwright-core": "1.65.1",
     "pngjs": "7.0.0",
