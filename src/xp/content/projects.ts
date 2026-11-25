@@ -1,6 +1,6 @@
 // The projects on the desktop (the Projects folder, their documents, the terminal and the browser). Adding a project
 // is adding one object here; each shot's kind names a picture in apps/mocks (an unknown kind gets a plain frame).
-import type { Bilingual } from '../../shared/types';
+import type { Bilingual, Lang } from '../../shared/types';
 
 export interface Shot {
   kind: string;
@@ -18,6 +18,12 @@ export interface Project {
   role: Bilingual;
   url: string;
   repo?: string;
+  /** The desktop program that shows the live site in its own window; without one the site opens in Navigator. */
+  site?: {
+    app: string;
+    /** The query parameter the site takes its language from. */
+    langParam?: string;
+  };
   summary: Bilingual;
   stack: string[];
   highlights: Bilingual[];
@@ -58,7 +64,7 @@ export const PROJECTS: readonly Project[] = [
     highlights: [
       {
         ru: 'REST API на Django/DRF с двумя контурами JWT-авторизации: сотрудники платформы и производители. Права в виде строк, общие для API и фронта, и журнал действий сотрудников.',
-        en: 'REST API on Django/DRF with two separate JWT contours: platform staff and manufacturers. String permissions shared by the API and the frontend, plus an audit log of staff actions.',
+        en: 'REST API on Django/DRF with two JWT audiences: platform staff and manufacturers. String permissions shared by the API and the frontend, plus an audit log of staff actions.',
       },
       {
         ru: 'Генерация партий кодов на Celery: большие партии уходят в фон, прогресс приходит по WebSocket (Channels) с троттлингом, есть отмена и перезапуск.',
@@ -99,10 +105,11 @@ export const PROJECTS: readonly Project[] = [
       en: 'A promo: hidden cups of skate wax with QR codes',
     },
     type: { ru: 'Свой проект, открытый код', en: 'Own project, open source' },
-    period: { ru: 'акция моего бывшего бренда, переписан в 2026', en: "my former brand's campaign, rewritten in 2026" },
+    period: { ru: '2026', en: '2026' },
     role: { ru: 'Автор: идея, 3D, фронтенд', en: 'Author: idea, 3D, frontend' },
     url: 'https://wax.donya.dev',
-    repo: 'https://github.com/le5tef/wax',
+    repo: 'https://github.com/donyaveselov/wax',
+    site: { app: 'wax', langParam: 'lang' },
     summary: {
       ru: 'Когда-то я продавал наждачки для скейтбордов и устроил акцию: прятал по городу стаканчики с ваксом, а на дне каждого был QR-код. Нашедший сканировал его и попадал на этот сайт: промокод из ссылки расшифровывается в цвет стаканчика, стаканчик появляется в 3D именно этого цвета, а говорилка поздравляет с подарком. Сейчас проект переписан на TypeScript и выложен в открытый доступ, есть демо без кода.',
       en: "I used to sell skateboard griptape and ran a promo: I hid cups of skate wax around the city with a QR code on the bottom of each. Whoever found one scanned it and landed on this site: the promo code in the link decodes into the cup's colour, the cup appears in 3D in exactly that colour, and a talking mouth congratulates you on the gift. The project is now rewritten in TypeScript and open source, with a demo that needs no code.",
@@ -152,6 +159,7 @@ export const PROJECTS: readonly Project[] = [
       en: 'Author: product, backend, frontend, bot, deployment',
     },
     url: 'https://kompy.app',
+    site: { app: 'kompy-app' },
     summary: {
       ru: 'Человек проходит квиз: гражданство, доход, сбережения, семья, цели, отношение к рискам. Движок прогоняет профиль по 21 стране и примерно 140 визовым маршрутам и отдаёт топ стран с объяснением, почему подходит каждая. Полный отчёт приходит PDF-файлом от Telegram-бота. Вокруг этого: гайды по странам на трёх языках, новостной канал и своя аналитика.',
       en: 'A person takes a quiz: citizenship, income, savings, family, goals, attitude to risk. The engine runs the profile through 21 countries and about 140 visa routes and returns the top countries with the reasons each one fits. The full report arrives as a PDF from a Telegram bot. Around it: country guides in three languages, a news channel and in-house analytics.',
@@ -217,4 +225,13 @@ export const PROJECTS: readonly Project[] = [
 
 export function findProject(id: string): Project | null {
   return PROJECTS.find((p) => p.id === id) ?? null;
+}
+
+/** The app that shows a project's live site. */
+export const siteApp = (p: Project): string => p.site?.app ?? 'browser';
+
+/** The address a project's site opens at, in the language when the site takes one. */
+export function siteUrl(p: Project, lang: Lang): string {
+  const q = p.site?.langParam;
+  return `${p.url}/${q ? `?${q}=${lang}` : ''}`;
 }

@@ -2,39 +2,28 @@
 import type { Text } from '../../shared/i18n';
 import type { Bilingual, XPAppApi } from '../../shared/types';
 import { CONTACTS, PERSON } from '../content/profile';
-import { RESUME } from '../content/resume';
+import { jobPeriod, RESUME } from '../content/resume';
 import { registerApp } from '../shell/apps';
 import { G16, ICONS } from './icons';
-import { copyText, reduced, ui } from './kit';
+import { copyText, ui } from './kit';
+import { APP } from './strings';
 
 const T = {
   title: { ru: 'Резюме', en: 'Resume' },
   winTitle: { ru: 'Резюме — Иванов Даниил.rtf — ДокПад', en: 'Resume — Daniil Ivanov.rtf — DocPad' },
   print: { ru: 'Печать', en: 'Print' },
   printMenu: { ru: 'Печать…', en: 'Print…' },
-  printBusy: {
-    ru: 'Принтер «HP LaserJet в комнате» не отвечает.\nПохоже, он снова печатает чей-то билет на самолёт.\n\nСовет: Файл → Копировать контакты работает всегда.',
-    en: 'Printer "LaserJet in the room" is not responding.\nIt seems to be printing someone\'s boarding pass again.\n\nTip: File → Copy contacts always works.',
-  },
   copyContacts: { ru: 'Копировать контакты', en: 'Copy contacts' },
-  cancel: { ru: 'Отмена', en: 'Cancel' },
-  file: { ru: 'Файл', en: 'File' },
   preview: { ru: 'Предварительный просмотр', en: 'Print Preview' },
-  exit: { ru: 'Выход', en: 'Exit' },
-  edit: { ru: 'Правка', en: 'Edit' },
-  selectAll: { ru: 'Выделить всё', en: 'Select All' },
   copySel: { ru: 'Копировать выделенное', en: 'Copy selection' },
-  view: { ru: 'Вид', en: 'View' },
   ruler: { ru: 'Линейка', en: 'Ruler' },
   wrap: { ru: 'Перенос по ширине окна', en: 'Wrap to window' },
   zoomIn: { ru: 'Крупнее', en: 'Zoom in' },
   zoomOut: { ru: 'Мельче', en: 'Zoom out' },
-  help: { ru: 'Справка', en: 'Help' },
-  about: { ru: 'О программе', en: 'About' },
   aboutName: { ru: 'ДокПад — просмотр резюме', en: 'DocPad — resume viewer' },
   aboutText: {
-    ru: 'PDF-версия тоже существует, но эта красивее.',
-    en: 'A PDF version exists too, but this one is prettier.',
+    ru: '«Печать» открывает лист резюме, который можно распечатать.',
+    en: 'Print opens the resume sheet, ready for printing.',
   },
   docpad: { ru: 'ДокПад', en: 'DocPad' },
   f1: {
@@ -73,29 +62,9 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
   let showRuler = true;
   const fmt: Record<Fmt, boolean> = { b: false, i: false, u: false };
 
-  const printDialog = (): void => {
-    U.dialog({
-      title: T.print,
-      icon: 'warn',
-      text: t(T.printBusy),
-      buttons: [
-        { label: T.copyContacts, primary: true, onClick: () => void copyText(contactsText(t)) },
-        { label: T.cancel },
-      ],
-    });
-  };
-  // a sheet slides out of the printer first
-  const printJoke = (): void => {
-    if (reduced()) {
-      printDialog();
-      return;
-    }
-    const sheet = h('div.xpa-res-sheet', { 'aria-hidden': 'true' }, [h('i'), h('i'), h('i'), h('i')]);
-    root.appendChild(sheet);
-    U.later(1100, () => {
-      sheet.remove();
-      printDialog();
-    });
+  /** The room's printable resume sheet (the host opens it). */
+  const print = (): void => {
+    api.openResume();
   };
   const togglePreview = (): void => {
     root.classList.toggle('preview');
@@ -111,9 +80,9 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
 
   const menu = U.menubar([
     {
-      label: T.file,
+      label: APP.file,
       items: [
-        { label: T.printMenu, key: 'Ctrl+P', action: printJoke },
+        { label: T.printMenu, key: 'Ctrl+P', action: print },
         { label: T.preview, action: togglePreview },
         {
           label: T.copyContacts,
@@ -123,7 +92,7 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
         },
         { sep: true },
         {
-          label: T.exit,
+          label: APP.exit,
           action: () => {
             api.win.close();
           },
@@ -131,14 +100,14 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
       ],
     },
     {
-      label: T.edit,
+      label: APP.edit,
       items: [
-        { label: T.selectAll, key: 'Ctrl+A', action: selectAll },
+        { label: APP.selectAll, key: 'Ctrl+A', action: selectAll },
         { label: T.copySel, key: 'Ctrl+C', action: () => void copyText(String(window.getSelection() ?? '')) },
       ],
     },
     {
-      label: T.view,
+      label: APP.view,
       items: [
         {
           label: T.ruler,
@@ -174,10 +143,10 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
       ],
     },
     {
-      label: T.help,
+      label: APP.help,
       items: [
         {
-          label: T.about,
+          label: APP.about,
           action: () => {
             U.aboutDialog(T.aboutName, T.aboutText);
           },
@@ -223,7 +192,7 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
   });
 
   const tb = U.toolbar([
-    U.tbtn({ g: 'print', label: T.print, big: true, onClick: printJoke }),
+    U.tbtn({ g: 'print', label: T.print, big: true, onClick: print }),
     U.tbtn({ g: 'preview', label: T.preview, big: true, onClick: togglePreview }),
     U.tsep(),
     fontSel,
@@ -298,7 +267,7 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
                   h('a', { href: `https://${j.link}`, target: '_blank', rel: 'noopener noreferrer' }, j.link),
                 ])
               : null,
-            h('span.xpa-res-when', t(j.when)),
+            h('span.xpa-res-when', t(jobPeriod(j))),
           ]),
           j.stack ? h('div.xpa-res-stack', j.stack) : null,
           h(
@@ -334,7 +303,7 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
     }
     if (!(e.ctrlKey || e.metaKey)) return;
     const run: (() => void) | undefined = {
-      p: printJoke,
+      p: print,
       a: selectAll,
       '=': () => {
         setZoom(zoom + 10);

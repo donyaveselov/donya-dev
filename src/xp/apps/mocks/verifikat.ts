@@ -1,46 +1,23 @@
-/* Verifikat project screens rebuilt from the real product UI (truesign-ui tokens, truesign-frontend
-   VerifyCodeView, truesign-manufacturer BatchesView / ExportsView). Real HTML + CSS at a fixed design
+/* Verifikat project screens rebuilt from the real product UI (the UI library's tokens, the public site's
+   code check, the manufacturer portal's batches and exports). Real HTML + CSS at a fixed design
    size, scaled to the container by mocks-verifikat.css. Each export: (lang) -> markup string. */
-/* eslint-disable @typescript-eslint/restrict-plus-operands -- markup concatenated as in the product's own code, from fixed data */
 import type { Lang } from '../../../shared/types';
+import { esc } from '../../shell/dom';
 
 type BatchStatus = 'draft' | 'awaiting_platform' | 'awaiting_manufacturer' | 'confirmed';
 type JobStatus = 'running' | 'success' | 'failed' | 'cancelled';
 
-function esc(s: string | number): string {
-  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-}
 function L(lang: Lang, ru: string, en: string): string {
   return esc(lang === 'ru' ? ru : en);
 }
 function root(kind: string, size: number, inner: string): string {
-  return (
-    '<div class="vfk-root vfk-' +
-    kind +
-    '" aria-hidden="true"><div class="vfk-stage vfk-s' +
-    size +
-    '">' +
-    inner +
-    '</div></div>'
-  );
+  return `<div class="vfk-root vfk-${kind}" aria-hidden="true"><div class="vfk-stage vfk-s${String(size)}">${inner}</div></div>`;
 }
 function svg(w: number, h: number, vb: string, body: string, extra = ''): string {
-  return (
-    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="' +
-    vb +
-    '" fill="none" style="width:' +
-    w +
-    'px;height:' +
-    h +
-    'px"' +
-    extra +
-    '>' +
-    body +
-    '</svg>'
-  );
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vb}" fill="none" style="width:${String(w)}px;height:${String(h)}px"${extra}>${body}</svg>`;
 }
 
-/* ---- icons copied from the project (truesign-frontend/src/components/icons, truesign-ui icons) */
+/* ---- icons copied from the project (the public site's and the UI library's) */
 const LOGO = svg(
   46,
   46,
@@ -136,21 +113,17 @@ function jar(w: number, h: number, v: number): string {
     h,
     '0 0 200 200',
     '<ellipse cx="100" cy="176" rx="58" ry="7" fill="#000" opacity=".08"/>' +
-      '<rect x="56" y="58" width="88" height="118" rx="20" fill="#e0a33a"/><rect x="56" y="58" width="88" height="118" rx="20" fill="url(#vfkJ' +
-      v +
-      ')"/>' +
+      `<rect x="56" y="58" width="88" height="118" rx="20" fill="#e0a33a"/><rect x="56" y="58" width="88" height="118" rx="20" fill="url(#vfkJ${String(v)})"/>` +
       '<rect x="62" y="40" width="76" height="24" rx="6" fill="' +
       lid +
       '"/><rect x="62" y="40" width="76" height="6" rx="3" fill="#fff" opacity=".18"/>' +
       '<rect x="66" y="96" width="68" height="46" rx="4" fill="#fffaf0"/><rect x="76" y="106" width="48" height="6" rx="3" fill="#c98a1f"/><rect x="82" y="118" width="36" height="4" rx="2" fill="#d9c39a"/><rect x="86" y="127" width="28" height="4" rx="2" fill="#d9c39a"/>' +
       '<rect x="64" y="68" width="9" height="96" rx="4.5" fill="#fff" opacity=".22"/>' +
-      '<defs><linearGradient id="vfkJ' +
-      v +
-      '" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#b8741a" stop-opacity=".35"/><stop offset=".5" stop-color="#f6c55a" stop-opacity="0"/><stop offset="1" stop-color="#9a5e10" stop-opacity=".4"/></linearGradient></defs>',
+      `<defs><linearGradient id="vfkJ${String(v)}" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#b8741a" stop-opacity=".35"/><stop offset=".5" stop-color="#f6c55a" stop-opacity="0"/><stop offset="1" stop-color="#9a5e10" stop-opacity=".4"/></linearGradient></defs>`,
   );
 }
 
-/* ================= Buyer: public verification page (truesign-frontend VerifyCodeView, mobile) */
+/* ================= Buyer: public verification page (the public site's code check, mobile) */
 function ntf(color: string, icon: string, title: string, sub: string, column?: boolean): string {
   return (
     '<div class="vfk-ntf vfk-' +
@@ -249,7 +222,7 @@ export function verify(lang: Lang): string {
   );
 }
 
-/* ================= Manufacturer portal (truesign-manufacturer ManufacturerLayout + u-datatable) */
+/* ================= Manufacturer portal (its layout and the UI library's datatable) */
 function shell(lang: Lang, active: number, table: string): string {
   const tabs = [L(lang, 'Товары', 'Products'), L(lang, 'Партии', 'Batches'), L(lang, 'Экспорты', 'Exports')];
   return (
@@ -284,7 +257,7 @@ function grid(cols: [string, number][], rows: (string | number)[][]): string {
     '<table class="vfk-tbl"><colgroup>' +
     cols
       .map(function (c) {
-        return '<col style="width:' + c[1] + 'px">';
+        return `<col style="width:${String(c[1])}px">`;
       })
       .join('') +
     '</colgroup>' +
@@ -301,7 +274,7 @@ function grid(cols: [string, number][], rows: (string | number)[][]): string {
           '<tr>' +
           r
             .map(function (v) {
-              return '<td><div class="vfk-cell">' + v + '</div></td>';
+              return `<td><div class="vfk-cell">${String(v)}</div></td>`;
             })
             .join('') +
           '</tr>'
@@ -475,16 +448,8 @@ export function exports(lang: Lang): string {
     const s = d[3],
       pct = Math.round((d[4] / d[5]) * 100);
     const prog =
-      '<div class="vfk-prog"><div class="vfk-track"><div class="vfk-fill vfk-j-' +
-      s +
-      '" style="width:' +
-      pct +
-      '%"></div></div>' +
-      '<span class="vfk-pn">' +
-      (s === 'running' ? '<i class="vfk-count"></i>' : d[4]) +
-      ' / ' +
-      d[5] +
-      '</span></div>';
+      `<div class="vfk-prog"><div class="vfk-track"><div class="vfk-fill vfk-j-${s}" style="width:${String(pct)}%"></div></div>` +
+      `<span class="vfk-pn">${s === 'running' ? '<i class="vfk-count"></i>' : String(d[4])} / ${String(d[5])}</span></div>`;
     const act =
       s === 'running'
         ? L(lang, 'Отмена', 'Cancel')
@@ -497,7 +462,7 @@ export function exports(lang: Lang): string {
       d[2],
       '<span class="vfk-badge vfk-j-' + s + '">' + ST[s] + '</span>',
       prog,
-      d[6] + ' ' + d[7],
+      `${d[6]} ${d[7]}`,
       tb(act),
     ];
   });

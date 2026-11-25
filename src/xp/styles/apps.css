@@ -652,13 +652,6 @@
 /* calculator hint */
 .xp .xpa-calc .xpa-calc-hint { min-height: 0; font-size: 11px; color: #0046d5; text-align: right; margin-top: -6px; }
 .xp .xpa-calc .xpa-calc-hint:empty { display: none; }
-/* resume: printed sheet slides into the tray */
-.xp .xpa-resume .xpa-res-sheet {
-  position: absolute; z-index: 50; left: 10px; top: 34px; width: 34px; height: 44px; padding: 8px 5px; display: grid; gap: 4px; align-content: start;
-  background: #fff; border: 1px solid #999; box-shadow: 1px 2px 4px rgba(0, 0, 0, .3); animation: xpa-print 1.1s cubic-bezier(.3, 0, .2, 1) forwards;
-}
-.xp .xpa-resume .xpa-res-sheet i { display: block; height: 2px; background: #9aa9c4; }
-@keyframes xpa-print { 0% { transform: translateY(-30px) scaleY(.2); opacity: 0; } 25% { transform: none; opacity: 1; } 80% { transform: translate(40px, 140px) rotate(8deg); opacity: 1; } 100% { transform: translate(40px, 170px) rotate(8deg) scale(.8); opacity: 0; } }
 
 /* ================================================================ original Windows XP bitmaps (custom properties --xpi-<key> come from the shell) */
 .xp .xpa ::-webkit-scrollbar { width: 17px; height: 17px; }
@@ -747,10 +740,10 @@
 .xp.xp--phone .xpa-contact .xpa-ct-to, .xp.xp--phone .xpa-contact .xpa-ct-subj { height: 30px; }
 .xp.xp--phone .xpa-term .xpa-term-screen { font-size: 13px; }
 
-/* Wax: the live site in a window */
-.xpa-wax { display: flex; flex-direction: column; height: 100%; }
-.xpa-wax-bar { display: flex; gap: 14px; padding: 4px 8px; background: #ece9d8; border-bottom: 1px solid #aca899; font-size: 11px; }
-.xpa-wax-frame { flex: 1; width: 100%; height: 100%; min-height: 200px; border: 0; background: #000; display: block; }
-.xpa-wax-msg { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 24px; text-align: center; background: #fff; font-size: 12px; color: #222; }
-.xpa-wax-msg p { max-width: 380px; margin: 0; line-height: 1.45; color: #444; }
-.xpa-wax-msg b { font-size: 14px; }
+/* my live sites in a window (site-frame.ts) */
+.xpa-site { display: flex; flex-direction: column; height: 100%; }
+.xpa-site-bar { display: flex; gap: 14px; padding: 4px 8px; background: #ece9d8; border-bottom: 1px solid #aca899; font-size: 11px; }
+.xpa-site-frame { flex: 1; width: 100%; height: 100%; min-height: 200px; border: 0; background: #000; display: block; }
+.xpa-site-msg { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 24px; text-align: center; background: #fff; font-size: 12px; color: #222; }
+.xpa-site-msg p { max-width: 380px; margin: 0; line-height: 1.45; color: #444; }
+.xpa-site-msg b { font-size: 14px; }

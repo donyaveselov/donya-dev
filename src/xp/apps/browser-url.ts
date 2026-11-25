@@ -15,6 +15,17 @@ export function normalize(input: unknown): string {
   return `about:search?q=${encodeURIComponent(s)}`;
 }
 
+/** The query of an about:search address; text the address bar could not have encoded (a lone %) is taken as it is. */
+export function searchQuery(u: string): string {
+  const at = u.indexOf('?');
+  if (at < 0) return '';
+  try {
+    return new URLSearchParams(u.slice(at + 1)).get('q') ?? '';
+  } catch {
+    return '';
+  }
+}
+
 /** My own sites, which open inside the window. */
 export const isOwnSite = (u: string): boolean => /^https:\/\/([a-z0-9-]+\.)*donya\.dev(\/|$)/i.test(u);
 

@@ -1,7 +1,5 @@
 // My Computer's uptime and focus graph, without the DOM (unit-tested in about.test.ts).
-
-/** hh:mm:ss of a duration in seconds. */
-const pad = (n: number): string => String(n).padStart(2, '0');
+import { pad } from '../content/text';
 
 /** hh:mm:ss of a duration in seconds. */
 export const hms = (s: number): string => `${pad(Math.floor(s / 3600))}:${pad(Math.floor(s / 60) % 60)}:${pad(s % 60)}`;

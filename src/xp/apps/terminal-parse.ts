@@ -20,19 +20,8 @@ const COLORS: Readonly<Record<string, string>> = {
   f: '#ffffff',
 };
 
-export const OPENABLE = [
-  'projects',
-  'resume',
-  'about',
-  'contact',
-  'minesweeper',
-  'paint',
-  'recycle',
-  'browser',
-  'notepad',
-  'calc',
-  'terminal',
-];
+/** The owner's home folder, where the console starts (the same C:\Users\Daniil the Projects folder lives in). */
+export const HOME_DIR: readonly [string, string, string] = ['C:', 'Users', 'Daniil'];
 
 /** A typed line: the command name (lower case, without .exe) and its arguments. */
 export function parseCommand(line: string): { word: string; name: string; args: string[] } | null {
@@ -50,8 +39,8 @@ export function changeDir(cwd: readonly string[], arg: string, projectsDir: stri
   if (a === '..') return cwd.length > 1 ? cwd.slice(0, -1) : [...cwd];
   if (a === '\\' || a === '/') return ['C:'];
   if (/^(my ?projects|projects|мои проекты)$/i.test(a) && cwd.length === 3) return [...cwd, projectsDir];
-  if (/^andaman$/i.test(a) && cwd.length === 1) return [...cwd, 'Andaman'];
-  if (/^daniil$/i.test(a) && cwd.length === 2) return [...cwd, 'Daniil'];
+  const next = HOME_DIR[cwd.length];
+  if (next?.toLowerCase() === a.toLowerCase()) return [...cwd, next];
   return null;
 }
 

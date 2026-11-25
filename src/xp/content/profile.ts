@@ -7,6 +7,9 @@ export const PERSON = {
   city: { ru: 'Пхукет, Таиланд', en: 'Phuket, Thailand' },
 } as const satisfies Record<string, Bilingual>;
 
+/** The positioning line next to the role: "Vue 3 · Python / Django" (or joined with " + "). */
+export const HEADLINE = ['Vue 3', 'Python / Django'] as const;
+
 /** The desktop's own OS. */
 export const OS = {
   name: 'Windows XD',
@@ -45,8 +48,8 @@ export const CONTACTS: readonly [Contact, ...Contact[]] = [
   {
     id: 'github',
     label: 'GitHub',
-    value: 'github.com/le5tef',
-    href: 'https://github.com/le5tef',
+    value: 'github.com/donyaveselov',
+    href: 'https://github.com/donyaveselov',
     note: { ru: 'код и пет-проекты', en: 'code and side projects' },
     color: '#333',
   },
@@ -60,8 +63,24 @@ export const CONTACTS: readonly [Contact, ...Contact[]] = [
   },
 ];
 
+/** The desktop's programs that can be opened by name, in the order of their icons. */
+export const APP_IDS = [
+  'projects',
+  'resume',
+  'about',
+  'contact',
+  'terminal',
+  'minesweeper',
+  'paint',
+  'recycle',
+  'browser',
+  'notepad',
+  'calc',
+] as const;
+export type AppId = (typeof APP_IDS)[number];
+
 /** App ids the terminal and the browser open, with friendly aliases. */
-export const APP_ALIASES: Readonly<Record<string, string>> = {
+export const APP_ALIASES: Readonly<Record<string, AppId>> = {
   projects: 'projects',
   project: 'projects',
   explorer: 'projects',
@@ -96,3 +115,6 @@ export const APP_ALIASES: Readonly<Record<string, string>> = {
   calc: 'calc',
   calculator: 'calc',
 };
+
+/** What the terminal's `open` lists and completes: every program the aliases reach, once. */
+export const OPENABLE: readonly AppId[] = [...new Set(Object.values(APP_ALIASES))];

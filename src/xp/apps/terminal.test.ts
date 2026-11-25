@@ -12,18 +12,18 @@ describe('terminal parsing', () => {
   });
 
   it('shows a cmd prompt', () => {
-    expect(prompt(['C:', 'Andaman', 'Daniil'])).toBe('C:\\Andaman\\Daniil>');
+    expect(prompt(['C:', 'Users', 'Daniil'])).toBe('C:\\Users\\Daniil>');
     expect(prompt(['C:'])).toBe('C:\\>');
   });
 
   it('changes folders the way cd does', () => {
-    const home = ['C:', 'Andaman', 'Daniil'];
-    expect(changeDir(home, '..', 'My Projects')).toEqual(['C:', 'Andaman']);
+    const home = ['C:', 'Users', 'Daniil'];
+    expect(changeDir(home, '..', 'My Projects')).toEqual(['C:', 'Users']);
     expect(changeDir(['C:'], '..', 'My Projects')).toEqual(['C:']);
     expect(changeDir(home, '\\', 'My Projects')).toEqual(['C:']);
     expect(changeDir(home, 'my projects', 'Мои проекты')).toEqual([...home, 'Мои проекты']);
-    expect(changeDir(['C:'], 'ANDAMAN', 'x')).toEqual(['C:', 'Andaman']);
-    expect(changeDir(['C:', 'Andaman'], 'daniil', 'x')).toEqual(home);
+    expect(changeDir(['C:'], 'USERS', 'x')).toEqual(['C:', 'Users']);
+    expect(changeDir(['C:', 'Users'], 'daniil', 'x')).toEqual(home);
     expect(changeDir(home, 'windows', 'x')).toBeNull();
   });
 

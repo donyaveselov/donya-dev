@@ -1,36 +1,26 @@
-// Contact me: an Outlook-Express-like "New Message" window that only shows contacts to copy.
-import type { Bilingual, XPAppApi } from '../../shared/types';
+// Contact me: an Outlook-Express-like "New Message" window. Send opens the chosen channel for real (Telegram, a
+// mailto: with the subject, GitHub, the site); every address can also be copied.
+import type { XPAppApi } from '../../shared/types';
 import { type Contact, CONTACTS, PERSON } from '../content/profile';
 import { registerApp } from '../shell/apps';
 import { ICONS } from './icons';
+import { sendUrl, stepContact } from './contact-logic';
 import { copyText, ui } from './kit';
-
-const d = (ru: string, en: string): Bilingual => ({ ru, en });
+import { d } from '../content/text';
+import { APP } from './strings';
 
 const T = {
   title: d('Написать мне', 'Contact me'),
   winTitle: d('Новое сообщение', 'New Message'),
-  sendTitle: d('Отправка сообщения', 'Send Message'),
-  sendFail: d(
-    'Не удалось связаться с почтовым сервером: этот компьютер живёт внутри монитора.\n\nСкопируйте адрес и напишите из своего мессенджера или почты. Даниил отвечает быстро.',
-    'Could not reach the mail server: this computer lives inside a monitor.\n\nCopy the address and write from your own messenger or mail. Daniil replies fast.',
-  ),
-  copyAddress: d('Копировать адрес', 'Copy address'),
-  cancel: d('Отмена', 'Cancel'),
-  file: d('Файл', 'File'),
+  sending: d('Открывается: ', 'Opening: '),
   sendMenu: d('Отправить', 'Send Message'),
-  close: d('Закрыть', 'Close'),
-  edit: d('Правка', 'Edit'),
   copyAll: d('Копировать все контакты', 'Copy all contacts'),
   copyTo: d('Копировать адрес получателя', 'Copy recipient address'),
-  view: d('Вид', 'View'),
   book: d('Адресная книга', 'Address book'),
-  help: d('Справка', 'Help'),
-  about: d('О программе', 'About'),
   aboutName: d('Почта без почты', 'Mail Without Mail'),
   aboutText: d(
-    'Ссылки mailto: здесь ненадёжны, поэтому только копирование.',
-    'mailto: links are unreliable here, so it is copy only.',
+    '«Отправить» открывает выбранный канал: Telegram или вашу почтовую программу.',
+    'Send opens the selected channel: Telegram or your own mail program.',
   ),
   send: d('Отправить', 'Send'),
   cut: d('Вырезать', 'Cut'),
@@ -49,11 +39,10 @@ const T = {
   defaultSubject: d('Есть задача для fullstack-разработчика', 'A project for a fullstack developer'),
   hello: d('Здравствуйте, Даниил!', 'Hi Daniil,'),
   intro: d(
-    'Отправка писем отсюда не работает (компьютер внутри монитора), поэтому вот прямые контакты. Выделяются мышью, копируются кнопкой:',
-    'Sending mail from here does not work (the computer is inside a monitor), so here are the direct contacts. Select them with the mouse or use the copy buttons:',
+    'Вот прямые контакты. «Отправить» откроет выбранный, а адреса выделяются мышью и копируются кнопкой:',
+    'Here are the direct contacts. Send opens the selected one; the addresses can be selected with the mouse or copied with the buttons:',
   ),
   manualCopy: d('Не удалось скопировать — выделите текст вручную.', 'Copy failed: select the text manually.'),
-  open: d('Открыть', 'Open'),
   regards: d('С уважением,', 'Best regards,'),
   visitor: d('посетитель сайта', 'a site visitor'),
   ready: d('Готово. Telegram отвечает быстрее всего.', 'Ready. Telegram gets the fastest reply.'),
@@ -69,11 +58,7 @@ const BADGES: Record<Contact['id'], string> = {
   site: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#2f9e5b"/><path d="M1.5 12h21M12 1.5c3 3 3 18 0 21M12 1.5c-3 3-3 18 0 21M3.5 6.5h17M3.5 17.5h17" fill="none" stroke="#fff" stroke-width="1.2"/></svg>',
 };
 
-/** The contact `d` steps from the current one, wrapping around (or stopping at the ends). */
-function stepContact(i: number, dir: 1 | -1, wrap: boolean): number {
-  const n = CONTACTS.length;
-  return wrap ? (i + dir + n) % n : Math.max(0, Math.min(n - 1, i + dir));
-}
+const step = (i: number, dir: 1 | -1, wrap: boolean): number => stepContact(i, dir, wrap, CONTACTS.length);
 
 function render(content: HTMLElement, api: XPAppApi): () => void {
   const U = ui(api);
@@ -84,24 +69,23 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
   let showBook = true;
 
   const allText = (): string => `${t(PERSON.name)}\n${CONTACTS.map((c) => `${t(c.label)}: ${c.value}`).join('\n')}`;
-  const sendJoke = (): void => {
-    U.sound('error');
-    U.dialog({
-      title: T.sendTitle,
-      icon: 'warn',
-      text: T.sendFail,
-      buttons: [{ label: T.copyAddress, primary: true, onClick: () => void copyText(to().value) }, { label: T.cancel }],
-    });
+  /** Opens the recipient's channel: a link in a new tab, or the visitor's mail program with the subject filled in. */
+  const send = (): void => {
+    const c = to();
+    const url = sendUrl(c, subj.value);
+    if (url.startsWith('mailto:')) h('a', { href: url }).click();
+    else window.open(url, '_blank', 'noopener');
+    st.set(0, t(T.sending) + c.value);
   };
 
   const menu = U.menubar([
     {
-      label: T.file,
+      label: APP.file,
       items: [
-        { label: T.sendMenu, key: 'Alt+S', action: sendJoke },
+        { label: T.sendMenu, key: 'Alt+S', action: send },
         { sep: true },
         {
-          label: T.close,
+          label: APP.close,
           action: () => {
             api.win.close();
           },
@@ -109,14 +93,14 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
       ],
     },
     {
-      label: T.edit,
+      label: APP.edit,
       items: [
         { label: T.copyAll, action: () => void copyText(allText()) },
         { label: T.copyTo, action: () => void copyText(to().value) },
       ],
     },
     {
-      label: T.view,
+      label: APP.view,
       items: [
         {
           label: T.book,
@@ -129,10 +113,10 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
       ],
     },
     {
-      label: T.help,
+      label: APP.help,
       items: [
         {
-          label: T.about,
+          label: APP.about,
           action: () => {
             U.aboutDialog(T.aboutName, T.aboutText);
           },
@@ -141,7 +125,7 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
     },
   ]);
   const tb = U.toolbar([
-    U.tbtn({ g: 'send', label: T.send, showLabel: true, big: true, onClick: sendJoke }),
+    U.tbtn({ g: 'send', label: T.send, showLabel: true, big: true, onClick: send }),
     U.tsep(),
     U.tbtn({
       g: 'cut',
@@ -203,7 +187,12 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
     st.set(1, `${t(c.label)}: ${c.value}`);
   }
 
+  // the address book and the message are rebuilt on a language switch: their bilingual text and copy buttons go with
+  // the old nodes
+  const view = U.scope();
   function build(): void {
+    view.dispose();
+    const { h, copyButton } = view;
     book.innerHTML = '';
     book.appendChild(h('div.xpa-ct-bhead', [h('span', T.contacts), h('span', '▾')]));
     const list = h('div.xpa-ct-blist', { role: 'listbox', tabindex: '0', 'aria-label': T.book });
@@ -221,11 +210,11 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
     list.addEventListener('keydown', (e) => {
       if (e.key === 'ArrowDown') {
         e.preventDefault();
-        setTo(stepContact(toIdx, 1, false), true);
+        setTo(step(toIdx, 1, false), true);
       }
       if (e.key === 'ArrowUp') {
         e.preventDefault();
-        setTo(stepContact(toIdx, -1, false), true);
+        setTo(step(toIdx, -1, false), true);
       }
       if (e.key === 'Enter') {
         e.preventDefault();
@@ -252,7 +241,7 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
           h('div.xpa-ct-cval.xpa-selectable', c.value),
         ]),
         h('div.xpa-ct-cbtns', [
-          U.copyButton(c.value, {
+          copyButton(c.value, {
             onCopied: (ok) => {
               setTo(i);
               st.set(0, ok ? t(T.copied) + c.value : t(T.manualCopy));
@@ -262,7 +251,7 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
             ? h(
                 'a.xpa-btn.xpa-ct-open',
                 { href: c.href, target: '_blank', rel: 'noopener noreferrer', title: c.href },
-                [U.glyph('link'), h('span', T.open)],
+                [U.glyph('link'), h('span', APP.open)],
               )
             : null,
         ]),
@@ -281,21 +270,21 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
   toBox.addEventListener('keydown', (e) => {
     if (e.key === 'ArrowDown') {
       e.preventDefault();
-      setTo(stepContact(toIdx, 1, true), true);
+      setTo(step(toIdx, 1, true), true);
     }
     if (e.key === 'ArrowUp') {
       e.preventDefault();
-      setTo(stepContact(toIdx, -1, true), true);
+      setTo(step(toIdx, -1, true), true);
     }
   });
   toBox.addEventListener('click', () => {
-    setTo(stepContact(toIdx, 1, true), true);
+    setTo(step(toIdx, 1, true), true);
     U.sound('click');
   });
   root.addEventListener('keydown', (e) => {
     if (e.altKey && (e.key === 's' || e.key === 'S')) {
       e.preventDefault();
-      sendJoke();
+      send();
     }
   });
   U.bind(build);

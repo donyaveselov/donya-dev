@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Board, ledDigits } from './minesweeper-board';
+import { isLevel, parseBest, parseJson, parseSettings } from './minesweeper-store';
 
 /** A board with mines exactly where given (row, col). */
 function rigged(rows: number, cols: number, mines: [number, number][]): Board {
@@ -81,5 +82,30 @@ describe('minesweeper board', () => {
     expect(ledDigits(1234)).toBe('999');
     expect(ledDigits(-3)).toBe('-03');
     expect(ledDigits(-150)).toBe('-99');
+  });
+});
+
+describe('minesweeper storage', () => {
+  it('reads the saved settings, whatever is in storage', () => {
+    expect(parseSettings({ level: 'expert', marks: false })).toEqual({ level: 'expert', marks: false });
+    expect(parseSettings({ level: 'insane', marks: 'no' })).toEqual({ level: 'beginner', marks: true });
+    for (const junk of [undefined, null, 7, 'x', [], { level: 3 }])
+      expect(parseSettings(junk)).toEqual({ level: 'beginner', marks: true });
+  });
+  it('keeps only real best times', () => {
+    expect(parseBest({ beginner: 12, expert: 340 })).toEqual({ beginner: 12, expert: 340 });
+    expect(parseBest({ beginner: '12', intermediate: -3, expert: 1.5, other: 9 })).toEqual({});
+    expect(parseBest({ beginner: 0, intermediate: null, expert: Infinity })).toEqual({});
+    for (const junk of [undefined, null, 7, 'x', [1, 2]]) expect(parseBest(junk)).toEqual({});
+  });
+  it('reads JSON without throwing', () => {
+    expect(parseJson('{"a":1}')).toEqual({ a: 1 });
+    expect(parseJson('{broken')).toBeUndefined();
+    expect(parseJson(null)).toBeUndefined();
+  });
+  it('knows the levels', () => {
+    expect(isLevel('expert')).toBe(true);
+    expect(isLevel('Expert')).toBe(false);
+    expect(isLevel(1)).toBe(false);
   });
 });

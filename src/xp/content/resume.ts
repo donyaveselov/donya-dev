@@ -1,16 +1,21 @@
 // The public resume the desktop's DocPad shows (the skills come from the stack).
 import type { Bilingual } from '../../shared/types';
 import { byArea, stackLine } from './stack';
+import { HEADLINE } from './profile';
+import { d } from './text';
 import { EXPERIENCE } from '../../shared/experience';
 
-const d = (ru: string, en: string): Bilingual => ({ ru, en });
+/** A month as [year, month 1-12]. */
+export type YearMonth = readonly [number, number];
 
 export interface Job {
   org: Bilingual;
   role: Bilingual;
   /** A site, without the protocol. */
   link?: string;
-  when: Bilingual;
+  from: YearMonth;
+  /** null: to the present. */
+  to: YearMonth | null;
   stack?: string;
   items: Bilingual[];
 }
@@ -18,6 +23,7 @@ export interface Job {
 export interface Resume {
   title: Bilingual;
   lead: Bilingual;
+  /** The most recent first (see jobOrder). */
   jobs: Job[];
   /** [area, its technologies] */
   skills: [Bilingual, Bilingual][];
@@ -25,26 +31,85 @@ export interface Resume {
   edu: [Bilingual, string][];
 }
 
+const MONTHS_RU = [
+  'январь',
+  'февраль',
+  'март',
+  'апрель',
+  'май',
+  'июнь',
+  'июль',
+  'август',
+  'сентябрь',
+  'октябрь',
+  'ноябрь',
+  'декабрь',
+];
+const MONTHS_EN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+/** "июль 2025 — сентябрь 2026" / "Jul 2025 — Sep 2026"; an open job ends with "наст. время" / "present". */
+export function jobPeriod(job: Pick<Job, 'from' | 'to'>): Bilingual {
+  const at = ([y, m]: YearMonth, names: readonly string[]): string => `${names[m - 1] ?? ''} ${String(y)}`;
+  return d(
+    `${at(job.from, MONTHS_RU)} — ${job.to ? at(job.to, MONTHS_RU) : 'наст. время'}`,
+    `${at(job.from, MONTHS_EN)} — ${job.to ? at(job.to, MONTHS_EN) : 'present'}`,
+  );
+}
+
+/** Sorts jobs the way a resume lists them: the latest end first (an open job before any other), then the latest start. */
+export function jobOrder(a: Pick<Job, 'from' | 'to'>, b: Pick<Job, 'from' | 'to'>): number {
+  // an open job ends later than any month
+  const key = (ym: YearMonth | null): number => (ym ? ym[0] * 12 + ym[1] : Number.MAX_SAFE_INTEGER);
+  return key(b.to) - key(a.to) || key(b.from) - key(a.from);
+}
+
 export const RESUME: Resume = {
-  title: d(
-    'Fullstack-разработчик · Vue 3 / Nuxt · Python / Django',
-    'Fullstack developer · Vue 3 / Nuxt · Python / Django',
-  ),
+  title: d(`Fullstack-разработчик · ${HEADLINE.join(' · ')}`, `Fullstack developer · ${HEADLINE.join(' · ')}`),
   lead: d(
     `${EXPERIENCE.ru} в разработке: frontend на Vue 3 с 2022 года, с 2025-го — fullstack (Django, Node.js). Живу на Пхукете, работаю удалённо.`,
     `${EXPERIENCE.en} in development: frontend on Vue 3 since 2022, fullstack since 2025 (Django, Node.js). Based in Phuket, working remotely.`,
   ),
   jobs: [
     {
+      // the employer is under NDA: the desktop never names it or its repositories (see nda.test.ts)
+      org: d('Проект под NDA', 'NDA project'),
+      role: d(
+        'Frontend-разработчик · проект под NDA · частичная занятость',
+        'Frontend developer · NDA project · part-time',
+      ),
+      from: [2023, 1],
+      to: null,
+      stack: 'Vue 3, Pinia, Vue Router, PrimeVue, Vite, Axios, Chart.js, Leaflet, Telegram Mini Apps',
+      items: [
+        d(
+          'Расширил Pinia собственной опцией defineStore: CRUD, пагинация и фильтры для любого стора',
+          'Extended Pinia with its own defineStore option: CRUD, pagination and filters for any store',
+        ),
+        d(
+          'Спроектировал API-слой: прозрачное обновление токена с повтором запроса, отмена запросов',
+          'Designed the API layer: transparent token refresh with request retry, request cancellation',
+        ),
+        d(
+          'Разработал SPA-дашборд с собственным UI-китом и графиками на чистом SVG',
+          'Built an SPA dashboard with its own UI kit and charts in plain SVG',
+        ),
+        d(
+          'Сделал Telegram Mini App: авторизация по initData + JWT, оплата в Telegram Stars, моки из OpenAPI',
+          'Built a Telegram Mini App: initData + JWT auth, Telegram Stars payments, mocks from OpenAPI',
+        ),
+      ],
+    },
+    {
       org: d('Верификат', 'Verifikat'),
       role: d('Fullstack-разработчик · проектная работа', 'Fullstack developer · project work'),
       link: 'verifikat.ru',
-      when: d('июль 2025 — сентябрь 2026', 'Jul 2025 — Sep 2026'),
+      from: [2025, 7],
+      to: [2026, 9],
       stack: 'Python, Django, DRF, Channels, Celery, Redis, PostgreSQL, S3, Vue 3, Pinia, Vite, Docker, GitLab CI',
       items: [
         d(
           'Разработал REST API на Django/DRF с JWT-авторизацией для двух клиентских контуров',
-          'Built a REST API on Django/DRF with JWT auth for two client contours',
+          'Built a REST API on Django/DRF with JWT auth for two separate client areas',
         ),
         d(
           'Реализовал генерацию партий кодов на Celery с прогрессом по WebSocket, отменой и перезапуском',
@@ -67,7 +132,8 @@ export const RESUME: Resume = {
     {
       org: d('Крипто-финтех стартап', 'Crypto fintech startup'),
       role: d('Frontend-разработчик', 'Frontend developer'),
-      when: d('январь 2024 — июнь 2025', 'Jan 2024 — Jun 2025'),
+      from: [2024, 1],
+      to: [2025, 6],
       stack: 'Vue 3, Pinia, Vue Router, Vite, Axios, vue-i18n, vee-validate, ApexCharts, Docker, GitLab CI',
       items: [
         d(
@@ -95,7 +161,8 @@ export const RESUME: Resume = {
     {
       org: d('Whai Thai', 'Whai Thai'),
       role: d('Frontend-разработчик', 'Frontend developer'),
-      when: d('октябрь 2022 — январь 2023', 'Oct 2022 — Jan 2023'),
+      from: [2022, 10],
+      to: [2023, 1],
       items: [
         d(
           'Разработал CRM: шахматка бронирований с drag-and-drop, ролевой доступ (Vue 3, TypeScript)',
@@ -106,7 +173,8 @@ export const RESUME: Resume = {
     {
       org: d('RANKS LLC', 'RANKS LLC'),
       role: d('Junior Frontend-разработчик', 'Junior frontend developer'),
-      when: d('февраль 2022 — октябрь 2022', 'Feb 2022 — Oct 2022'),
+      from: [2022, 2],
+      to: [2022, 10],
       items: [
         d(
           'Разработал интернет-магазин с оплатой и генерацией PDF-отчётов с графиками (Vue 2, Vuex, Chart.js)',

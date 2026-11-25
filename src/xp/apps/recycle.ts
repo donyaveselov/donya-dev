@@ -1,10 +1,11 @@
 // Recycle Bin: retired old projects as greyed file names. Nothing can be restored, and nothing is shown.
+import { fill } from '../../shared/i18n';
 import type { Bilingual, XPAppApi } from '../../shared/types';
 import { registerApp } from '../shell/apps';
 import { ICONS } from './icons';
 import { reduced, ui } from './kit';
-
-const d = (ru: string, en: string): Bilingual => ({ ru, en });
+import { counted, d, fillEach } from '../content/text';
+import { APP } from './strings';
 
 const T = {
   title: d('Корзина', 'Recycle Bin'),
@@ -13,8 +14,8 @@ const T = {
   openProjects: d('Открыть «Мои проекты»', 'Open My Projects'),
   confirm: d('Подтверждение удаления', 'Confirm Multiple File Delete'),
   confirmText: d(
-    'Вы действительно хотите удалить эти %s объекта навсегда?',
-    'Are you sure you want to delete these %s items for good?',
+    'Вы действительно хотите удалить эти %s навсегда?',
+    'Are you sure you want to delete these %s for good?',
   ),
   yes: d('Да', 'Yes'),
   no: d('Нет', 'No'),
@@ -42,15 +43,8 @@ const T = {
     'To open this file you need to restore it from the Recycle Bin first.\nAnd it cannot be restored.',
   ),
   restore: d('Восстановить', 'Restore'),
-  file: d('Файл', 'File'),
   emptyBin: d('Очистить корзину', 'Empty Recycle Bin'),
-  properties: d('Свойства', 'Properties'),
-  close: d('Закрыть', 'Close'),
-  edit: d('Правка', 'Edit'),
-  selectAll: d('Выделить всё', 'Select All'),
   undoDelete: d('Отменить удаление', 'Undo Delete'),
-  help: d('Справка', 'Help'),
-  about: d('О программе', 'About'),
   aboutText: d(
     'Здесь лежат старые проекты из прошлой версии портфолио.',
     'Old projects from the previous portfolio live here.',
@@ -65,10 +59,7 @@ const T = {
   emptyTheBin: d('Очистить корзину', 'Empty the Recycle Bin'),
   restoreAllItems: d('Восстановить все объекты', 'Restore all items'),
   otherPlaces: d('Другие места', 'Other Places'),
-  myProjects: d('Мои проекты', 'My Projects'),
-  myComputer: d('Мой компьютер', 'My Computer'),
   noRestore: d('восстановление недоступно', 'cannot be restored'),
-  objects: d('объекта', 'objects'),
 } as const;
 
 interface Trashed {
@@ -113,7 +104,7 @@ const FILES: readonly [Trashed, ...Trashed[]] = [
 const RESTORE_JOKES: readonly [Bilingual, ...Bilingual[]] = [
   d(
     'Невозможно восстановить «%s».\n\nФайл находится в заслуженном отпуске и просил не беспокоить.',
-    'Cannot restore "%s".\n\nThe file is on a well-deserved retirement and asked not to be disturbed.',
+    'Cannot restore "%s".\n\nThe file is enjoying a well-deserved retirement and asked not to be disturbed.',
   ),
   d(
     'Восстановление «%s» отменено.\n\nЭтот проект писал Даниил из 2022 года. Даниил из 2026 года против.',
@@ -136,7 +127,7 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
   let sel = -1;
   let jokeI = 0;
   let emptyTries = 0;
-  const n = String(FILES.length);
+  const n = FILES.length;
 
   /** i < 0: everything. */
   function restore(i: number): void {
@@ -146,7 +137,7 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
     U.dialog({
       title: T.restoreError,
       icon: 'error',
-      text: t(j).replace('%s', i < 0 ? t(T.allItems) : f.name),
+      text: fill(j, i < 0 ? t(T.allItems) : f.name),
       buttons: [
         { label: T.openProjects, onClick: () => api.openApp('projects') },
         { label: 'OK', primary: true },
@@ -157,7 +148,7 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
     U.dialog({
       title: T.confirm,
       icon: 'warn',
-      text: t(T.confirmText).replace('%s', n),
+      text: fillEach(T.confirmText, counted(n, ['объект', 'объекта', 'объектов'], ['item', 'items'])),
       buttons: [
         {
           label: T.yes,
@@ -172,7 +163,7 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
               U.dialog({
                 title: T.title,
                 icon: 'info',
-                text: emptyTries > 2 ? t(T.stillHere).replace('%s', String(emptyTries)) : t(T.memories),
+                text: emptyTries > 2 ? fill(T.stillHere, emptyTries) : T.memories,
                 buttons: [{ label: 'OK', primary: true }],
               });
             });
@@ -188,7 +179,7 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
       U.dialog({
         title: T.binProps,
         icon: 'info',
-        text: t(T.binPropsText).replace('%s', n),
+        text: fill(T.binPropsText, n),
         buttons: [{ label: 'OK', primary: true }],
       });
       return;
@@ -222,7 +213,7 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
 
   const menu = U.menubar([
     {
-      label: T.file,
+      label: APP.file,
       items: [
         { label: T.emptyBin, action: empty },
         {
@@ -232,10 +223,10 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
             restore(sel);
           },
         },
-        { label: T.properties, action: props },
+        { label: APP.properties, action: props },
         { sep: true },
         {
-          label: T.close,
+          label: APP.close,
           action: () => {
             api.win.close();
           },
@@ -243,10 +234,10 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
       ],
     },
     {
-      label: T.edit,
+      label: APP.edit,
       items: [
         {
-          label: T.selectAll,
+          label: APP.selectAll,
           key: 'Ctrl+A',
           action: () => {
             select(0);
@@ -262,10 +253,10 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
       ],
     },
     {
-      label: T.help,
+      label: APP.help,
       items: [
         {
-          label: T.about,
+          label: APP.about,
           action: () => {
             U.aboutDialog(T.title, T.aboutText);
           },
@@ -285,7 +276,7 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
       },
     }),
     U.tsep(),
-    U.tbtn({ g: 'props', label: T.properties, big: true, onClick: props }),
+    U.tbtn({ g: 'props', label: APP.properties, big: true, onClick: props }),
   ]);
   const head = h('div.xpa-rb-head', [
     h('span', T.name),
@@ -306,8 +297,8 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
       }),
     ]),
     tpBox(T.otherPlaces, [
-      link('folders', T.myProjects, () => api.openApp('projects')),
-      link('props', T.myComputer, () => api.openApp('about')),
+      link('folders', APP.myProjects, () => api.openApp('projects')),
+      link('props', APP.myComputer, () => api.openApp('about')),
     ]),
   ]);
   const st = U.statusbar(2);
@@ -320,7 +311,10 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
       el.setAttribute('aria-selected', String(k === i));
     });
     const f = FILES[i];
-    st.set(0, f ? `${f.name} — ${t(T.noRestore)}` : `${n} ${t(T.objects)}`);
+    st.set(
+      0,
+      f ? `${f.name} — ${t(T.noRestore)}` : t(counted(n, ['объект', 'объекта', 'объектов'], ['object', 'objects'])),
+    );
   }
   function build(): void {
     list.innerHTML = '';

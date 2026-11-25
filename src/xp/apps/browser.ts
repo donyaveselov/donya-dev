@@ -1,37 +1,28 @@
 // Navigator: an Internet-Explorer-like window. Home is the portfolio start page; external sites cannot be embedded,
 // so they get a friendly "cannot be displayed" page with a real link out (my own *.donya.dev sites open inside).
 import type { Bilingual, XPAppApi } from '../../shared/types';
-import { CONTACTS, PERSON } from '../content/profile';
+import { CONTACTS, HEADLINE, PERSON } from '../content/profile';
 import { findProject, PROJECTS } from '../content/projects';
 import { ico, svg } from '../icons';
 import { registerApp } from '../shell/apps';
 import { ICONS } from './icons';
 import { copyText, pad, reduced, ui } from './kit';
-import { HOME, isOwnSite, isThisSite, normalize, searchHits } from './browser-url';
-
-const d = (ru: string, en: string): Bilingual => ({ ru, en });
+import { HOME, isOwnSite, isThisSite, normalize, searchHits, searchQuery } from './browser-url';
+import { siteFrame } from './site-frame';
+import { d } from '../content/text';
+import { APP } from './strings';
 
 const T = {
   title: d('Навигатор', 'Navigator'),
-  file: d('Файл', 'File'),
   home: d('Домой', 'Home'),
   newTab: d('Открыть в новой вкладке…', 'Open in a new tab…'),
-  close: d('Закрыть', 'Close'),
-  edit: d('Правка', 'Edit'),
   copyAddress: d('Копировать адрес', 'Copy address'),
-  view: d('Вид', 'View'),
   refresh: d('Обновить', 'Refresh'),
   linksBar: d('Строка ссылок', 'Links bar'),
   favorites: d('Избранное', 'Favorites'),
   startPage: d('Стартовая страница', 'Start page'),
-  help: d('Справка', 'Help'),
-  about: d('О программе', 'About'),
-  aboutText: d('Шифрование: 0 бит. Зато без трекеров.', 'Cipher strength: 0-bit. But no trackers either.'),
-  back: d('Назад', 'Back'),
-  forward: d('Вперёд', 'Forward'),
+  aboutText: d('Шифрование: 0 бит. Зато без трекеров.', 'Cipher strength: 0-bit. No trackers, though.'),
   stop: d('Остановить', 'Stop'),
-  address: d('Адрес', 'Address'),
-  go: d('Переход', 'Go'),
   links: d('Ссылки', 'Links'),
   stopped: d('Остановлено', 'Stopped'),
   opening: d('Открывается ', 'Opening page '),
@@ -48,7 +39,6 @@ const T = {
   search: d('Поиск', 'Search'),
   noPage: d('Нет такой страницы: ', 'No such page: '),
   internet: d('Интернет', 'Internet'),
-  myComputer: d('Мой компьютер', 'My Computer'),
   searchHere: d('Найти на этом компьютере…', 'Search this computer…'),
   find: d('Найти', 'Search'),
   welcome: d('Добро пожаловать на домашнюю страницу', 'Welcome to the home page of'),
@@ -63,10 +53,7 @@ const T = {
   paint: d('Кисть', 'Paint'),
   web: d('В интернете', 'On the web'),
   visitor: d('Вы посетитель №', 'You are visitor #'),
-  bestViewed: d(
-    'Лучше всего смотреть в разрешении 1024×768. Сделано вручную, без фреймворков.',
-    'Best viewed at 1024×768. Handmade, no frameworks.',
-  ),
+  bestViewed: d('Лучше всего смотреть в разрешении 1024×768. Сделано вручную.', 'Best viewed at 1024×768. Handmade.'),
   thePage: d('Страница ', 'The page '),
   livesOnline: d(
     ' живёт в настоящем интернете, а этот компьютер — внутри монитора. Встроить чужой сайт сюда нельзя (и это правильно: сайты сами запрещают так делать).',
@@ -87,11 +74,20 @@ const T = {
   ),
 } as const;
 
-const FAVS = [
-  { label: 'GitHub — le5tef', url: 'https://github.com/le5tef' },
-  { label: 'Telegram — work_veselov', url: 'https://t.me/work_veselov' },
-  { label: 'donya.dev', url: 'https://donya.dev' },
-  { label: 'verifikat.ru', url: 'https://verifikat.ru' },
+/** Favorites: my pages on the web (content/profile.ts), then the commercial project's site. */
+const FAVS: readonly { label: string; short: string; url: string }[] = [
+  ...(['github', 'telegram', 'site'] as const).flatMap((id) => {
+    const c = CONTACTS.find((x) => x.id === id);
+    if (!c?.href) return [];
+    // "GitHub — donyaveselov" for a profile, the bare address for a site
+    const name = typeof c.label === 'string' ? c.label : c.value;
+    const handle = c.value.split('/')[1];
+    return [{ label: handle ? `${name} — ${handle}` : c.value, short: handle ? name : c.value, url: c.href }];
+  }),
+  ...PROJECTS.slice(0, 1).map((p) => {
+    const site = p.url.replace(/^https?:\/\//, '');
+    return { label: site, short: site, url: p.url };
+  }),
 ];
 
 function visitorNo(): string {
@@ -111,8 +107,13 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
   const root = U.root(content, 'xpa-browser', 560);
   let hist: string[] = [];
   let hi = -1;
-  let loadT = 0;
+  /** The address in the bar. */
   let url = HOME;
+  /** The page in the view (it stays while the next one loads, or after Stop). */
+  let shown: string | null = null;
+  let cancelLoad: (() => void) | null = null;
+  // a page is rebuilt on every navigation and language switch: its bilingual text and its site probe go with it
+  const page = U.scope();
 
   // the Internet Explorer 6 throbber is the Windows flag
   const throbber = h('div.xpa-br-throb', {
@@ -121,7 +122,7 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
   });
   const menu = U.menubar([
     {
-      label: T.file,
+      label: APP.file,
       items: [
         {
           label: T.home,
@@ -137,16 +138,16 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
         },
         { sep: true },
         {
-          label: T.close,
+          label: APP.close,
           action: () => {
             api.win.close();
           },
         },
       ],
     },
-    { label: T.edit, items: [{ label: T.copyAddress, action: () => void copyText(url) }] },
+    { label: APP.edit, items: [{ label: T.copyAddress, action: () => void copyText(url) }] },
     {
-      label: T.view,
+      label: APP.view,
       items: [
         {
           label: T.refresh,
@@ -181,10 +182,10 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
       ],
     },
     {
-      label: T.help,
+      label: APP.help,
       items: [
         {
-          label: T.about,
+          label: APP.about,
           action: () => {
             U.aboutDialog(T.title, T.aboutText);
           },
@@ -194,8 +195,8 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
   ]);
   menu.appendChild(throbber);
 
-  const bBack = U.tbtn({ g: 'back', label: T.back, showLabel: true, big: true, onClick: back });
-  const bFwd = U.tbtn({ g: 'fwd', label: T.forward, big: true, onClick: fwd });
+  const bBack = U.tbtn({ g: 'back', label: APP.back, showLabel: true, big: true, onClick: back });
+  const bFwd = U.tbtn({ g: 'fwd', label: APP.forward, big: true, onClick: fwd });
   const bStop = U.tbtn({ g: 'stop', label: T.stop, big: true, onClick: stop });
   const tb = U.toolbar([
     bBack,
@@ -224,16 +225,17 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
       showLabel: true,
       big: true,
       onClick: () => {
-        go('https://github.com/le5tef');
+        const first = FAVS[0];
+        if (first) go(first.url);
       },
     }),
   ]);
-  const addrIn = h('input', { type: 'text', spellcheck: 'false', autocomplete: 'off', 'aria-label': T.address });
+  const addrIn = h('input', { type: 'text', spellcheck: 'false', autocomplete: 'off', 'aria-label': APP.address });
   const addrIcon = h('span.xpa-g16', { html: ICONS.url });
   const addr = h('form.xpa-addr', { action: '#' }, [
-    h('span.xpa-addr-label', T.address),
+    h('span.xpa-addr-label', APP.address),
     h('div.xpa-addr-box', [addrIcon, addrIn, h('span.xpa-addr-dd', '▼')]),
-    h('button.xpa-go', { type: 'submit' }, [U.glyph('go'), h('span', T.go)]),
+    h('button.xpa-go', { type: 'submit' }, [U.glyph('go'), h('span', APP.go)]),
   ]);
   addr.addEventListener('submit', (e) => {
     e.preventDefault();
@@ -256,7 +258,7 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
             },
           },
         },
-        [h('span.xpa-g16', { html: ICONS.url }), h('span', f.label.split(' ')[0] ?? '')],
+        [h('span.xpa-g16', { html: ICONS.url }), h('span', f.short)],
       ),
     ),
   ]);
@@ -290,7 +292,9 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
     load(u);
   }
   function stop(): void {
-    clearTimeout(loadT);
+    if (!cancelLoad) return;
+    cancelLoad();
+    cancelLoad = null;
     root.classList.remove('loading');
     st.set(0, T.stopped);
   }
@@ -304,7 +308,7 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
     addrIn.value = u;
     bBack.disabled = hi <= 0;
     bFwd.disabled = hi >= hist.length - 1;
-    clearTimeout(loadT);
+    cancelLoad?.();
     const ext = /^https?:/i.test(u);
     const bad = ext && !isOwnSite(u);
     st.set(0, `${t(T.opening)}${u}...`);
@@ -314,16 +318,20 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
     const dur = reduced() ? 0 : ext ? 900 : 350;
     progFill.style.transition = `width ${String(dur)}ms ease-out`;
     progFill.style.width = '100%';
-    loadT = window.setTimeout(() => {
+    cancelLoad = U.later(dur, () => {
+      cancelLoad = null;
       root.classList.remove('loading');
       draw(u);
       st.set(0, bad ? T.cannotDisplay : T.done);
       resetProgress();
       if (bad) U.sound('error');
-    }, dur);
+    });
   }
 
   function draw(u: string): void {
+    page.dispose();
+    const { h } = page;
+    shown = u;
     view.innerHTML = '';
     view.scrollTop = 0;
     const ext = /^https?:/i.test(u);
@@ -335,23 +343,27 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
       view.appendChild(herePage());
       api.win.setTitle(`${t(T.hereTitle)} — ${nav}`);
     } else if (ext && isOwnSite(u)) {
-      view.appendChild(h('iframe.xpa-wax-frame', { src: u, title: u }));
+      const project = PROJECTS.find((p) => u.startsWith(p.url));
+      view.appendChild(
+        siteFrame(page, { src: u, overview: project && (() => api.openApp('project', { id: project.id })) }),
+      );
       api.win.setTitle(`${u.replace(/^https?:\/\//, '')} — ${nav}`);
     } else if (ext) {
       view.appendChild(errorPage(u));
       api.win.setTitle(`${t(T.pageCannot)} — ${nav}`);
     } else if (u.startsWith('about:search')) {
-      view.appendChild(searchPage(decodeURIComponent(u.split('q=')[1] ?? '')));
+      view.appendChild(searchPage(searchQuery(u)));
       api.win.setTitle(t(T.search));
     } else {
       view.appendChild(h('div.xpa-br-blank', u === 'about:blank' ? '' : t(T.noPage) + u));
       api.win.setTitle(u);
     }
-    st.set(1, ext ? T.internet : T.myComputer);
+    st.set(1, ext ? T.internet : APP.myComputer);
     addrIcon.innerHTML = ext ? ICONS.url : ICONS.browser;
   }
 
   function appLink(id: string, label: Bilingual, iconName: string): HTMLButtonElement {
+    const { h } = page;
     const b = h('button.xpa-br-app', { type: 'button' }, [U.icon(iconName), h('span', label)]);
     b.addEventListener('click', () => {
       U.sound('click');
@@ -369,8 +381,9 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
   const visitor = visitorNo();
 
   function startPage(): HTMLDivElement {
+    const { h, button } = page;
     const q = h('input.xpa-field', { type: 'search', placeholder: T.searchHere, 'aria-label': T.search });
-    const submit = U.button(T.find, null, { primary: true });
+    const submit = button(T.find, null, { primary: true });
     submit.type = 'submit';
     const form = h('form.xpa-br-search', { action: '#' }, [q, submit]);
     form.addEventListener('submit', (e) => {
@@ -382,7 +395,7 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
         h('div.xpa-br-hero-txt', [
           h('div.xpa-br-hello', T.welcome),
           h('h1', t(PERSON.name)),
-          h('div.xpa-br-role', [t(PERSON.role), ' · Vue 3 / Nuxt · Python / Django']),
+          h('div.xpa-br-role', [t(PERSON.role), ` · ${HEADLINE.join(' · ')}`]),
           h('div.xpa-br-city', ['☀ ', t(PERSON.city), ' · ', h('span.xpa-br-new', 'NEW!'), ' ', t(T.offers)]),
         ]),
         h('div.xpa-br-hero-art', { 'aria-hidden': 'true', html: ICONS.browser }),
@@ -442,6 +455,7 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
   }
 
   function herePage(): HTMLDivElement {
+    const { h } = page;
     return h('div.xpa-br-err', [
       h('div.xpa-br-err-head', [h('span.xpa-ico', { html: ICONS.info }), h('h1', T.hereTitle)]),
       h('p', T.hereText),
@@ -463,6 +477,7 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
   }
 
   function errorPage(u: string): HTMLDivElement {
+    const { h } = page;
     const host = u.replace(/^https?:\/\//, '').replace(/\/.*$/, '');
     return h('div.xpa-br-err', [
       h('div.xpa-br-err-head', [h('span.xpa-ico', { html: ICONS.info }), h('h1', T.pageCannot)]),
@@ -471,7 +486,7 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
       h('p', T.tryThis),
       h('ul', [
         h('li', [t(T.openInTab), h('a.xpa-br-out', { href: u, target: '_blank', rel: 'noopener noreferrer' }, u)]),
-        h('li', [t(T.click), h('button.xpa-br-inl', { type: 'button', on: { click: back } }, T.back), t(T.toGoBack)]),
+        h('li', [t(T.click), h('button.xpa-br-inl', { type: 'button', on: { click: back } }, APP.back), t(T.toGoBack)]),
         h('li', T.internet2003),
         h('li', [
           t(T.orReturn),
@@ -495,6 +510,7 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
   }
 
   function searchPage(q: string): HTMLDivElement {
+    const { h } = page;
     const hits = searchHits(q);
     return h('div.xpa-br-start', [
       h('h2', [t(T.results), h('b', q)]),
@@ -535,14 +551,15 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
     if (a instanceof HTMLAnchorElement) st.set(0, a.href);
   });
 
-  U.bind(() => {
-    draw(url);
-    st.set(0, T.done);
-  });
   go(normalize(api.params?.url));
-  U.onCleanup(() => {
-    clearTimeout(loadT);
-  });
+  // a language switch redraws the page in the view; while one is loading, its "Opening…" line is said again instead
+  // (the bilingual statuses follow the language by themselves)
+  U.onCleanup(
+    api.onLang(() => {
+      if (cancelLoad) st.set(0, `${t(T.opening)}${url}...`);
+      else if (shown !== null) draw(shown);
+    }),
+  );
   return U.destroy;
 }
 
