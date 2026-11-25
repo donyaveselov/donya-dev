@@ -652,13 +652,6 @@
 /* calculator hint */
 .xp .xpa-calc .xpa-calc-hint { min-height: 0; font-size: 11px; color: #0046d5; text-align: right; margin-top: -6px; }
 .xp .xpa-calc .xpa-calc-hint:empty { display: none; }
-/* resume: printed sheet slides into the tray */
-.xp .xpa-resume .xpa-res-sheet {
-  position: absolute; z-index: 50; left: 10px; top: 34px; width: 34px; height: 44px; padding: 8px 5px; display: grid; gap: 4px; align-content: start;
-  background: #fff; border: 1px solid #999; box-shadow: 1px 2px 4px rgba(0, 0, 0, .3); animation: xpa-print 1.1s cubic-bezier(.3, 0, .2, 1) forwards;
-}
-.xp .xpa-resume .xpa-res-sheet i { display: block; height: 2px; background: #9aa9c4; }
-@keyframes xpa-print { 0% { transform: translateY(-30px) scaleY(.2); opacity: 0; } 25% { transform: none; opacity: 1; } 80% { transform: translate(40px, 140px) rotate(8deg); opacity: 1; } 100% { transform: translate(40px, 170px) rotate(8deg) scale(.8); opacity: 0; } }
 
 /* ================================================================ original Windows XP bitmaps (custom properties --xpi-<key> come from the shell) */
 .xp .xpa ::-webkit-scrollbar { width: 17px; height: 17px; }

@@ -5,19 +5,14 @@ import { CONTACTS, PERSON } from '../content/profile';
 import { jobPeriod, RESUME } from '../content/resume';
 import { registerApp } from '../shell/apps';
 import { G16, ICONS } from './icons';
-import { copyText, reduced, ui } from './kit';
+import { copyText, ui } from './kit';
 
 const T = {
   title: { ru: 'Резюме', en: 'Resume' },
   winTitle: { ru: 'Резюме — Иванов Даниил.rtf — ДокПад', en: 'Resume — Daniil Ivanov.rtf — DocPad' },
   print: { ru: 'Печать', en: 'Print' },
   printMenu: { ru: 'Печать…', en: 'Print…' },
-  printBusy: {
-    ru: 'Принтер «HP LaserJet в комнате» не отвечает.\nПохоже, он снова печатает чей-то билет на самолёт.\n\nСовет: Файл → Копировать контакты работает всегда.',
-    en: 'Printer "LaserJet in the room" is not responding.\nIt seems to be printing someone\'s boarding pass again.\n\nTip: File → Copy contacts always works.',
-  },
   copyContacts: { ru: 'Копировать контакты', en: 'Copy contacts' },
-  cancel: { ru: 'Отмена', en: 'Cancel' },
   file: { ru: 'Файл', en: 'File' },
   preview: { ru: 'Предварительный просмотр', en: 'Print Preview' },
   exit: { ru: 'Выход', en: 'Exit' },
@@ -33,8 +28,8 @@ const T = {
   about: { ru: 'О программе', en: 'About' },
   aboutName: { ru: 'ДокПад — просмотр резюме', en: 'DocPad — resume viewer' },
   aboutText: {
-    ru: 'PDF-версия тоже существует, но эта красивее.',
-    en: 'A PDF version exists too, but this one is prettier.',
+    ru: '«Печать» открывает лист резюме, который можно распечатать.',
+    en: 'Print opens the resume sheet, ready for printing.',
   },
   docpad: { ru: 'ДокПад', en: 'DocPad' },
   f1: {
@@ -73,29 +68,9 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
   let showRuler = true;
   const fmt: Record<Fmt, boolean> = { b: false, i: false, u: false };
 
-  const printDialog = (): void => {
-    U.dialog({
-      title: T.print,
-      icon: 'warn',
-      text: t(T.printBusy),
-      buttons: [
-        { label: T.copyContacts, primary: true, onClick: () => void copyText(contactsText(t)) },
-        { label: T.cancel },
-      ],
-    });
-  };
-  // a sheet slides out of the printer first
-  const printJoke = (): void => {
-    if (reduced()) {
-      printDialog();
-      return;
-    }
-    const sheet = h('div.xpa-res-sheet', { 'aria-hidden': 'true' }, [h('i'), h('i'), h('i'), h('i')]);
-    root.appendChild(sheet);
-    U.later(1100, () => {
-      sheet.remove();
-      printDialog();
-    });
+  /** The room's printable resume sheet (the host opens it). */
+  const print = (): void => {
+    api.openResume();
   };
   const togglePreview = (): void => {
     root.classList.toggle('preview');
@@ -113,7 +88,7 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
     {
       label: T.file,
       items: [
-        { label: T.printMenu, key: 'Ctrl+P', action: printJoke },
+        { label: T.printMenu, key: 'Ctrl+P', action: print },
         { label: T.preview, action: togglePreview },
         {
           label: T.copyContacts,
@@ -223,7 +198,7 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
   });
 
   const tb = U.toolbar([
-    U.tbtn({ g: 'print', label: T.print, big: true, onClick: printJoke }),
+    U.tbtn({ g: 'print', label: T.print, big: true, onClick: print }),
     U.tbtn({ g: 'preview', label: T.preview, big: true, onClick: togglePreview }),
     U.tsep(),
     fontSel,
@@ -334,7 +309,7 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
     }
     if (!(e.ctrlKey || e.metaKey)) return;
     const run: (() => void) | undefined = {
-      p: printJoke,
+      p: print,
       a: selectAll,
       '=': () => {
         setZoom(zoom + 10);
