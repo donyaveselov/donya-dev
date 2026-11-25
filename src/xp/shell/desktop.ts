@@ -9,7 +9,7 @@ import { COMPACT_MAX_W, PHONE_MAX_W, TASKBAR_H, TINY_W } from './constants';
 import { closest, h, coarsePointer, now, on, reflow, sessSet } from './dom';
 import { dialog } from './dialog';
 import { forgetIcons, layoutIcons, wireDesk } from './desktop-icons';
-import { startGame } from './game';
+import { startGame, syncGame } from './game';
 import { onKey, onKeyUp, onRootDown, resetHotkeys } from './hotkeys';
 import { onLang, setLang } from './lang';
 import { closeMenus } from './menu';
@@ -239,6 +239,7 @@ function open(o: XPOpenOptions = {}): void {
   computeSize();
   paintWall();
   updateTray();
+  syncGame();
   if (o.game) {
     S.booted = true;
     sessSet('booted', '1');
@@ -274,6 +275,7 @@ export function closeDesktop(o: { instant?: boolean } = {}): void {
   closeVol();
   stopSaver();
   Tip.hide();
+  syncGame();
   if (o.instant) {
     R.root.style.transition = 'none';
     R.root.classList.add('xp--hidden');
