@@ -7,7 +7,8 @@
      scene.ts          the 3D room: built from the model, lit, animated
      handoff.ts        sitting down at a monitor and standing up
      flat-desktop.ts   the desktop alone, when there is no 3D
-     pointer.ts, pin.ts, panels.ts, tour.ts, music.ts   the pointer, the Projects button, the top bar, the talkie, the music */
+     pointer.ts, pin.ts   the pointer over the room, the Projects button
+     panels.ts, tour.ts, music.ts   the top bar and the resume sheet, the talkie, the music */
 import { Vector3, WebGLRenderer } from 'three';
 import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { debugWanted } from '../shared/debug';
