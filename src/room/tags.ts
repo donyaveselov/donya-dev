@@ -11,7 +11,8 @@ import { effectiveKind } from './weather';
 export type TagKey = 'window' | 'clock' | 'resume' | 'diploma' | 'projects';
 
 interface Tag {
-  key: TagKey;
+  /** shown once the tour has shown any of these */
+  keys: TagKey[];
   el: HTMLElement;
   p: Vector3;
   /** the label's size in CSS px, measured when its text changes (not per frame: that would force a layout) */
@@ -149,7 +150,7 @@ export class Tags {
     const cp = topOf(root, 'Clock_case', 0.1) ?? topOf(root, 'Clock_display', 0.12);
     if (wp)
       this.tags.push({
-        key: 'window',
+        keys: ['window'],
         el: label(),
         p: wp,
         w: 0,
@@ -161,7 +162,7 @@ export class Tags {
       });
     if (cp)
       this.tags.push({
-        key: 'clock',
+        keys: ['clock'],
         el: label(),
         p: cp,
         w: 0,
@@ -171,11 +172,17 @@ export class Tags {
         wall: 1,
         text: (lang) => t(lang).localTime,
       });
-    for (const f of frames) {
-      const tag = f.kind === 'resume' ? 'resumeTag' : 'diplomaTag';
-      const p = f.top.clone();
-      p.y += 0.06;
-      this.tags.push({ key: f.kind, el: label(), p, w: 0, h: 0, dx: 0, dy: 0, wall: 1, text: (lang) => t(lang)[tag] });
+    // the resume and the diploma hang side by side: one label over the pair (their own labels kept bumping into each
+    // other); a lone frame keeps its own
+    if (frames.length) {
+      const p = new Vector3();
+      for (const f of frames) p.add(f.top);
+      p.divideScalar(frames.length);
+      p.y = Math.max(...frames.map((f) => f.top.y)) + 0.06;
+      const only = frames.length === 1 ? frames[0] : undefined;
+      const text = (lang: Lang): string =>
+        !only ? t(lang).framesTag : only.kind === 'resume' ? t(lang).resumeTag : t(lang).diplomaTag;
+      this.tags.push({ keys: frames.map((f) => f.kind), el: label(), p, w: 0, h: 0, dx: 0, dy: 0, wall: 1, text });
     }
     this.infoEl = label('tag--info');
     void document.fonts.ready.then(() => {
@@ -215,7 +222,8 @@ export class Tags {
     this.lastPlace = now;
     const shown: { tag: Tag; x: number; y: number; at: Placed }[] = [];
     for (const tag of this.tags) {
-      const show = !!tag.el.textContent && view.room && view.isOn(tag.key) && view.wallK(tag.wall) > 0.6;
+      const show =
+        !!tag.el.textContent && view.room && tag.keys.some((k) => view.isOn(k)) && view.wallK(tag.wall) > 0.6;
       const at = show ? screenAt(tag.p, view) : null;
       if (at) shown.push({ tag, x: at[0], y: at[1], at: { x: at[0], y: at[1], w: tag.w, h: tag.h } });
       else {

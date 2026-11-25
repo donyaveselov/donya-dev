@@ -33,6 +33,8 @@ export interface RoomStrings extends Record<MarkupKey | Status, string> {
   diploma: string;
   resumeTag: string;
   diplomaTag: string;
+  /** the one label over the resume and the diploma */
+  framesTag: string;
   tour: TourStrings;
   /** accessible names the markup asks for by `data-t-aria` */
   aria: Record<AriaKey, string>;
@@ -65,6 +67,7 @@ const STR: Record<Lang, RoomStrings> = {
     diploma: 'Диплом бакалавра · бизнес-информатика · Университет «Синергия», 2026',
     resumeTag: 'Резюме',
     diplomaTag: 'Диплом',
+    framesTag: 'Резюме и диплом',
     tour: {
       hello: 'Привет, я Даниил! Сейчас на Пхукете {time}, и я {what}. Показать вам комнату?',
       yes: 'Да',
@@ -107,6 +110,7 @@ const STR: Record<Lang, RoomStrings> = {
     diploma: 'Bachelor’s degree · Business Informatics · Synergy University, 2026',
     resumeTag: 'Resume',
     diplomaTag: 'Diploma',
+    framesTag: 'Resume & diploma',
     tour: {
       hello: 'Hi, I’m Daniil! It’s {time} in Phuket and I’m {what}. Want a quick tour of the room?',
       yes: 'Yes',
