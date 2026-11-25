@@ -45,8 +45,8 @@ export const CONTACTS: readonly [Contact, ...Contact[]] = [
   {
     id: 'github',
     label: 'GitHub',
-    value: 'github.com/le5tef',
-    href: 'https://github.com/le5tef',
+    value: 'github.com/donyaveselov',
+    href: 'https://github.com/donyaveselov',
     note: { ru: 'код и пет-проекты', en: 'code and side projects' },
     color: '#333',
   },

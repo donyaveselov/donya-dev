@@ -102,7 +102,7 @@ export const PROJECTS: readonly Project[] = [
     period: { ru: 'акция моего бывшего бренда, переписан в 2026', en: "my former brand's campaign, rewritten in 2026" },
     role: { ru: 'Автор: идея, 3D, фронтенд', en: 'Author: idea, 3D, frontend' },
     url: 'https://wax.donya.dev',
-    repo: 'https://github.com/le5tef/wax',
+    repo: 'https://github.com/donyaveselov/wax',
     summary: {
       ru: 'Когда-то я продавал наждачки для скейтбордов и устроил акцию: прятал по городу стаканчики с ваксом, а на дне каждого был QR-код. Нашедший сканировал его и попадал на этот сайт: промокод из ссылки расшифровывается в цвет стаканчика, стаканчик появляется в 3D именно этого цвета, а говорилка поздравляет с подарком. Сейчас проект переписан на TypeScript и выложен в открытый доступ, есть демо без кода.',
       en: "I used to sell skateboard griptape and ran a promo: I hid cups of skate wax around the city with a QR code on the bottom of each. Whoever found one scanned it and landed on this site: the promo code in the link decodes into the cup's colour, the cup appears in 3D in exactly that colour, and a talking mouth congratulates you on the gift. The project is now rewritten in TypeScript and open source, with a demo that needs no code.",

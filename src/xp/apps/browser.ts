@@ -88,7 +88,7 @@ const T = {
 } as const;
 
 const FAVS = [
-  { label: 'GitHub — le5tef', url: 'https://github.com/le5tef' },
+  { label: 'GitHub — donyaveselov', url: 'https://github.com/donyaveselov' },
   { label: 'Telegram — work_veselov', url: 'https://t.me/work_veselov' },
   { label: 'donya.dev', url: 'https://donya.dev' },
   { label: 'verifikat.ru', url: 'https://verifikat.ru' },
@@ -224,7 +224,7 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
       showLabel: true,
       big: true,
       onClick: () => {
-        go('https://github.com/le5tef');
+        go('https://github.com/donyaveselov');
       },
     }),
   ]);

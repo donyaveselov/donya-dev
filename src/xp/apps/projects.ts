@@ -964,7 +964,7 @@ const SITES: Site[] = [
     title: { ru: 'Wax', en: 'Wax' },
     icon: ICONS.wax,
     home: 'https://wax.donya.dev/',
-    repo: 'https://github.com/le5tef/wax',
+    repo: 'https://github.com/donyaveselov/wax',
     url: (l) => `https://wax.donya.dev/?lang=${l}`,
   },
   {
