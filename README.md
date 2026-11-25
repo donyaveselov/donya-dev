@@ -81,70 +81,97 @@ src/
   components/kit/      the apps' small DOM kit (h(), menus, bindings)
   i18n/  types/  enums/  utils/  assets/
 scripts/           deploy.mjs (FTP deploy), pack-room.mjs (Blender export -> room.json), regress.mjs + compare.mjs
-public/            room.json, wallpapers, screenshots, music/ (the lofi loop, with its CREDITS.txt), .htaccess,
-                   api/ (the analytics endpoint and the daily digest, PHP)
-deploy/            analytics.sample.php: the template of the analytics' private config on the host
+public/            room.json, wallpapers, screenshots, music/ (the lofi loop, with its CREDITS.txt), .htaccess
+worker/            the analytics: a Cloudflare Worker with D1 (src/index.ts, migrations/, wrangler.toml)
+deploy/            analytics.sample.php: the template of the private copy of the analytics' Telegram settings
 docs/              DEVELOPMENT.md
 ```
 
 ## Analytics and notifications
 
 The site counts visits without personal data and tells me about them in Telegram. The page
-(`src/services/analytics.service.ts`) sends a short list of events to `/api/collect.php` (`public/api/`, PHP on the
-host), which logs them and sends one message per visit, for example:
+(`src/services/analytics.service.ts`) sends a short list of events with `sendBeacon` to a Cloudflare Worker
+([`worker/`](worker/), `POST https://donya-analytics.donya-analytics.workers.dev/collect`; the static host runs no
+server code), which stores them in a D1 database and sends one message per visit, for example:
 
 ```
 👀 Визит 3 мин 12 с (активно 2:40) · телефон · RU · пришёл: hh.ru · Safari/iOS
 экскурсия: да, до конца → компьютер → Проекты, Резюме → Компи (сайт)
 ```
 
-and `/api/digest.php` sends a daily summary (visits, unique visitors, median and average active time, referrers, how
-many took the tour, sat at the PC, opened the resume, the top apps).
+The message is edited while the visit goes on (later `visit_end` beacons), for half an hour and at most once a minute;
+visits with under 3 s of active time get none. Every morning at 9:00 Phuket time an hourly cron trigger sends a summary
+of the previous day (visits, unique visitors, median and average active time, referrers, how many took the tour, sat at
+the PC, opened the resume, the top apps), and deletes data older than 180 days.
 
-**What is collected.** The events and their props are a fixed list (`SCHEMA` in the service, mirrored in
-`public/api/analytics-lib.php`; anything else is dropped on both sides): the visit's start (the route, the page's and
-the browser's language, the device class phone / tablet / desktop, the window size rounded to tens of pixels, the
-referrer's host, `utm_source`), the tour (offered, accepted, declined, each step, skipped, completed), sitting down at
-the PC and leaving it, the apps opened, the resume sheet, the diploma, projects and their site windows, a language
-switch, and the visit's end: total time, active time (the tab visible and some input within the last minute) and the
-milestones reached. The server adds the time, a browser and OS family ("Chrome/Android") and a visitor hash.
+**What is collected.** The events and their props are a fixed list (`SCHEMA` in
+`src/services/analytics.schema.ts`, which the page and the Worker both import; anything else is dropped on both sides):
+the visit's start (the route, the page's and the browser's language, the device class phone / tablet / desktop, the
+window size rounded to tens of pixels, the referrer's host, `utm_source`), the tour (offered, accepted, declined, each
+step, skipped, completed), sitting down at the PC and leaving it, the apps opened, the resume sheet, the diploma,
+projects and their site windows, a language switch, and the visit's end: total time, active time (the tab visible and
+some input within the last minute) and the milestones reached. The Worker adds the time, a browser and OS family
+("Chrome", "Android") and a visitor hash.
 
 **What is not.** No cookies, no ids in localStorage, no fingerprinting: the visit's id is random and lives in the tab's
-sessionStorage. No IP address and no User-Agent are stored: the visitor is `sha256(salt . ip . ua)[:16]` with a random
-salt that is replaced every day, so a visitor counts once per day and cannot be followed from one day to the next. No
-referrer paths or queries, no text typed anywhere. Nothing is sent with Do Not Track or Global Privacy Control on, from
-bots, headless or automated browsers (`navigator.webdriver`), in `?debug` mode, or from `npm run dev` (unless it is
-started with `VITE_ANALYTICS=1`).
+sessionStorage. No IP address and no User-Agent are stored: the visitor is `sha256(salt + ip + ua)[:16]` with a random
+salt that is replaced every day (Phuket time), so a visitor counts once per day and cannot be followed from one day to
+the next. No referrer paths or queries, no text typed anywhere. Nothing is sent with Do Not Track or Global Privacy
+Control on, from bots, headless or automated browsers (`navigator.webdriver`), in `?debug` mode, or from `npm run dev`
+(unless it is started with `VITE_ANALYTICS=1`). The Worker also refuses other origins, bodies over 4 KB, bot
+User-Agents and more than 120 events per visitor in 10 minutes.
 
-**Setting it up on the host (once).** The config lives outside the site's folder, where the deploy never writes and
-the web never serves it: `<home>/donya-private/analytics.php`, next to `www/` (the site is `<home>/www/donya.dev`;
-another path can be given in the `DONYA_ANALYTICS_CONFIG` environment variable).
-
-1. Create the bot with [@BotFather](https://t.me/BotFather) (`/newbot`) and keep its token.
-2. Write anything to the bot, then open `https://api.telegram.org/bot<token>/getUpdates` in a browser: the chat id is
-   `result[0].message.chat.id`.
-3. In ISPmanager's file manager (or over FTP) create the folder `donya-private` in the home folder, next to `www`
-   (permissions 700), and put [`deploy/analytics.sample.php`](deploy/analytics.sample.php) in it as `analytics.php`
-   (permissions 600) with the real `tg_token`, `tg_chat_id` and a long random `digest_key`. The `logs/` and `state/`
-   folders appear next to it with the first event. Never commit the real file.
-4. Deploy (`npm run deploy` uploads `dist/api/` with the rest), open the site, leave it after a few seconds: a message
-   arrives. Logs: `donya-private/logs/YYYY-MM-DD.jsonl`, one JSON line per event.
-
-**The daily digest.** ISPmanager → _Scheduler_ (cron) → _Create_: run every hour (minute `5`, every hour, every day),
-with the command
+**The Worker.** `worker/` is an npm workspace (`npm install` at the root installs it). From the repository root:
 
 ```sh
-/usr/bin/wget -q -O - "https://donya.dev/api/digest.php?key=<digest_key>"
+npm run deploy -w worker            # wrangler deploy (the site's npm run deploy does not touch the Worker)
+npm run migrate -w worker           # apply worker/migrations to the remote D1 database
+npm run tail -w worker              # live logs (wrangler tail): requests, "telegram sendMessage: ok, message_id …"
+npm run dev -w worker               # wrangler dev on localhost, with localhost origins allowed (DEV_ORIGINS)
 ```
 
-or, without the key in a URL, the host's PHP binary on the file (its path is in the hosting panel, e.g.
-`/opt/php/8.3/bin/php`): `/opt/php/8.3/bin/php ~/www/donya.dev/api/digest.php`. It sends once a day, in the hour
-`digest_hour` of the config (Phuket time), a summary of the previous day, and then deletes logs older than 180 days.
-`?force=1` sends now, `?print=1` only shows the text, `?day=2026-11-24` picks the day.
+`worker/wrangler.toml` holds the D1 binding, the hourly cron and the vars: `ALLOWED_ORIGINS`, `DEV_ORIGINS` (empty in
+production), `DIGEST_HOUR` (9) and `NOTIFY` (`"0"` turns the per-visit messages off). The secrets are set once with
+wrangler, never in a file of the repository (it reads the value from stdin):
 
-**Turning it off.** Messages only: `'notify' => false` in the config (the log and the digest go on). Everything on the
-server: `'enabled' => false`, or delete the config (collect.php then answers 503 and stores nothing). In the page:
-build with `VITE_ANALYTICS=0`, and nothing is sent at all.
+```sh
+cd worker
+npx wrangler secret put TG_TOKEN      # the bot's token from @BotFather
+npx wrangler secret put TG_CHAT_ID    # write to the bot, then https://api.telegram.org/bot<token>/getUpdates:
+                                      #   result[0].message.chat.id
+npx wrangler secret put DIGEST_KEY    # a long random string (openssl rand -hex 24), for GET /digest
+```
+
+A private copy of the Telegram values stays on the host outside the web root, `<home>/donya-private/analytics.php`
+([`deploy/analytics.sample.php`](deploy/analytics.sample.php) is its template); nothing reads it at run time.
+
+**The digest by hand.** `https://donya-analytics.donya-analytics.workers.dev/digest?key=<DIGEST_KEY>` answers in plain
+text: `&print=1` only shows the text, `&force=1` sends it now (even outside the hour, or a second time),
+`&day=2026-11-24` picks the day (default: yesterday).
+
+**Reading the data.** From `worker/`, `npx wrangler d1 execute donya-analytics --remote --command "<SQL>"`, e.g.
+
+```sql
+-- the latest visits and their messages
+SELECT session, datetime(started / 1000, 'unixepoch', '+7 hours') AS started, active_ms, device, lang, referrer, utm,
+       message_id IS NOT NULL AS notified FROM sessions ORDER BY started DESC LIMIT 20;
+-- visits and visitors per day
+SELECT day, count(DISTINCT session) AS visits, count(DISTINCT visitor) AS visitors FROM events GROUP BY day
+ORDER BY day DESC LIMIT 14;
+-- one visit's events
+SELECT ct, event, props FROM events WHERE session = '<session>' ORDER BY id;
+-- the most opened apps
+SELECT json_extract(props, '$.app') AS app, count(*) AS n FROM events WHERE event = 'app_open' GROUP BY app
+ORDER BY n DESC;
+```
+
+The tables: `events` (day, ts, session, visitor, event, ct, props JSON, browser, os), `sessions` (one row per visit,
+with its Telegram `message_id`, `notified_at`, `edited_at`), `salts` (today's), `rate` (the rate counters), `state`
+(`digest_last`).
+
+**Turning it off.** Messages only: set `NOTIFY = "0"` in `worker/wrangler.toml` and deploy the Worker (the data and the
+digest go on). In the page: build with `VITE_ANALYTICS=0`, and nothing is sent at all. `VITE_ANALYTICS_URL` points
+the page at another endpoint (e.g. `http://127.0.0.1:8787/collect` for `npm run dev -w worker`).
 
 ## Credits
 

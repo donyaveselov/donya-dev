@@ -86,6 +86,9 @@ node scripts/deploy.mjs --ls   # list the login's home folder (to find the site'
   files stay for one more deploy, because a tab opened before it still has the old `index.html` and loads its desktop
   chunk lazily. `.well-known/` (Let's Encrypt) and `cgi-bin/` are never touched.
 - The first deploy with this script finds no manifest, uploads everything and removes nothing.
+- **The analytics** are not on this host (it serves files only: `.php` comes back as text and a POST gets 405 from
+  nginx). They are the Cloudflare Worker in `worker/`, deployed separately with `npm run deploy -w worker`; see the
+  README, «Analytics and notifications», for its secrets, logs (`npm run tail -w worker`) and D1 queries.
 
 `dist/.htaccess` (from `public/`) sets compression, caching (hashed assets and `room.json?v=` for a year,
 `index.html` and a plain `room.json` revalidated) and the www → apex redirect. The hosting puts nginx in front of
