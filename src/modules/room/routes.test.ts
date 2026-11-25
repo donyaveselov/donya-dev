@@ -10,6 +10,7 @@ const PLAIN: Route = {
   sit: null,
   ps1: true,
   camera: 'southeast',
+  holdLoader: false,
 };
 
 describe('hash routes', () => {
@@ -31,6 +32,9 @@ describe('hash routes', () => {
   it('shows a game being played', () => {
     expect(parseRoute('dota')).toEqual({ ...PLAIN, forced: 'play', game: { kind: 'dota', name: 'Dota 2' } });
     expect(parseRoute('cs')).toEqual({ ...PLAIN, forced: 'play', game: { kind: 'cs', name: 'Counter-Strike 2' } });
+  });
+  it('keeps the loading screen up', () => {
+    expect(parseRoute('loader')).toEqual({ ...PLAIN, holdLoader: true });
   });
   it('opens the resume sheet', () => {
     expect(parseRoute('resume')).toEqual({ ...PLAIN, resume: true });

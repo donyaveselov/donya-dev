@@ -152,6 +152,8 @@ class RoomApp {
     this.applyLang();
     readClock();
     this.applyTime();
+    // #loader keeps the loading screen up for good (nothing is loaded): a way to look at the loader
+    if (currentRoute().holdLoader) return;
     const gl = createRenderer();
     if (gl)
       loadRoom()

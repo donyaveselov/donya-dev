@@ -5,6 +5,7 @@
 //   #dota #cs                         playing that game
 //   #pc #pcdota #projects             straight to the desktop (with a game on the monitor, with My Projects open)
 //   #nops1                            without the PS1 look
+//   #loader                           the loading screen for good: the room is never loaded (to look at the loader)
 //   #southwest #northeast #low        another camera start (handy for checking the window portal from outside)
 // (#debug is not a route: debug mode is remembered for the tab and the desktop needs it too, see src/utils/debug.ts.)
 import type { Status } from '../../types';
@@ -27,6 +28,8 @@ export interface Route {
   sit: 'desktop' | 'projects' | null;
   ps1: boolean;
   camera: CameraStart;
+  /** keep the loading screen up: the room is never loaded */
+  holdLoader: boolean;
 }
 
 const GAMES: Readonly<Record<string, 'dota' | 'cs'>> = { dota: 'dota', cs: 'cs', pcdota: 'dota' };
@@ -48,6 +51,7 @@ export function parseRoute(hash: string): Route {
     sit: lookup(SITS, hash),
     ps1: hash !== 'nops1',
     camera: lookup(CAMERAS, hash) ?? 'southeast',
+    holdLoader: hash === 'loader',
   };
 }
 
