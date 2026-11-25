@@ -1,7 +1,7 @@
 // Background music: one lofi loop ("Lofi Hip Hop Loop" by omfgdude, CC0: public/music/CREDITS.txt), on by default.
 // The speaker button flips the page's one sound switch (src/store/sound.ts), which the desktop's tray Mute flips
 // too; the music follows the switch. Browsers start audio only from a gesture, so it begins on the visitor's first
-// click, tap or key and fades in. The file is fetched while the page is idle (not while muted) and looped gaplessly
+// click, tap or key and fades in. The file (1.4 MB) is fetched only then, not with the page, and looped gaplessly
 // with Web Audio: Ogg Vorbis, or MP3 for older Safari, with the encoder's silence cut off both ends. A hidden tab
 // pauses it; the tray's volume slider turns it down.
 import { isMuted, onMutedChange, setMuted } from '../../store/sound';
@@ -49,8 +49,8 @@ export class Music {
     });
   }
 
-  /** The file, fetched once: Ogg Vorbis where the browser plays it, else the MP3. */
-  prefetch(): void {
+  /** The file, fetched once (on the first gesture): Ogg Vorbis where the browser plays it, else the MP3. */
+  private prefetch(): void {
     if (isMuted() || this.file) return;
     const ogg = new Audio().canPlayType('audio/ogg; codecs="vorbis"') !== '';
     this.file = fetch(ogg ? 'music/lofi-loop.ogg' : 'music/lofi-loop.mp3').then((r) => {

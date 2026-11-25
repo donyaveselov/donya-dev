@@ -38,6 +38,7 @@ import { REDUCED_MOTION, live, readClock, saveLang, status } from './store/state
 import type { TagView } from './components/tags';
 import { Tour } from './tour/tour';
 import { byId, must } from '../../utils/dom';
+import { nextTask } from '../../utils/tasks';
 import { fetchWeather, restoreWeather } from '../../services/weather.service';
 
 /** The Phuket clock is read this often (s); the room is relit when its minute changes. */
@@ -75,7 +76,6 @@ class RoomApp {
   private readonly stage = byId('stage');
   private readonly note = byId('note');
   private readonly loading = byId('loading');
-  private readonly meter = byId('meter');
   private readonly panels = new Panels();
   private readonly music = new Music(byId('music', HTMLButtonElement));
   private readonly pin = new ProjectsPin(byId('pin'));
@@ -154,12 +154,8 @@ class RoomApp {
     this.applyTime();
     const gl = createRenderer();
     if (gl)
-      loadRoom((k) => {
-        this.meter.style.width = String(k * 100) + '%';
-      })
-        .then((gltf) => {
-          this.enterRoom(gl, gltf);
-        })
+      loadRoom()
+        .then((gltf) => this.enterRoom(gl, gltf))
         .catch((e: unknown) => {
           console.error(e);
           this.openWithoutRoom();
@@ -254,10 +250,15 @@ class RoomApp {
   /* ---------- the room ---------- */
 
   /** The model is in: builds the room, shows it, and follows a route that sits down (or says hello). */
-  private enterRoom(gl: WebGLRenderer, gltf: GLTF): void {
-    this.meter.style.width = '100%';
+  private async enterRoom(gl: WebGLRenderer, gltf: GLTF): Promise<void> {
     const route = currentRoute();
+    // three tasks, not one: build the scene, compile its shaders, then show it. three r128 compiles every shader
+    // program synchronously on the first frame (a few hundred ms on a phone), so it gets a task of its own here, and
+    // the frame loop only sees the room once it is compiled.
     const scene = buildScene(gl, gltf, this.stage, route.camera);
+    await nextTask();
+    gl.compile(scene.scene, scene.camera);
+    await nextTask();
     const handoff = this.makeHandOff(scene);
     const pointer = watchPointer(scene, {
       free: () => !handoff.atPC,
@@ -283,7 +284,7 @@ class RoomApp {
     if (debugWanted()) window.__psx = this.debugHandle(room);
     this.layout();
     this.applyTime();
-    this.loading.style.opacity = '0';
+    this.hideLoader();
     this.pin.el.hidden = false;
     this.pin.measure();
     void document.fonts.ready.then(() => {
@@ -308,7 +309,6 @@ class RoomApp {
     // the desktop module, then its shell (invisible), when the page is idle: a click on a monitor then starts the
     // flight at once
     whenIdle(() => {
-      this.music.prefetch();
       void loadDesktop().then((ok) => {
         if (ok)
           whenIdle(() => {
@@ -469,7 +469,7 @@ class RoomApp {
   /** No room (no WebGL, or the model failed): the desktop opens straight away, full-screen; leaving it shows the
    *  Projects button in the middle of the page, which opens it again. */
   private openWithoutRoom(): void {
-    this.loading.style.opacity = '0';
+    this.hideLoader();
     document.body.classList.add('no-3d');
     this.say('no3d');
     const pin = this.pin.el;
@@ -480,7 +480,12 @@ class RoomApp {
     pin.style.visibility = 'visible';
     pin.style.opacity = '1';
     this.flat.open(currentRoute().sit === 'projects' ? (desk) => desk.openApp('projects') : undefined);
-    this.music.prefetch();
+  }
+
+  /** The loader fades out and the page underneath (hidden while booting, see index.html) shows. */
+  private hideLoader(): void {
+    this.loading.style.opacity = '0';
+    document.body.classList.remove('booting');
   }
 
   /* ---------- debug mode ---------- */

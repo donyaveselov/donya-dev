@@ -115,6 +115,7 @@ export class Tour {
   private bub: HTMLElement | null = null;
   private btns: HTMLElement | null = null;
   private mouth: HTMLImageElement | null = null;
+  private btn: HTMLButtonElement | null = null;
   private readonly shown = new Set<TagKey>();
   private all = false;
   private steps: TourStep[] | null = null;
@@ -143,14 +144,17 @@ export class Tour {
     el.hidden = true;
     el.innerHTML =
       '<div class="talkie__say"><div class="tbub" role="status" aria-live="polite"></div><div class="tbtns"></div></div>' +
-      '<img class="talkie__mouth" alt="" width="64" height="31" role="button" tabindex="-1">'; // a button once the tour is over
+      // the corner button replays the tour; it only joins the tab order once the tour is over
+      '<button class="talkie__btn" type="button" tabindex="-1"><img class="talkie__mouth" alt="" width="64" height="31"></button>';
     document.body.appendChild(el);
     this.el = el;
     const bub = must(el.querySelector<HTMLElement>('.tbub'));
     const mouth = must(el.querySelector<HTMLImageElement>('.talkie__mouth'));
+    const btn = must(el.querySelector<HTMLButtonElement>('.talkie__btn'));
     this.bub = bub;
     this.btns = must(el.querySelector<HTMLElement>('.tbtns'));
     this.mouth = mouth;
+    this.btn = btn;
     mouth.src = TALKIE_FRAMES.idle;
     bub.addEventListener('click', () => {
       if (this.typing) this.finishLine();
@@ -159,13 +163,7 @@ export class Tour {
     const replay = (): void => {
       if (el.classList.contains('talkie--mini')) this.start(true);
     };
-    mouth.addEventListener('click', replay);
-    mouth.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        replay();
-      }
-    });
+    btn.addEventListener('click', replay); // a button: Enter and Space click it too
   }
 
   private showMouth(f: MouthFrame): void {
@@ -320,7 +318,7 @@ export class Tour {
     this.i = again ? 1 : 0;
     el.hidden = false;
     el.classList.remove('talkie--mini');
-    this.mouth?.setAttribute('tabindex', '-1'); // while the tour talks the mouth does nothing
+    this.btn?.setAttribute('tabindex', '-1'); // while the tour talks the mouth does nothing
     this.host.hideHint();
     this.show();
   }
@@ -338,12 +336,12 @@ export class Tour {
   }
 
   private labelMouth(): void {
-    const mouth = this.mouth;
-    if (!mouth) return;
+    const btn = this.btn;
+    if (!btn) return;
     const again = t(this.host.lang()).tour.again;
-    mouth.setAttribute('aria-label', again);
-    mouth.title = again;
-    mouth.setAttribute('tabindex', '0');
+    btn.setAttribute('aria-label', again);
+    btn.title = again;
+    btn.setAttribute('tabindex', '0');
   }
 
   /** The page language changed: say the current line again, or relabel the corner button. */

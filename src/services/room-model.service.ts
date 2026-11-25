@@ -10,12 +10,11 @@ function gunzip(buf: Uint8Array<ArrayBuffer>): Promise<ArrayBuffer> {
   return new Response(new Blob([buf]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer();
 }
 
-/** Fetches, unpacks and parses the room; `progress` gets 0.6 once the file is in. */
-export async function loadRoom(progress: (k: number) => void): Promise<GLTF> {
+/** Fetches, unpacks and parses the room. */
+export async function loadRoom(): Promise<GLTF> {
   const res = await fetch(`room.json?v=${__ROOM_VERSION__}`);
   if (!res.ok) throw new Error(`room.json: HTTP ${String(res.status)}`);
   const data = (await res.json()) as { gz: string };
-  progress(0.6);
   const bin = atob(data.gz);
   const buf = new Uint8Array(bin.length);
   for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
