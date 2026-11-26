@@ -306,7 +306,9 @@ button.chip:active {
   padding-bottom: 14px;
   border-bottom: 2px solid var(--ink);
 }
-.cv h1 {
+/* the name is the page's <h1> in its own language and a <p> in the other (index.html, panels.ts): one look for both */
+.cv .cv-name {
+  font-weight: 700;
   font-size: 30px;
   line-height: 1.1;
   margin: 0 0 6px;
@@ -413,7 +415,7 @@ button.chip:active {
   .cv dd {
     margin-bottom: 8px;
   }
-  .cv h1 {
+  .cv .cv-name {
     font-size: 26px;
   }
 }
@@ -727,7 +729,7 @@ body.no-3d .note span {
     font-size: 8.9pt;
     line-height: 1.33;
   }
-  .cv h1 {
+  .cv .cv-name {
     font-size: 19pt;
     margin: 0 0 2px;
   }

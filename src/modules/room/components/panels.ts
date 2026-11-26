@@ -9,18 +9,20 @@ import { fitPixelBox } from './tags';
 import { byId } from '../../../utils/dom';
 import { track } from '../../../services/analytics.service';
 
-/** The tab title per language; index.html carries the English one for crawlers and link previews. */
-export const PAGE_TITLE: Record<Lang, string> = {
-  en: 'Daniil Ivanov | Fullstack Developer | Vue Django NodeJS',
-  ru: 'Даниил Иванов | Fullstack-разработчик | Vue Django NodeJS',
-};
-
-/** The meta description per language; index.html carries the English one. */
-export const PAGE_DESCRIPTION: Record<Lang, string> = {
-  en: 'Portfolio of Daniil Ivanov, a fullstack developer: Vue 3 / Nuxt, Python / Django, Node.js. An interactive 3D room with projects, a resume and contacts.',
-  ru: 'Портфолио Даниила Иванова, fullstack-разработчика: Vue 3 / Nuxt, Python / Django, Node.js. Интерактивная 3D-комната с проектами, резюме и контактами.',
-};
+import { PAGE_DESCRIPTION, PAGE_TITLE } from '../../../services/seo';
 import type { EventProps } from '../../../services/analytics.service';
+
+/** The resume's name line as the page's one <h1> (the shown language) or a plain <p> (the hidden one): same id, class
+ *  and text, so the page never has two headings of the first level. */
+function headName(block: HTMLElement, heading: boolean): void {
+  const name = block.querySelector<HTMLElement>('.cv-name');
+  const tag = heading ? 'H1' : 'P';
+  if (!name || name.tagName === tag) return;
+  const next = document.createElement(tag);
+  for (const a of name.attributes) next.setAttribute(a.name, a.value);
+  next.append(...name.childNodes);
+  name.replaceWith(next);
+}
 
 export class Panels {
   private readonly sheet = byId('sheet');
@@ -161,7 +163,10 @@ export class Panels {
       if (isAriaKey(key)) el.setAttribute('aria-label', T.aria[key]);
     });
     // the resume sheet holds both languages (index.html): the page's language shows one, names the dialog, prints
-    for (const block of this.sheet.querySelectorAll<HTMLElement>('.cv-lang')) block.hidden = block.lang !== lang;
+    for (const block of this.sheet.querySelectorAll<HTMLElement>('.cv-lang')) {
+      block.hidden = block.lang !== lang;
+      headName(block, !block.hidden);
+    }
     this.sheet.setAttribute('aria-labelledby', lang === 'ru' ? 'cv-name' : 'cv-name-en');
     for (const b of document.querySelectorAll('button[data-lang]'))
       b.setAttribute('aria-pressed', String(b.getAttribute('data-lang') === lang));

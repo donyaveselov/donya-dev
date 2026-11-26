@@ -1,5 +1,6 @@
 // What the room is showing: the page language, the Phuket clock, the owner's status and game, the weather.
-import { initialLang } from '../../../i18n/i18n';
+import { startLang } from '../../../i18n/i18n';
+import { langOfPath } from '../../../services/lang-url';
 import type { GameKind, Lang, Status } from '../../../types';
 import { phuketTime, statusAt } from './clock';
 import type { Presence } from '../../../services/presence.service';
@@ -16,7 +17,8 @@ function savedLang(): string | null {
 export const REDUCED_MOTION = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 export const live = {
-  lang: initialLang(savedLang(), navigator.language),
+  /** from the address first (/ru/...), then the saved choice and the browser */
+  lang: startLang(langOfPath(location.pathname), savedLang(), navigator.language),
   /** the Phuket clock as last read (every 5 s) */
   time: { h: 12, m: 0 },
   /** a previewed hour (/day, the debug panel, the tour) instead of the clock */

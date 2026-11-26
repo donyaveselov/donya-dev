@@ -324,7 +324,7 @@
 .xp .xpa-resume .xpa-res-page.f-i { font-style: italic; }
 .xp .xpa-resume .xpa-res-page.f-u li { text-decoration: underline; }
 .xp .xpa-resume .cv-top { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 16px; padding-bottom: 12px; border-bottom: 2px solid #1d3f7a; }
-.xp .xpa-resume h1 { margin: 0; font: bold 2em/1.1 Georgia, "Times New Roman", serif; color: #1d3f7a; }
+.xp .xpa-resume .cv-name { margin: 0; font: bold 2em/1.1 Georgia, "Times New Roman", serif; color: #1d3f7a; }
 .xp .xpa-resume .cv-role { margin: 2px 0 0; font-size: 1.1em; color: #333; }
 .xp .xpa-resume .cv-role span { color: #777; }
 .xp .xpa-resume .cv-contacts { font-size: .95em; line-height: 1.5; }

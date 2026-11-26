@@ -31,6 +31,7 @@ import type { Pointer } from './scene/pointer';
 import { GAME_NAMES, pollPresence } from '../../services/presence.service';
 import { render, setBackdrop } from './scene/psx';
 import { currentRoute, onRouteChange, tidyAddress } from '../../services/router.service';
+import { counterpartUrl, langOfPath } from '../../services/lang-url';
 import type { Route } from './routes';
 import { animateScene, buildScene, fitScene, lightScene, tourSights } from './scene/scene';
 import type { RoomScene } from './scene/scene';
@@ -142,6 +143,7 @@ class RoomApp {
     window.addEventListener('resize', this.layout);
     // Back or Forward (the resume sheet opened or closed); the boot handles the address the page was loaded with
     onRouteChange((route) => {
+      addressInLang(live.lang); // an entry from before a language switch keeps the language the page shows
       this.applyRoute(route);
       if (route.sit === 'projects') this.openProjects();
     });
@@ -197,6 +199,7 @@ class RoomApp {
   private setLang(next: Lang): void {
     if (next !== live.lang) track('lang_switch', { to: next });
     saveLang(next);
+    addressInLang(next); // /resume ↔ /ru/resume, in place: no reload, the room goes on
     this.applyLang();
     this.room?.handoff.setLang(next);
   }
@@ -526,9 +529,15 @@ class RoomApp {
   }
 }
 
+/** The address in a language (the same route, query and hash), replaced in place when it is in the other one. */
+function addressInLang(lang: Lang): void {
+  if (langOfPath(location.pathname) !== lang) history.replaceState(history.state, '', counterpartUrl(location, lang));
+}
+
 /** Starts the page; nothing is built before this call. */
 export function startRoom(): void {
   initAnalytics({ lang: live.lang }); // first: visit_start reads the address as it was opened
   tidyAddress(); // /resume/, an unknown path or a #fragment is tidied before anything reads the route
+  addressInLang(live.lang); // an English address for a Russian visitor (saved, or the browser) becomes /ru/...
   new RoomApp().start();
 }

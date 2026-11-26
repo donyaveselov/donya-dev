@@ -4,9 +4,12 @@ import { fileURLToPath } from 'node:url';
 import { runnerImport } from 'vite';
 import type { Plugin } from 'vite';
 import { defineConfig } from 'vitest/config';
+import type * as Seo from './src/services/seo';
+import type { Lang } from './src/types';
 
 const ROOM_JSON = fileURLToPath(new URL('./public/room.json', import.meta.url));
 const ROUTES_TS = fileURLToPath(new URL('./src/modules/room/routes.ts', import.meta.url));
+const SEO_TS = fileURLToPath(new URL('./src/services/seo.ts', import.meta.url));
 
 /**
  * Cache-busts the model: the page fetches room.json?v=<md5[:10] of the file>, so the host can cache it for good.
@@ -41,29 +44,58 @@ export async function routeNames(): Promise<readonly string[]> {
   return Object.keys(module.ROUTES);
 }
 
+/** The pages' heads and the sitemap (src/services/seo.ts), loaded through Vite as the route table is. */
+export async function seo(): Promise<typeof Seo> {
+  const { module } = await runnerImport<typeof Seo>(SEO_TS, { configFile: false, logLevel: 'warn' });
+  return module;
+}
+
+export interface PageOptions {
+  /** the built English page as a route's page in a language (src/services/seo.ts) */
+  localize?: (html: string, lang: Lang, name: string) => string;
+  /** the sitemap's lastmod: the build date */
+  today?: () => string;
+}
+
 /**
- * A copy of the built page in a folder per route (resume/index.html, pc/index.html, ...): the host serves files only,
- * with no fallback to index.html, and this is how /resume opens straight away. The page's scripts and styles are at
- * absolute URLs (base '/'), so the same HTML works one folder down.
+ * The built page once per language and route: index.html and resume/index.html, pc/index.html, ... in English,
+ * ru/index.html and ru/resume/index.html, ... in Russian, each with its head in its language (src/services/seo.ts), and
+ * sitemap.xml over them. The host serves files only, with no fallback to index.html: this is how /resume and /ru/resume
+ * open straight away. The page's scripts and styles are at absolute URLs (base '/'), so the same HTML works in every
+ * folder.
  */
-export function routePages(names: () => Promise<readonly string[]> = routeNames): Plugin {
+export function routePages(names: () => Promise<readonly string[]> = routeNames, opts: PageOptions = {}): Plugin {
+  const today = opts.today ?? (() => new Date().toISOString().slice(0, 10));
   let pages: readonly string[] = [];
+  let S: typeof Seo;
   return {
     name: 'donya:route-pages',
     apply: 'build',
     enforce: 'post',
     async buildStart() {
       pages = await names();
+      S = await seo();
       if (pages.length === 0) this.error('no route list: the build would ship no route pages');
-      const bad = pages.find((name) => !/^[a-z0-9]+$/.test(name));
+      const bad = pages.find((name) => !/^[a-z0-9]+$/.test(name) || name === 'ru');
       if (bad !== undefined) this.error(`route "${bad}" is no folder name`);
+      const lost = S.INDEXED_ROUTES.find((name) => !pages.includes(name));
+      if (lost !== undefined) this.error(`the sitemap's route "${lost}" is not in the route table`);
     },
     generateBundle: {
       order: 'post',
       handler(_options, bundle) {
         const page = bundle['index.html'];
         if (page?.type !== 'asset') return this.error('no index.html in the bundle to copy into the route folders');
-        for (const name of pages) this.emitFile({ type: 'asset', fileName: `${name}/index.html`, source: page.source });
+        const html = String(page.source);
+        const localize = opts.localize ?? S.localizePage;
+        for (const lang of ['en', 'ru'] satisfies Lang[])
+          for (const name of ['', ...pages]) {
+            const source = localize(html, lang, name);
+            const fileName = S.pageFile(name, lang);
+            if (fileName === 'index.html') page.source = source;
+            else this.emitFile({ type: 'asset', fileName, source });
+          }
+        this.emitFile({ type: 'asset', fileName: 'sitemap.xml', source: S.sitemap(today()) });
       },
     },
   };

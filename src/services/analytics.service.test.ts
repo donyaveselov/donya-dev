@@ -85,6 +85,12 @@ describe('the visitor, coarsely', () => {
     expect(routeLabel('/resume')).toBe('resume');
     expect(routeLabel('/pc/')).toBe('pc');
     expect(routeLabel('/wp-admin')).toBe('other');
+    // a Russian page counts as the same route: the stats are not split by language
+    expect(routeLabel('/ru/')).toBe('home');
+    expect(routeLabel('/ru')).toBe('home');
+    expect(routeLabel('/ru/resume')).toBe('resume');
+    expect(routeLabel('/ru/pc/')).toBe('pc');
+    expect(routeLabel('/ru/wp-admin')).toBe('other');
   });
 });
 

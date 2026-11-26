@@ -31,7 +31,8 @@ into one HTML file. That is why the history starts with an import and not with a
   clock, seeds `Math.random`, stubs the weather and captures 42 states in Chrome; `scripts/compare.mjs` diffs two
   captures. It caught, for example, a CSS minifier silently dropping `backdrop-filter`.
 - **Routes are paths, pages are copies.** `/resume`, `/pc`, `/night` and the rest are real addresses: the host serves
-  files only, so the build writes the page into a folder per route, taking the names from the route table.
+  files only, so the build writes the page into a folder per route, taking the names from the route table, once in
+  English and once in Russian under `/ru/` (each with its own head, hreflang and JSON-LD), plus `sitemap.xml`.
 - **Fallbacks.** Without WebGL the page keeps its top bar and a plain projects button instead of an empty canvas
   (the desktop is DOM and still works); without JavaScript a `<noscript>` style makes the resume sheet the page.
 - **One resume.** The resume sheet in `index.html` (Russian and English) is its only source: the desktop's DocPad

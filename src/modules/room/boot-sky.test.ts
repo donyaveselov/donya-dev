@@ -38,8 +38,9 @@ describe('the sky before the first paint', () => {
   });
   it('matches the room at every quarter hour, for every route', () => {
     const names = ['', ...Object.keys(ROUTES), 'constructor', 'nonsense'];
-    // each name as a path in every form the host serves it
-    const paths = ['/index.html', '/a/b', ...names.flatMap((n) => [`/${n}`, `/${n}/`, `/${n}/index.html`])];
+    // each name as a path in every form the host serves it, in English and under /ru/
+    const forms = (n: string): string[] => [`/${n}`, `/${n}/`, `/${n}/index.html`];
+    const paths = ['/index.html', '/a/b', '/ru', ...names.flatMap((n) => [...forms(n), ...forms(`ru/${n}`)])];
     for (let q = 0; q < 24 * 4; q++) {
       const utc = new Date(Date.UTC(2026, 10, 25, 0, q * 15));
       for (const p of paths) expect(bootSky(utc, p), `${p} at ${utc.toISOString()}`).toEqual(roomSky(utc, p));

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_ROUTE, ROUTES } from '../modules/room/routes';
-import { routeName, routeOf } from './router.service';
+import { routeName, routeOf, routePath } from './router.service';
 
 describe('routeOf', () => {
   it('is the plain room for no route or an unknown one', () => {
@@ -20,6 +20,25 @@ describe('routeName', () => {
     expect(routeName('/resume/')).toBe('resume');
     expect(routeName('/resume/index.html')).toBe('resume');
     expect(routeName('/')).toBe('');
+  });
+  it('reads a route under the Russian prefix', () => {
+    expect(routeName('/ru/resume')).toBe('resume');
+    expect(routeName('/ru/resume/')).toBe('resume');
+    expect(routeName('/ru/resume/index.html')).toBe('resume');
+    expect(routeName('/ru/')).toBe('');
+    expect(routeName('/ru')).toBe('');
+    expect(routeName('/ru/index.html')).toBe('index.html'); // no route: the plain room
+    expect(routeOf(routeName('/ru/pcdota/'))).toEqual(routeOf('pcdota'));
+    expect(routeName('/rus/resume')).toBe('rus');
+  });
+});
+
+describe('routePath', () => {
+  it('is the one address of a route in a language', () => {
+    expect(routePath('', 'en')).toBe('/');
+    expect(routePath('', 'ru')).toBe('/ru/');
+    expect(routePath('resume', 'en')).toBe('/resume');
+    expect(routePath('resume', 'ru')).toBe('/ru/resume');
   });
 });
 

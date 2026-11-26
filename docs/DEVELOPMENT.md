@@ -22,6 +22,15 @@ by absolute paths (`/room.json`). `/resume/` (how the host serves the folder) be
 path (`/nonsense`) is the host's 404 on donya.dev; `vite dev` and `vite preview` fall back to the page for any path,
 so there it is the plain room. The router is `src/services/router.service.ts`.
 
+**Languages are paths too.** `/` and every route are English, `/ru/` and `/ru/<route>/` Russian: the build writes each
+page in both (`dist/ru/resume/index.html`, ...) with its head in its language (`<html lang>`, title, description,
+Open Graph, canonical, hreflang alternates, the JSON-LD `Person`; `src/services/seo.ts`), and with the one `<h1>` in
+that language's resume block (the other block's name is a `<p>`), plus `sitemap.xml` over the plain room, `/resume`,
+`/pc` and `/projects` (the previews like `/night` stay out). The language at load comes from the address; on an
+English one a saved choice of Russian or a Russian browser switches to Russian in place and replaces the address with
+`/ru/...`. The RU/EN buttons swap the language live and replace the address with its counterpart
+(`src/services/lang-url.ts`), without a reload. `src/built-pages.test.ts` builds the site and checks every page.
+
 ## Regression harness
 
 ```sh

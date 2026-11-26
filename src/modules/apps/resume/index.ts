@@ -232,6 +232,13 @@ function render(content: HTMLElement, api: XPAppApi): () => void {
       sheet.querySelectorAll('[id]').forEach((el) => {
         el.removeAttribute('id'); // the sheet's own ids stay unique on the page
       });
+      // the name is the page's <h1> on the sheet; in the window it is a plain line, so the page keeps one <h1>
+      sheet.querySelectorAll('h1').forEach((el) => {
+        const name = document.createElement('p');
+        name.className = el.className;
+        name.append(...el.childNodes);
+        el.replaceWith(name);
+      });
       sheet.querySelectorAll('a').forEach((a) => {
         a.target = '_blank';
         a.rel = 'noopener noreferrer';

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// The resume as PDF, in Russian and English: the site's own resume sheet (/resume), printed by Chrome. The sheet in
+// The resume as PDF, in Russian and English: the site's own resume sheet (/ru/resume, /resume), printed by Chrome. The sheet in
 // index.html is the one source of the resume; its print styles (room.css, @media print) make it one A4 page.
 //   npm run build && npm run preview &
 //   node scripts/resume-pdf.mjs [site url, default http://127.0.0.1:4173] [out dir, default resume-pdf/]
@@ -12,7 +12,7 @@ mkdirSync(out, { recursive: true });
 const browser = await chromium.launch();
 for (const lang of ['ru', 'en']) {
   const page = await browser.newPage({ locale: lang });
-  await page.goto(`${url}/resume`);
+  await page.goto(`${url}${lang === 'ru' ? '/ru' : ''}/resume`);
   await page.waitForFunction(() => !document.body.classList.contains('booting'));
   await page.evaluate(() => document.fonts.ready);
   const file = join(out, `Daniil-Ivanov-CV-${lang}.pdf`);

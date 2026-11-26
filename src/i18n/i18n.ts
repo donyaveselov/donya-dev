@@ -11,6 +11,14 @@ export function initialLang(saved: string | null, navigatorLanguage: string | un
   return (navigatorLanguage ?? 'en').toLowerCase().startsWith('ru') ? 'ru' : 'en';
 }
 
+/**
+ * The language a page opens in: a Russian address (/ru/...) is Russian whatever was saved; an English one is English
+ * unless the visitor chose Russian before or the browser is Russian (then the page switches in place, room.ts).
+ */
+export function startLang(urlLang: Lang, saved: string | null, navigatorLanguage: string | undefined): Lang {
+  return urlLang === 'ru' ? 'ru' : initialLang(saved, navigatorLanguage);
+}
+
 /** Text that is either already final or still bilingual. */
 export type Text = string | Bilingual;
 
