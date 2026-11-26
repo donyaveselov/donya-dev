@@ -30,6 +30,7 @@ function gameMedia(img: XPGame['image']): HTMLElement {
     } catch {
       try {
         const im = document.createElement('img');
+        im.alt = '';
         im.src = img.toDataURL();
         return im;
       } catch {
