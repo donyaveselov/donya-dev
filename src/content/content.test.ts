@@ -57,7 +57,7 @@ describe('content integrity', () => {
   });
 
   it('links every contact that is a page, under one GitHub profile', () => {
-    for (const c of CONTACTS) if (c.href) expect(c.href).toBe(`https://${c.value}`);
+    for (const c of CONTACTS) if (c.href) expect(c.href.replace('://www.', '://')).toBe(`https://${c.value}`);
     const github = CONTACTS.find((c) => c.id === 'github');
     for (const p of PROJECTS) if (p.repo) expect(p.repo.startsWith(`${github?.href ?? ''}/`)).toBe(true);
   });

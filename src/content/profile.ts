@@ -19,7 +19,7 @@ export const OS = {
 } as const;
 
 export interface Contact {
-  id: 'telegram' | 'email' | 'github' | 'site';
+  id: 'telegram' | 'email' | 'github' | 'linkedin' | 'site';
   label: string | Bilingual;
   value: string;
   /** null: shown with a copy button instead of a link. */
@@ -52,6 +52,14 @@ export const CONTACTS: readonly [Contact, ...Contact[]] = [
     href: 'https://github.com/donyaveselov',
     note: { ru: 'код и пет-проекты', en: 'code and side projects' },
     color: '#333',
+  },
+  {
+    id: 'linkedin',
+    label: 'LinkedIn',
+    value: 'linkedin.com/in/daniil-ivanov-bb9539451',
+    href: 'https://www.linkedin.com/in/daniil-ivanov-bb9539451',
+    note: { ru: 'профиль и опыт', en: 'profile and experience' },
+    color: '#0a66c2',
   },
   {
     id: 'site',
